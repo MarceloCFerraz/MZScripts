@@ -1,0 +1,4 @@
+*.xlsx
+venv
+results
+responses
