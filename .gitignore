@@ -1,4 +1,5 @@
-*.xlsx
+Fleet Analysis.*
 venv
 results
 responses
+aikey.py
