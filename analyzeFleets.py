@@ -1,4 +1,5 @@
 import os
+from ast import literal_eval
 
 import pandas
 
@@ -18,8 +19,8 @@ def verify_question_history_file():
 
     if not os.path.isfile(filename):
         # Create an empty question history file
-        df = pandas.DataFrame(columns=["User Question", "Agent Response"])
-        df.to_csv(f"./{dir}/{filename}", index=False)
+        fleets = pandas.DataFrame(columns=["User Question", "Agent Response"])
+        fleets.to_csv(f"./{dir}/{filename}", index=False)
 
 
 def verify_history_dir():
@@ -90,14 +91,84 @@ def setup_agent(dataFrame):
     return agent
 
 
+def is_valid_description(row):
+    # hubsNames, hubsIDs, associatesNames and associatesIDs are stored in the csv file as repr string. 
+    # repr strings can't have their \n chars replaced directly, the only way of doing so is below
+    hubNames = str(literal_eval(row["HubsNames"])).replace("'", "")  
+
+    for hubName in hubNames.splitlines():
+        if hubName not in row["Description"]:
+            # print(f"{row['Description']} doesn't contain {hubName}")
+            return True
+    return False
+
+
 def analyze_data():
-    fleets = pandas.read_csv("Fleets Data.csv")
+    print("Loadin data from CSV file...", end=" ")
+    fleets = pandas.read_csv("Fleets Data.csv")  # Pandas DataFrame containing all data
+    print("Done")
+
+    analysis_file = "Fleet Analysis.xlsx"
+    writer = pandas.ExcelWriter(analysis_file, engine='xlsxwriter')
     
     # agent = setup_agent(fleets)
 
     # Group the fleets based on unique combinations of 'HubIds' and 'ORG'
-    fleets_with_same_hubs = fleets.groupby(['HubsIDs', "ORG"])['FleetID'].apply(list).reset_index()
-    fleets_with_same_hubs.to_excel("Fleets With The Same Hubs and Orgs 1.xlsx", index=False)
+    sheet_name = "Same Hubs"
+    print(f"Generating {sheet_name} Sheet for {analysis_file}...", end=" ")
+
+    fleets_with_same_hubs = fleets.groupby(
+        ['ORG', 'HubsIDs']
+    )['FleetID'].apply(list).reset_index()
+    fleets_with_same_hubs.to_excel(writer, sheet_name=sheet_name, index=False)
+    print("Done")
+
+    # Filter the 'fleets' DataFrame to include only rows with duplicated FleetIDs
+    sheet_name = "Same IDs"
+    print(f"Generating {sheet_name} Sheet for {analysis_file}...", end=" ")
+
+    fleets_with_same_ids = fleets.groupby(
+        ['ORG', 'FleetID']
+    )['Description'].apply(list).reset_index()
+    # fleets[
+    #     fleets['FleetID'].duplicated(keep=False)
+    # ][['ORG', 'Description', 'FleetID']]  # Sheet Headers in order
+    fleets_with_same_ids.to_excel(writer, sheet_name=sheet_name, index=False)
+    print("Done")
+
+    # Filter the 'fleets' DataFrame to include only rows with duplicated Descriptions
+    sheet_name = "Same Description"
+    print(f"Generating {sheet_name} Sheet for {analysis_file}...", end=" ")
+
+    fleets_with_same_description = fleets.groupby(
+        ['ORG', 'Description']
+    )['FleetID'].apply(list).reset_index()
+    # fleets[
+    #     fleets['Description'].duplicated(keep=False)
+    # ][['ORG', 'Description', 'FleetID']]
+    fleets_with_same_description.to_excel(writer, sheet_name=sheet_name, index=False)
+    print("Done")
+
+    # Filter the 'fleets' DataFrame to include only rows whose descriptions do not contain a
+    # reference to at least one HubName from the HubsNames
+    sheet_name = "Bad Description"
+    print(f"Generating {sheet_name} Sheet for {analysis_file}...", end=" ")
+    
+    fleets_with_poor_description = fleets[
+        fleets.apply(
+            is_valid_description,
+            axis=1  
+            # axis=1 indicates that the function should be applied to each row of the DataFrame. 
+            # if axis=0 were specified, the lambda function would be applied column-wise, 
+            # executing the function on each column of the DataFrame.
+        )
+    ][['ORG', 'Description', 'HubsNames', 'FleetID']]
+    fleets_with_poor_description.to_excel(writer, sheet_name=sheet_name, index=False)
+    print("Done")
+
+    print(f"Saving {analysis_file}... ", end=" ")
+    writer.close()
+    print("Done")
 
     # # Group the fleets based on unique combinations of 'HubIds' and 'ORG'
     # grouped2 = fleets.groupby(['HubsIDs', 'ORG']).apply(
