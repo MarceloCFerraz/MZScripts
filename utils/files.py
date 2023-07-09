@@ -12,7 +12,7 @@ def save_json_to_file(jsonData, filePrefix):
     # even in windows this works out just fine
     current_dir = os.path.realpath(os.path.dirname(__name__)).replace("\\", "/")
 
-    # creates "Responses" folder directory
+    # creates "RESULTS" folder directory
     response_dir = current_dir + "/RESULTS"
 
     os.makedirs(response_dir, exist_ok=True)

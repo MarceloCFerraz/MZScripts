@@ -45,8 +45,8 @@ def saveJsonToFile(packages, key):
     # get current file directory and replaces "\" for "/"
     # even in windows this works out just fine
     current_dir = os.path.realpath(os.path.dirname(__name__)).replace("\\", "/")
-    # creates "Responses" folder directory
-    response_dir = current_dir + "/Responses"
+    # creates "RESULTS" folder directory
+    response_dir = current_dir + "/RESULTS"
     os.makedirs(response_dir, exist_ok=True)
     
     # names the file
@@ -60,7 +60,7 @@ def saveJsonToFile(packages, key):
     with open(final_dir, "w") as json_file:
         try:
             json_file.write(packages)
-            result += f"was created SUCCESSFULLY and can be accessed on ./Responses/{KEY}!"
+            result += f"was created SUCCESSFULLY and can be accessed on ./RESULTS/{KEY}!"
         except Exception as e:
             result += f"COULD NOT be created. See exception bellow:\n\n{e}"
 

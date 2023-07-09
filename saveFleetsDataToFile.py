@@ -6,7 +6,7 @@ import pandas
 from utils import utils, fleets, associates, hubs
 
 
-XLSX_FILE = "Fleet Analysis.xlsx"
+XLSX_FILE = "Fleets Data.xlsx"
 CSV_FILE = XLSX_FILE.replace("xlsx", "csv")
 
 
@@ -36,7 +36,7 @@ def fill_file_with_data():
         # creating keys for each element in HEADERS. They will be the headers in the CSV file
     
     workbook = xlsxwriter.Workbook(f"{XLSX_FILE}")
-    worksheet = workbook.add_worksheet("Fleets Data")
+    worksheet = workbook.add_worksheet("All Data")
 
 
     BOLD = workbook.add_format({"bold": True, "align": "center", "valign": "vcenter"})
@@ -56,8 +56,11 @@ def fill_file_with_data():
 
         orgId = utils.ORGS[env.upper()][orgName]
 
-        # getting all active org associates
-        orgAssociates = associates.search_associate(env, orgId, 6, "ACTIVE")
+        # getting all active org associates (sorted by id)
+        orgAssociates = sorted(
+            associates.search_associate(env, orgId, 6, "ACTIVE"),
+            key= lambda ass: ass["associateId"] 
+        )
         print(f"> {len(orgAssociates)} active associates found for {orgName}")
 
         # getting all fleets for org
@@ -108,11 +111,16 @@ def fill_file_with_data():
             fleetHubsIds = ""
 
             if hubIds != "":
+                idsList = []
                 for hubId in hubIds:
+                    idsList.append(hubId)
+
+                idsList.sort()
+                for hubId in idsList:
                     hub = [h for h in orgHubs if h["id"] == hubId]
                     if hub != []:
-                        fleetHubsNames += f"{hub[0]['name']}\n" 
-                        fleetHubsIds += f"{hub[0]['id']}\n"
+                        fleetHubsNames += f"'{hub[0]['name']}'\n" 
+                        fleetHubsIds += f"'{hub[0]['id']}'\n"
             
             data["HubsNames"].append(repr(fleetHubsNames))
             data["HubsIDs"].append(repr(fleetHubsIds))
@@ -125,8 +133,8 @@ def fill_file_with_data():
                 associateFleet = get_attribute(associate, "fleetId")
 
                 if fleetId == associateFleet:
-                    fleetAssociatesNames += f"{associateName}\n"
-                    fleetAssociatesIds += f"{associateId}\n"
+                    fleetAssociatesNames += f"'{associateName}'\n"
+                    fleetAssociatesIds += f"'{associateId}'\n"
 
             data["AssociatesNames"].append(repr(fleetAssociatesNames))
             data["AssociatesIDs"].append(repr(fleetAssociatesIds))
@@ -155,13 +163,13 @@ def fill_file_with_data():
     dataFrame = pandas.DataFrame(data=data)
     # saving all data into the .csv file
     dataFrame.to_csv(CSV_FILE, sep=",", index=False)
-    # saving all data into a test .xlsx file to check what it would look like to replace XlsxWriter with Pandas
-    dataFrame.to_excel(
-        XLSX_FILE.replace(".xlsx", " - PD.xlsx"), 
-        sheet_name="Fleets Data", 
-        index=False, 
-        engine="xlsxwriter"
-    )
+    ## saving all data into a test .xlsx file to check what it would look like to replace XlsxWriter with Pandas
+    # dataFrame.to_excel(
+    #     XLSX_FILE.replace(".xlsx", " - PD.xlsx"), 
+    #     sheet_name="All Data", 
+    #     index=False, 
+    #     engine="xlsxwriter"
+    # )
 
     # formatting individual column widths
     worksheet.set_column(0, 0, 12)
