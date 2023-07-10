@@ -120,8 +120,11 @@ def analyze_data():
     aggregations = {
         'ORG': list, 
         # this could be the first found 
-        # but some different orgs have the same fleet/hub id
-        'FleetID': list
+        # but some different orgs have the same fleet/hub id and i wan to know
+        # when that is the case
+        'FleetID': list,
+        'State': list,
+        'AssociatesIDs': list
     }
     fleets_with_same_hubs = fleets.groupby('HubsIDs').agg(aggregations).reset_index()
     # First group data by hub ids
@@ -142,7 +145,7 @@ def analyze_data():
 
     aggregations = {
         'ORG': list, 
-        'Description': list
+        'Description': list,
     }
     fleets_with_same_ids = fleets.groupby('FleetID').agg(aggregations).reset_index()
     # First group data by hub ids
@@ -159,7 +162,9 @@ def analyze_data():
 
     aggregations = {
         'ORG': list, 
-        'FleetID': list
+        'FleetID': list,
+        'State': list,
+        'AssociatesIDs': list
     }
     fleets_with_same_description = fleets.groupby('Description').agg(aggregations).reset_index()
     fleets_with_same_description = fleets_with_same_description[
@@ -181,32 +186,13 @@ def analyze_data():
             # if axis=0 were specified, the lambda function would be applied column-wise, 
             # executing the function on each column of the DataFrame.
         )
-    ][['ORG', 'Description', 'HubsNames', 'FleetID']]
+    ][['ORG', 'Description', 'HubsNames', 'FleetID', 'AssociatesIDs']]
     fleets_with_poor_description.to_excel(writer, sheet_name=sheet_name, index=False)
     print("Done")
 
     print(f"Saving {analysis_file}... ", end=" ")
     writer.close()
     print("Done")
-
-    # # Group the fleets based on unique combinations of 'HubIds' and 'ORG'
-    # grouped2 = fleets.groupby(['HubsIDs', 'ORG']).apply(
-    #     lambda x: {
-    #         'FleetIDs': x['FleetID'].tolist(),
-    #         'Associates': x[['AssociatesNames', 'AssociatesIDs']].to_dict('records')
-    #     }
-    # ).reset_index(name='GroupedData')
-    # grouped2.to_excel("Fleets With The Same Hubs and Orgs 2.xlsx", index=False)
-
-    # # Iterate over the groups and print the details
-    # for hubs_ids, org, fleet_ids in fleets_with_same_hubs.items():
-    #     print("Hub ID:", hubs_ids)
-    #     print("ORG:", org)
-    #     print("Fleet IDs:", fleet_ids)
-    #     print("Hub Names:", fleets.loc[(fleets['HubsIDs'] == hubs_ids) & (fleets['ORG'] == org), 'HubsNames'].iloc[0])
-    #     print("Associate Names:", fleets.loc[(fleets['HubsIDs'] == hubs_ids) & (fleets['ORG'] == org), 'AssociatesNames'].tolist())
-    #     print("Associate IDs:", fleets.loc[(fleets['HubsIDs'] == hubs_ids) & (fleets['ORG'] == org), 'AssociatesIDs'].tolist())
-    #     print()
     
     # prompt(history, agent)
 
