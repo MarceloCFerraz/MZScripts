@@ -117,9 +117,21 @@ def analyze_data():
     sheet_name = "Same Hubs"
     print(f"Generating {sheet_name} Sheet for {analysis_file}...", end=" ")
 
-    fleets_with_same_hubs = fleets.groupby(
-        ['ORG', 'HubsIDs']
-    )['FleetID'].apply(list).reset_index()
+    aggregations = {
+        'ORG': list, 
+        # this could be the first found 
+        # but some different orgs have the same fleet/hub id
+        'FleetID': list
+    }
+    fleets_with_same_hubs = fleets.groupby('HubsIDs').agg(aggregations).reset_index()
+    # First group data by hub ids
+    
+    fleets_with_same_hubs = fleets_with_same_hubs[
+        fleets_with_same_hubs["FleetID"].apply(lambda id: len(id) > 1)
+    ]
+    # Then filters by the number of fleet ids in previous response 
+    # only a set of fleets with the same hubs are relevant
+
     fleets_with_same_hubs.to_excel(writer, sheet_name=sheet_name, index=False)
     print("Done")
 
@@ -127,12 +139,17 @@ def analyze_data():
     sheet_name = "Same IDs"
     print(f"Generating {sheet_name} Sheet for {analysis_file}...", end=" ")
 
-    fleets_with_same_ids = fleets.groupby(
-        ['ORG', 'FleetID']
-    )['Description'].apply(list).reset_index()
-    # fleets[
-    #     fleets['FleetID'].duplicated(keep=False)
-    # ][['ORG', 'Description', 'FleetID']]  # Sheet Headers in order
+
+    aggregations = {
+        'ORG': list, 
+        'Description': list
+    }
+    fleets_with_same_ids = fleets.groupby('FleetID').agg(aggregations).reset_index()
+    # First group data by hub ids
+    
+    fleets_with_same_ids = fleets_with_same_ids[
+        fleets_with_same_ids["Description"].apply(lambda x: len(x) > 1)
+    ]
     fleets_with_same_ids.to_excel(writer, sheet_name=sheet_name, index=False)
     print("Done")
 
@@ -140,12 +157,14 @@ def analyze_data():
     sheet_name = "Same Description"
     print(f"Generating {sheet_name} Sheet for {analysis_file}...", end=" ")
 
-    fleets_with_same_description = fleets.groupby(
-        ['ORG', 'Description']
-    )['FleetID'].apply(list).reset_index()
-    # fleets[
-    #     fleets['Description'].duplicated(keep=False)
-    # ][['ORG', 'Description', 'FleetID']]
+    aggregations = {
+        'ORG': list, 
+        'FleetID': list
+    }
+    fleets_with_same_description = fleets.groupby('Description').agg(aggregations).reset_index()
+    fleets_with_same_description = fleets_with_same_description[
+        fleets_with_same_description['FleetID'].apply(lambda x: len(x) > 1)
+    ]
     fleets_with_same_description.to_excel(writer, sheet_name=sheet_name, index=False)
     print("Done")
 
