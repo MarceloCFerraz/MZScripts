@@ -119,8 +119,8 @@ def fill_file_with_data():
                 for hubId in idsList:
                     hub = [h for h in orgHubs if h["id"] == hubId]
                     if hub != []:
-                        fleetHubsNames += f"'{hub[0]['name']}'\n" 
-                        fleetHubsIds += f"'{hub[0]['id']}'\n"
+                        fleetHubsNames += f"{hub[0]['name']}\n" 
+                        fleetHubsIds += f"{hub[0]['id']}\n"
             
             data["HubsNames"].append(repr(fleetHubsNames))
             data["HubsIDs"].append(repr(fleetHubsIds))
@@ -133,8 +133,8 @@ def fill_file_with_data():
                 associateFleet = get_attribute(associate, "fleetId")
 
                 if fleetId == associateFleet:
-                    fleetAssociatesNames += f"'{associateName}'\n"
-                    fleetAssociatesIds += f"'{associateId}'\n"
+                    fleetAssociatesNames += f"{associateName}\n"
+                    fleetAssociatesIds += f"{associateId}\n"
 
             data["AssociatesNames"].append(repr(fleetAssociatesNames))
             data["AssociatesIDs"].append(repr(fleetAssociatesIds))

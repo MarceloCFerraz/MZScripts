@@ -94,7 +94,7 @@ def setup_agent(dataFrame):
 def is_valid_description(row):
     # hubsNames, hubsIDs, associatesNames and associatesIDs are stored in the csv file as repr string. 
     # repr strings can't have their \n chars replaced directly, the only way of doing so is below
-    hubNames = str(literal_eval(row["HubsNames"])).replace("'", "")  
+    hubNames = str(literal_eval(row["HubsNames"]))
 
     for hubName in hubNames.splitlines():
         if hubName not in row["Description"]:
@@ -105,7 +105,7 @@ def is_valid_description(row):
 
 def analyze_data():
     print("Loadin data from CSV file...", end=" ")
-    fleets = pandas.read_csv("Fleets Data.csv")  # Pandas DataFrame containing all data
+    fleets = pandas.read_csv("Fleets Data.csv", sep=",")  # Pandas DataFrame containing all data
     print("Done")
 
     analysis_file = "Fleet Analysis.xlsx"
@@ -131,7 +131,8 @@ def analyze_data():
     
     fleets_with_same_hubs = fleets_with_same_hubs[
         fleets_with_same_hubs["FleetID"].apply(lambda id: len(id) > 1)
-    ]
+    ].replace("[", "")
+    fleets_with_same_hubs.replace("]", "", inplace=True)
     # Then filters by the number of fleet ids in previous response 
     # only a set of fleets with the same hubs are relevant
 

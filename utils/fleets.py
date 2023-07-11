@@ -12,7 +12,11 @@ def search_fleet(env, orgId, fleetId=None):
     if fleetId is not None:
         url += f"?fleetId={fleetId}"
 
-    return requests.get(url=url, timeout=5).json()
+    print(f"Searching for:")
+    print(f"ORG ID: {orgId}")
+    print(f"Fleet ID: {fleetId}\n")
+
+    return requests.get(url=url, timeout=10).json()
 
 
 def get_hubs_from_fleet(env, orgId, fleetId):
