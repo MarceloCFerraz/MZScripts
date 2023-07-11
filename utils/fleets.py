@@ -97,3 +97,9 @@ def remove_hub_from_fleet(env, orgId, fleetId, hubId):
     fleet["hubIds"].remove(hubId)
 
     return update_fleet(env, orgId, fleet)
+
+
+def delete_fleet(env, orgId, fleetId):
+    url = f"http://qilin.{env}.milezero.com/qilin-war/api/fleets/{orgId}/{fleetId}"
+
+    return requests.delete(url=url, timeout=5)
