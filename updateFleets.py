@@ -59,26 +59,6 @@ def main():
         # Same description has a column for description which same hubs doesn't have
 
         for fleetsIDs in fleetIDSeries:
-            # loading data from dataframe row where FleetID == fleetIDs
-            row_data = dataFrame[dataFrame['FleetID'] == fleetsIDs]
-
-            print("Loading Hubs Data from File... ", end="")
-            try:
-                # to understand this try/except, see comments above
-                hubs_data = row_data['HubsIDs'].iloc[0]
-                hubs_data = str(
-                    hubs_data.replace(", ", "\n")
-                ).splitlines() if pandas.notna(hubs_data) else []
-
-                print("Done")
-            except Exception:
-                print("Fail")
-                print("Loading Description Data from File... ", end="")
-
-                description_data = [row_data['Description'].iloc[0]]
-
-                print("Done")
-
             fleetsIDs = str(fleetsIDs).replace(", ", "\n").splitlines()
 
             fleetAssociates = {}
@@ -86,70 +66,76 @@ def main():
             biggestFleetCount = 1
 
             # filling dict with "fleetID": [List of associates with this fleetID]
-            print(">> Putting Associates into each Fleet... ", end="")
+            print(">> Putting Associates into each Fleet (equal fleets will be ignored)...")
 
             for fleetID in fleetsIDs:
-                idsList = []
-                
-                for associate in allAssociates:
-                    try:
-                        if associate["fleetId"] == fleetID:
-                            idsList.append(associate["associateId"])
-                    except Exception:
-                        pass
+                fleet = [f for f in allFleets if f["fleetId"] == fleetID]
 
-                fleetAssociates[fleetID] = idsList
+                if len(fleet) >= 1:
+                    associatesList = []
+                    
+                    for associate in allAssociates:
+                        try:
+                            if associate["fleetId"] == fleetID:
+                                associatesList.append(associate)
+                        except Exception:
+                            pass
 
+                    fleetAssociates[fleetID] = associatesList
+                    
+                    print(f">>>> {fleetID} has {len(associatesList)} associates")
+                    
+                    if len(associatesList) > biggestFleetCount and fleet[0]["active"]:
+                        biggestFleet = fleetID
+                        biggestFleetCount = len(associatesList)
+                else:
+                    print(f">> {fleetID} not found. It was probably already deleted!")
 
-                
-                if len(fleetAssociates[fleetID]) > biggestFleetCount:
-                    biggestFleet = fleetID
-                    biggestFleetCount = len(fleetAssociates[fleetID])
-            
-            print("Done")
-            print(f">> The fleet with most associates is {biggestFleet} with {biggestFleetCount}")
-
-            for fleetID in fleetAssociates.keys():
-                associatesList = fleetAssociates[fleetID]
-                if len(associatesList) > biggestFleetCount:
-                    biggestFleet = fleetID
-                    biggestFleetCount = len(associatesList)
 
             if biggestFleet == "" and len(fleetAssociates.keys()) > 1:
-                biggestFleet = iter(next(fleetAssociates))
+                for fleetID in fleetAssociates.keys():
+                    if biggestFleet == "":
+                        fleet = [f for f in allFleets if f["fleetId"] == fleetID][0]
+
+                        if fleet["active"]:
+                            biggestFleet = fleetID
+
+            print(f">>>> Biggest Fleet: {biggestFleet} {'will be ignored' if biggestFleet == '' else 'starting update'}")
 
             for fleetID in fleetAssociates.keys():
-                if fleetID != biggestFleet:
-                    haveFailed = False
+                haveFailed = False
 
+                if fleetID != biggestFleet and biggestFleet != "":
                     for associate in fleetAssociates[fleetID]:
-                        fId = associate["fleetId"]
+                        print(f">>> Updating {associate['associateId']} with {biggestFleet}")
 
-                        if fId == fleetID:
-                            print(f">>> {associate['associateId']} already has {fleetID}")
-                        else:
-                            print(f">>> Updating {associate} with {fleetID}")
-                            response = associates.update_associate_data(envFromData, associate)
-                            
-                            print(f">>> Result: {response.status_code}")
+                        associate["fleetId"] = biggestFleet
+                        response = associates.update_associate_data(envFromData, associate)
 
-                            if response.status_code >= 400:
-                                haveFailed = True
-                    
-                    if not haveFailed:
+                        print(f">>> Result: {response.status_code}")
+
+                        if response.status_code >= 400:
+                            haveFailed = True
+                            print(response.text)
+
+                    fleetIDList = [fleet for fleet in allFleets if fleet["fleetId"] == fleetID]
+                    # some fleets have duplicate ids, this list will be used to avoid deleting those duplicates
+                    # those duplicates fleetIDs are from different orgs anyways
+
+                    if not haveFailed and len(fleetIDList) == 1:
                         print(f">> Deleting {fleetID}")
 
                         response = fleets.delete_fleet(
                             envFromData, 
-                            fleets.search_fleet(
-                                envFromData, 
-                                [fleet for fleet in allFleets if fleet["fleetId"] == fleetID][0]["orgId"], 
-                                fleetID
-                            ),
+                            fleetIDList[0]["orgId"],
                             fleetID
                         )
 
-                        print(f">> Result: {response.status_code}")
+                        print(f">> Result: {response.status_code}\n")
+                        if response.status_code > 400:
+                            print(response.text)
+                    else:
+                        print(f">> {fleetID} won't be deleted! \nFailed? {haveFailed} \nFleets with This ID: {len(fleetIDList)}\n")
 
 
 main()
