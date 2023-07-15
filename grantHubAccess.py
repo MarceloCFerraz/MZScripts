@@ -86,6 +86,7 @@ def main():
                 hubsArray = fill_hubs_list(env, orgId, hubIdsList)
 
                 if associate_has_fleet(associate):  # if associate already have a fleetId
+                    print(f">> Searching for a fleet with {' '.join(hubsArray['name'])}")
                     fleet = fleets.search_fleet_with_hubs(  # searching for a fleet with same hubs
                         env=env,
                         orgId=orgId,
