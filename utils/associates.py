@@ -10,7 +10,7 @@ def get_associate_data(env, orgId, associateId):
     response = requests.get(url=url, timeout=10).json()
 
     try:
-        test = response["worldViewId"]
+        test = response["organizationId"]
         return response
     except Exception as e:
         print("An error has occurred")

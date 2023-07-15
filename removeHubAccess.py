@@ -11,7 +11,7 @@ def main():
     associate = associates.get_associate_data(env=env, orgId=orgId, associateId=associateId)
 
     if associate is not None:
-        print("Associate Found!")
+        print(">> Associate Found!")
         print()
 
         hubIdsArray = []
@@ -25,7 +25,7 @@ def main():
             fleetId = ""
 
         if fleetId == "":
-            print(f"Associate only has access to {associate['hubId']}. Finishing script")
+            print(f">> Associate only has access to {associate['hubId']}. Finishing script")
         else:
             hubsArray = []
             for hubId in hubIdsArray:
@@ -33,16 +33,42 @@ def main():
                 hubsArray.append(hub)
                 hubNamesArray.append(hub["name"])
 
-            print(f"Associate has access to hubs: {' '.join(hubNamesArray)}")
+            print(f">> Associate has access to hubs: {' '.join(hubNamesArray)}")
 
             while hubToBeRemoved not in hubNamesArray:
-                print("WHICH HUB NEEDS TO BE REMOVED?")
+                print(">> WHICH HUB NEEDS TO BE REMOVED?")
                 hubToBeRemoved = str(input("> ")).strip()
             
             hubsArray.remove([h for h in hubsArray if h["name"] == hubToBeRemoved][0])
 
-            print(f"Result: {fleets.update_fleet_hubs(env, orgId, fleetId, hubsArray)}")
-    print(f"Result: {associates.update_associate_data(env=env, associateData=associate)}")
+            fleet = associate["fleetId"]
+            
+            print(f">> Searching if {fleet} is present in other associates' data")
+            associatesWithSameFleet = associates.search_associate(
+                env=env,
+                org_id=orgId,
+                key_type_index=12,  # fleetId (12)
+                search_key=fleet
+            )
+            
+            if len(associatesWithSameFleet) == 1 and associatesWithSameFleet is not None:
+                # if only this associate has this fleet id
+                # means we can just update his fleet instead of creating another one
+                print(">> No other associate use this fleetId")
+                print(f">> Updating fleet with {' '.join(hubsArray['name'])}")
+
+                print(f">> Result: {fleets.update_fleet_hubs(env, orgId, fleet, hubsArray)}")
+            else:
+                # In this case we need to create a new fleet
+                print(">> Someone else uses this fleetId as well")
+                print(">> Creating a new fleet")
+
+                fleet = fleets.create_fleet(env=env, orgId=orgId, hubsArray=hubsArray)
+                associate["fleetId"] = fleet
+
+                print(f">> New Fleet: {fleet}")
+    print(">> Updating Associate Data")
+    print(f">> Result: {associates.update_associate_data(env=env, associateData=associate)}")
 
 
 main()
