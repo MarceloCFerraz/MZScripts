@@ -7,7 +7,7 @@ from langchain.chat_models import ChatOpenAI
 from langchain.agents import create_pandas_dataframe_agent
 from langchain.agents.agent_types import AgentType
 
-from utils import aikey
+from utils import aikey, files
 
 
 os.environ["OPENAI_API_KEY"] = aikey.API_KEY
@@ -105,13 +105,16 @@ def is_valid_description(row):
 
 def analyze_data():
     print("Loadin data from CSV file...", end=" ")
-    fleets = pandas.read_csv("Fleets Data.csv", sep=",")  # Pandas DataFrame containing all data
+    fleets = pandas.read_csv("Fleets Data.csv", sep=",")  
+    # Pandas DataFrame containing all data
     print("Done")
 
     analysis_file = "Fleet Analysis.xlsx"
     writer = pandas.ExcelWriter(analysis_file, engine='xlsxwriter')
     
     # agent = setup_agent(fleets)
+
+
 
     # Group the fleets based on unique combinations of 'HubIds' and 'ORG'
     sheet_name = "Same Hubs"
@@ -131,18 +134,18 @@ def analyze_data():
     
     fleets_with_same_hubs = fleets_with_same_hubs[
         fleets_with_same_hubs["FleetID"].apply(lambda id: len(id) > 1)
-    ].replace("[", "")
-    fleets_with_same_hubs.replace("]", "", inplace=True)
+    ]
     # Then filters by the number of fleet ids in previous response 
     # only a set of fleets with the same hubs are relevant
 
     fleets_with_same_hubs.to_excel(writer, sheet_name=sheet_name, index=False)
     print("Done")
 
+
+
     # Filter the 'fleets' DataFrame to include only rows with duplicated FleetIDs
     sheet_name = "Same IDs"
     print(f"Generating {sheet_name} Sheet for {analysis_file}...", end=" ")
-
 
     aggregations = {
         'ORG': list, 
@@ -156,6 +159,8 @@ def analyze_data():
     ]
     fleets_with_same_ids.to_excel(writer, sheet_name=sheet_name, index=False)
     print("Done")
+
+
 
     # Filter the 'fleets' DataFrame to include only rows with duplicated Descriptions
     sheet_name = "Same Description"
@@ -174,6 +179,8 @@ def analyze_data():
     fleets_with_same_description.to_excel(writer, sheet_name=sheet_name, index=False)
     print("Done")
 
+
+
     # Filter the 'fleets' DataFrame to include only rows whose descriptions do not contain a
     # reference to at least one HubName from the HubsNames
     sheet_name = "Bad Description"
@@ -190,6 +197,8 @@ def analyze_data():
     ][['ORG', 'Description', 'HubsNames', 'FleetID', 'AssociatesIDs']]
     fleets_with_poor_description.to_excel(writer, sheet_name=sheet_name, index=False)
     print("Done")
+
+
 
     print(f"Saving {analysis_file}... ", end=" ")
     writer.close()
@@ -228,7 +237,17 @@ def get_validated_input(prompt):
 
 
 def main():
+    print("Running script...",)
+    logFile = files.create_logs_file()
+    files.start_logging(logFile)
+    
     analyze_data()
+    
+    files.stop_logging()
+    files.close_logs_file(logFile)
+
+    print("Done!")
+    print("Check out the logs to see the full results")
 
 
 main()

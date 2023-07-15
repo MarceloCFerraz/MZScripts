@@ -45,8 +45,12 @@ def saveJsonToFile(packages, hubName):
     response_dir = current_dir + "/RESULTS"
     os.makedirs(response_dir, exist_ok=True)
     
+    dateTime = str(
+        datetime.now().replace(second=0, microsecond=0)
+    ).replace(':', '-').replace(' ', 'T')
+
     # names the file
-    FILE_NAME = f"{hubName}_HISTORIES.json"
+    FILE_NAME = f"{dateTime}_{hubName}_PKG_HISTORIES.json"
 
     # this is the complete directory and where the file will be saved
     final_dir = os.path.join(response_dir, FILE_NAME)
@@ -107,17 +111,16 @@ def printPackageHistories(package):
 
 def main(fileName, keyType):
     keys = getKeysFromFile(fileName)
-    response = []
+    historyList = []
     formattedResponse = {}
 
     for key in keys:
         packages = getPackages(keyType=keyType, key=key)["histories"]
 
         if packages != []:
-            for package in packages:
-                printPackageHistories(package)
+            historyList.append(packages)
     
-    formattedResponse["histories"] = packages
+    formattedResponse["histories"] = historyList
     formattedResponse = formatJson(formattedResponse)
     saveJsonToFile(packages=formattedResponse, hubName=fileName)
 

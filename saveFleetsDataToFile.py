@@ -1,16 +1,19 @@
+import sys
+import os
 from datetime import datetime
 
 import xlsxwriter
 import pandas
 
-from utils import utils, fleets, associates, hubs
+from utils import utils, fleets, associates, hubs, files
+
 
 
 XLSX_FILE = "Fleets Data.xlsx"
 CSV_FILE = XLSX_FILE.replace("xlsx", "csv")
 
 
-def fill_file_with_data():
+def fill_file_with_data(logFile):
     data = {}  # object which will be used to store the complete data and save it to CSV
     # Pandas could also be used to replace XlsxWriter to generate the Excel File but we'd probably lose formatting
 
@@ -48,7 +51,10 @@ def fill_file_with_data():
     for col in range(0, len(HEADERS)):
         worksheet.write(0, col, HEADERS[col].upper(), BOLD)
 
+    files.stop_logging()
     env = utils.select_env()
+    files.start_logging(logFile)
+
     row = 1  # first line is 0 and it already contains the headers
     col = 0
     for orgName in utils.ORGS[env.upper()].keys():
@@ -56,11 +62,13 @@ def fill_file_with_data():
 
         orgId = utils.ORGS[env.upper()][orgName]
 
+
         # getting all active org associates (sorted by id)
         orgAssociates = sorted(
-            associates.search_associate(env, orgId, 6, "ACTIVE"),
+            associates.search_associate(env, orgId, 0, orgId),
             key= lambda ass: ass["associateId"] 
         )
+        
         print(f"> {len(orgAssociates)} active associates found for {orgName}")
 
         # getting all fleets for org
@@ -79,7 +87,7 @@ def fill_file_with_data():
             data["FleetID"].append(fleetId)
 
             # print(fleet)
-            print(f">> Getting data for fleet {fleetId}")
+            print(f">> Getting data for fleet {fleetId}... ", end="")
 
             fleetName = get_attribute(fleet, "fleetName")
             data["Name"].append(fleetName)
@@ -156,7 +164,7 @@ def fill_file_with_data():
             worksheet.write(row, col + 13, fleetAssociatesIds, WRAP_TEXT)
             row += 1
 
-            print(f">> {fleetId} DONE")
+            print("Done")
             # Org | Env | Fleet Id | State | Name | Description | Parent Fleet | Parent Fleets | Creation Date | Last updated | Hubs | Active Associates
 
     # creating a Pandas DataFrame object which can be used to query data and will be used to save it to a file
@@ -186,7 +194,6 @@ def fill_file_with_data():
     workbook.close()
 
 
-
 def get_attribute(dict, key):
     response = ""
 
@@ -200,7 +207,17 @@ def get_attribute(dict, key):
 
 
 def main():
-    fill_file_with_data()
+    print("Running script...",)
+    logFile = files.create_logs_file()
+    files.start_logging(logFile)
+    
+    fill_file_with_data(logFile)
+    
+    files.stop_logging()
+    files.close_logs_file(logFile)
+
+    print("Done!")
+    print("Check out the logs to see the full results")
 
 
 main()

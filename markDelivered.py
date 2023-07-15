@@ -183,7 +183,7 @@ if (len(sys.argv) < 3):
         "PRE REQUISITES:\n"+
         "> A file <file>.txt should be created in this same directory. You should paste the barcodes/ORIs/PIs/etc there\n"+
         "SCRIPT USAGE:\n"+
-        "--> python replanPackages.py <fileName> <keyType>\n\n"+
+        "--> python markDelivered.py <fileName> <keyType>\n\n"+
         "-> Accepted keyTypes:\n"+
         "> pi (Package Id)\n"+
         "> tn (Tracking Number)\n"+

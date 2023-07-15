@@ -1,6 +1,7 @@
 from datetime import datetime
 import json
 import os
+import sys
 
 
 def format_json(data):
@@ -33,3 +34,42 @@ def save_json_to_file(jsonData, filePrefix):
             result += f"COULD NOT be created. See exception bellow:\n\n{e}"
 
     print(result)
+
+
+def create_dir(dirName):
+    if not os.path.isdir(dirName):
+        # Create a directory called history
+        os.mkdir(dirName)
+
+    return dirName
+
+
+def create_logs_file():
+    dir = create_dir("logs")
+    
+    # Get the name of the current script file
+    script_file = os.path.basename(sys.argv[0])
+
+    # Remove the file extension from the script name
+    script_name = os.path.splitext(script_file)[0]
+
+    # Create the log file name
+    log_file_name = script_name + f"_log_{str(datetime.now()).replace(':', '-')}.txt"
+
+    # Open the log file to redirect the standard output
+    log_file = open(f"./{dir}/{log_file_name}", "w")
+
+    return log_file
+
+
+def close_logs_file(log_file):
+    log_file.close()
+
+
+def start_logging(log_file):
+    # Redirect the standard output to the log file
+    sys.stdout = log_file
+
+
+def stop_logging():
+    sys.stdout = sys.__stdout__

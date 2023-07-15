@@ -1,7 +1,7 @@
 from ast import literal_eval
 
 import requests
-from utils import utils, associates, fleets
+from utils import utils, associates, fleets, files
 import pandas
 
 # Specify the names of the sheets you want to load
@@ -19,7 +19,7 @@ def load_dataframe_from_sheets(fileName, sheets):
     return dfs
 
 
-def main():
+def update_fleets():
     envFromData = pandas.read_csv("Fleets Data.csv")["ENV"].values[0]
     fileName = "Fleet Analysis.xlsx"
     orgs = utils.ORGS[envFromData]
@@ -31,8 +31,8 @@ def main():
     
     for org in orgs.keys():
         allAssociates.extend(
-            # searching for 'ACTIVE' associates for each org
-            associates.search_associate(envFromData, orgs[org], 6, "ACTIVE")
+            # searching for associates for each org
+            associates.search_associate(envFromData, orgs[org], 0, orgs[org])
         )
         allFleets.extend(
             # searching fo all fleets for each org
@@ -71,36 +71,39 @@ def main():
             for fleetID in fleetsIDs:
                 fleet = [f for f in allFleets if f["fleetId"] == fleetID]
 
-                if len(fleet) >= 1:
-                    associatesList = []
-                    
-                    for associate in allAssociates:
-                        try:
-                            if associate["fleetId"] == fleetID:
-                                associatesList.append(associate)
-                        except Exception:
-                            pass
+                associatesList = []
+                
+                for associate in allAssociates:
+                    try:
+                        if associate["fleetId"] == fleetID:
+                            associatesList.append(associate)
+                    except Exception:
+                        pass
 
-                    fleetAssociates[fleetID] = associatesList
-                    
-                    print(f">>>> {fleetID} has {len(associatesList)} associates")
-                    
-                    if len(associatesList) > biggestFleetCount and fleet[0]["active"]:
+                fleetAssociates[fleetID] = associatesList
+                
+                print(f">>>> {fleetID} has {len(associatesList)} associates")
+                
+                if len(associatesList) > biggestFleetCount and len(fleet) >= 1: 
+                    if fleet[0]["active"]:
                         biggestFleet = fleetID
                         biggestFleetCount = len(associatesList)
-                else:
-                    print(f">> {fleetID} not found. It was probably already deleted!")
+                    else:
+                        print(f">> {fleetID} not found!")
 
 
             if biggestFleet == "" and len(fleetAssociates.keys()) > 1:
                 for fleetID in fleetAssociates.keys():
                     if biggestFleet == "":
-                        fleet = [f for f in allFleets if f["fleetId"] == fleetID][0]
+                        fleet = [f for f in allFleets if f["fleetId"] == fleetID]
 
-                        if fleet["active"]:
-                            biggestFleet = fleetID
+                        if len(fleet) >= 1:
+                            if fleet[0]["active"]:
+                                biggestFleet = fleetID
 
-            print(f">>>> Biggest Fleet: {biggestFleet} {'will be ignored' if biggestFleet == '' else 'starting update'}")
+
+
+            print(f">>>> Biggest Fleet: '{biggestFleet}' {'will be ignored' if biggestFleet == '' else 'starting update'}")
 
             for fleetID in fleetAssociates.keys():
                 haveFailed = False
@@ -136,6 +139,20 @@ def main():
                             print(response.text)
                     else:
                         print(f">> {fleetID} won't be deleted! \nFailed? {haveFailed} \nFleets with This ID: {len(fleetIDList)}\n")
+
+
+def main():
+    print("Running script...",)
+    logFile = files.create_logs_file()
+    files.start_logging(logFile)
+    
+    update_fleets()
+    
+    files.stop_logging()
+    files.close_logs_file(logFile)
+
+    print("Done!")
+    print("Check out the logs to see the full results")
 
 
 main()
