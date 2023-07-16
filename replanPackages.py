@@ -1,4 +1,5 @@
 from datetime import datetime
+from utils import files
 import requests
 import sys
 
@@ -96,27 +97,8 @@ def resubmitRequest(package, next_delivery_date):
         print(e)
 
 
-def getDataLines(fileName):
-    file = open(fileName+".txt", "r")
-    lines = file.readlines()
-    file.close()
-
-    results = []
-    
-    for line in lines:
-        results.append(line.strip())
-
-    # removing duplicates from list
-    # this make the list unordered. Comment this line if
-    # this impact your workflow somehow
-    results = list(set(results))
-    
-    print("{} lines in file {}\n".format(len(results), fileName))
-    return results
-
-
 def replan(fileName, keyType, next_delivery_date):
-    lines = getDataLines(fileName)
+    lines = files.get_data_from_file(fileName)
     
     print("Key Types: {}\n".format(keyType.upper())+
         "Keys: {}\n".format(lines))
@@ -124,7 +106,6 @@ def replan(fileName, keyType, next_delivery_date):
     packages = []
     
     for line in lines:
-
         # getting packages from barcode present in file line
         packages = getPackages(keyType, line)["packageRecords"]
 

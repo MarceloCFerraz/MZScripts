@@ -42,7 +42,7 @@ def search_fleet_with_hubs(env, orgId, hubIdsArray):
 
 
 def create_fleet(env, orgId, hubsArray):
-    print(f"Creating new fleet with hubs", end=" ")
+    print(f"Creating new fleet with hubs {' '.join([h['name'] for h in hubsArray])}", end=" ")
     customer = get_org_by_id(env, orgId)
 
     url = f"http://qilin.{env}.milezero.com/qilin-war/api/fleets/{orgId}"
@@ -52,7 +52,6 @@ def create_fleet(env, orgId, hubsArray):
     for hub in hubsArray:
         hubNames.append(hub["name"])
         hubIds.append(hub["id"])
-    print(hubIds)
 
     requestData = {
       "fleetName": f"{customer['name'].upper()}",

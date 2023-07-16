@@ -18,6 +18,8 @@ def keep_previous_hubs():
     while answer not in answers:
         answer = str(input("> ")).upper().strip()
 
+    return answer
+
 
 def associate_has_fleet(associate):
     fleetId = ""
@@ -48,12 +50,12 @@ def get_associate_hubs_from_fleet(env, orgId, associate):
 
 
 def fill_hubs_list(env, orgId, hubIdsList):
-    hubs = []
+    hubsList = []
 
     for hubId in hubIdsList:
-        hubs.append(hubs.search_hub_by_id(env, orgId, hubId)[0])
+        hubsList.append(hubs.search_hub_by_id(env, orgId, hubId)[0])
 
-    return hubs
+    return hubsList
 
 
 def main():
@@ -83,10 +85,12 @@ def main():
                 else:
                     print("New hub already in associate's fleet")
                 
-                hubsArray = fill_hubs_list(env, orgId, hubIdsList)
+                hubsList = fill_hubs_list(env, orgId, hubIdsList)
 
                 if associate_has_fleet(associate):  # if associate already have a fleetId
-                    print(f">> Searching for a fleet with {' '.join(hubsArray['name'])}")
+                    print(f">> Searching for a fleet with {' '.join(
+                        [hub['name'] for hub in hubsList]
+                    )}")
                     fleet = fleets.search_fleet_with_hubs(  # searching for a fleet with same hubs
                         env=env,
                         orgId=orgId,
@@ -112,24 +116,26 @@ def main():
                             print(">> No other associate use this fleetId")
 
 
-                            print(f">> Result: {fleets.update_fleet_hubs(env, orgId, fleet, hubsArray)}")
+                            print(f">> Result: {fleets.update_fleet_hubs(env, orgId, fleet, hubsList)}")
                         else:
                             # In this case we need to create a new fleet
                             print(">> Someone else uses this fleetId as well")
 
-                            fleet = fleets.create_fleet(env=env, orgId=orgId, hubsArray=hubsArray)
+                            fleet = fleets.create_fleet(env=env, orgId=orgId, hubsArray=hubsList)
                             associate["fleetId"] = fleet
                 else:
                     print(">> Associate doesn't have a fleet")
                     print(f">> Searching for a fleet containing {newHub['name']}")
                     
-                    fleetId = fleets.search_fleet_with_hubs(env, orgId, [hub["id"] for hub in hubsArray])
+                    fleetId = fleets.search_fleet_with_hubs(env, orgId, [hub["id"] for hub in hubsList])
 
                     if fleetId == None:
-                        print(f">> There are no fleets with only {' '.join(hubsArray['name'])}")
+                        print(f">> There are no fleets with only {' '.join(
+                            [hub['name'] for hub in hubsList]
+                        )}")
                         print(f">> Creating new fleet with")
                         
-                        fleetId = fleets.create_fleet(env=env, orgId=orgId, hubsArray=hubsArray)
+                        fleetId = fleets.create_fleet(env=env, orgId=orgId, hubsArray=hubsList)
 
                     associate["fleetId"] = fleetId
             else:

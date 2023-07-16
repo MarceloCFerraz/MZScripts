@@ -19,25 +19,30 @@ def get_associate_data(env, orgId, associateId):
 
 
 def search_associate(env, org_id, key_type_index, search_key):
+    time = 30
     url = f"http://lmx.{env}.milezero.com/lmx-war/api/associate/all"
 
     key_types = [
-        "orgId", "associateId", "referenceId", "name", "email", "userName", "state", "type", "associateType", "skill",
+        "orgId", "referenceId", "name", "email", "userName", "state", "type", "associateType", "skill",
         "skillRatingValue", "rating", "fleetId", "clusterId", "hubId", "locationId",
         "worldViewId", "availabilityFleetId", "availabilityClusterId"
     ]
-    key_type = str(key_types[key_type_index])
-    requestData = {
-        key_type: search_key
-    }
+
+    requestData = {}
+
     if key_type_index > 0:
         requestData["orgId"] = org_id
+        time = 10
+    
+    key_type = str(key_types[key_type_index])
+    
+    requestData[key_type] = search_key
 
     p = "Searching for associates with\n"
     for key in requestData.keys():
         p += f"> {key} {requestData[key]}\n"
     print(p)
-    response = requests.post(url=url, timeout=30, json=requestData).json()
+    response = requests.post(url=url, json=requestData, timeout=time).json()
 
     try:
         return response["associates"]

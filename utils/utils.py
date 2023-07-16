@@ -1,3 +1,5 @@
+from datetime import datetime
+
 ORGS = {
     "PROD": {
         "STAPLES": "3c897e84-3957-4958-b54d-d02c01b14f15",
@@ -53,6 +55,12 @@ ASSOCIATE_KEY_TYPES = [
     "AVAILABILITY FLEET ID",
     "AVAILABILITY CLUSTER ID",
 ]
+
+
+def get_formated_now():
+    return str(
+        datetime.now().replace(second=0, microsecond=0)
+    ).replace(':', '-').replace(' ', 'T')
 
 
 def find_biggest_divisor(number):
