@@ -35,17 +35,17 @@ def associate_has_fleet(associate):
 
 def get_hubs_from_fleet(associate, allOrgFleets, allOrgHubs):
     idsList = []
-    fleet = ""
+    fleetId = ""
 
     if associate_has_fleet(associate):
         fleet = associate["fleetId"]
-        print(f">> Associate has a fleet {fleet}")
+        print(f">> Associate has a fleet {fleetId}")
 
-        fleetHubIds = [f['hubIds'] for f in allOrgFleets if f['fleetId'] == fleet][0]
+        fleetHubIds = [f['hubIds'] for f in allOrgFleets if f['fleetId'] == fleetId][0]
         fleetHubs = [h for h in allOrgHubs if h['id'] in fleetHubIds]
         fleetHubNames = [h['name'] for h in fleetHubs]
 
-        print(f">> Hubs in {fleet}: {fleetHubNames}")
+        print(f">> Hubs in {fleetId}: {fleetHubNames}")
         
         idsList = fleetHubIds
     else:
@@ -59,29 +59,39 @@ def fill_hubs_list(hubIdsList, allOrgHubs):
 
 
 def search_fleet_with_hubs(allOrgFleets, hubIdsArray):
-    print(f"Searching for a fleet that contains {hubIdsArray}")
+    print(f">> Searching for a fleet that contains {hubIdsArray}")
     hubIdsArray.sort()
     
     for fleet in allOrgFleets:
         try:
             fleetHubs = fleet["hubIds"].sort()
             if fleetHubs == hubIdsArray:
-                return fleet["fleetId"]
+                return [fleet]
         except Exception:
             pass
     
     return []
 
 
+def create_fleet(env, orgId, hubsList):
+    fleetId = fleets.create_fleet(env=env, orgId=orgId, hubsArray=hubsList)
+    print(f">> Created {fleetId} with {[h['name'] for h in hubsList]}")
+
+    fleet = fleets.search_fleet(env, orgId, fleetId)[0]
+
+    return fleet
+
+
 def main():
+    userName = input("What is your name?\n> ")
     env = utils.select_env()
     orgId = utils.select_org(env)
     newHub = get_new_hub_id(env, orgId)
     answer = keep_previous_hubs()
     
-    allOrgAssociates = associates.search_associate(env, orgId, 0, orgId)
-    allOrgFleets = fleets.search_fleet(env, orgId)
-    allOrgHubs = hubs.search_hubs(env, orgId)
+    allOrgAssociates = list(associates.search_associate(env, orgId, 0, orgId))
+    allOrgFleets = list(fleets.search_fleet(env, orgId))
+    allOrgHubs = list(hubs.search_hubs(env, orgId))
 
     associateIds = files.get_data_from_file("associates")
 
@@ -108,8 +118,6 @@ def main():
                         hubsList = fill_hubs_list(hubIdsList, allOrgHubs)
 
                         if associate_has_fleet(associate):  # if associate already have a fleetId
-                            print(f">> Searching for a fleet with {' '.join([hub['name'] for hub in hubsList])}")
-                            
                             fleet = search_fleet_with_hubs(allOrgFleets, hubIdsList)
 
                             if len(fleet) > 0:  # if a fleet with the correct hubs already exists
@@ -137,21 +145,26 @@ def main():
                                 else:
                                     # In this case we need to create a new fleet
                                     print(">> Someone else uses this fleetId as well")
-
-                                    fleet = fleets.create_fleet(env=env, orgId=orgId, hubsArray=hubsList)
-                                    associate["fleetId"] = fleet
+                                    
+                                    fleet = create_fleet(env, orgId, hubsList)
+                                    associate["fleetId"] = fleet['fleetId']
+                                    
+                                    allOrgFleets.append(fleet)
+                                    
                         else:
                             print(">> Associate doesn't have a fleet")
-                            print(f">> Searching for a fleet containing {' '.join([hub['name'] for hub in hubsList])}")
                             
-                            fleetId = [f["fleetId"] for f in allOrgFleets if f['hubIds'].sort() == hubIdsList.sort()]
+                            fleet = search_fleet_with_hubs(allOrgFleets, hubIdsList)
 
-                            if len(fleetId) == 0:
-                                print(f">> There are no fleets with those hubs")                                
-                                fleetId = fleets.create_fleet(env=env, orgId=orgId, hubsArray=hubsList)
+                            if len(fleet) == 0:
+                                print(f">> There are no fleets with those hubs")
+                                fleet = create_fleet(env, orgId, hubsList)
+                                fleetId = fleet['fleetId']
+                                
+                                allOrgFleets.append(fleet)
                             else:
-                                fleetId = fleetId[0]
-                                print(f">> Fleet found ({fleetId})")
+                                print(f">> Fleet found! Updating associate's fleetId with {fleet[0]['fleetId']}")
+                                associate["fleetId"] = fleet[0]['fleetId']
 
                             associate["fleetId"] = fleetId
                     else:
@@ -160,7 +173,7 @@ def main():
                     print(f">> Answer was {answer}. Updating associate Hub ID")
                     associate["hubId"] = newHub['id']
                 
-                response = associates.update_associate_data(env=env, associateData=associate)
+                response = associates.update_associate_data(env=env, associateData=associate, userName=userName)
                 print(f">> Result: {response}\n{response.text if response.status_code > 400 else ''}")
             else:
                 print(f"Sorry, this associate is a {accountType} and we can't him access to other hubs through fleets!")

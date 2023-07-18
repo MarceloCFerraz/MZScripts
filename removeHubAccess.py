@@ -2,6 +2,7 @@ from utils import utils, associates, hubs, fleets
 
 
 def main():
+    userName = input("What is your name?\n> ")
     env = utils.select_env()
     orgId = utils.select_org(env)
 
@@ -80,7 +81,7 @@ def main():
 
                     print(f">> New Fleet: {fleet}")
     print(">> Updating Associate Data")
-    print(f">> Result: {associates.update_associate_data(env=env, associateData=associate)}")
+    print(f">> Result: {associates.update_associate_data(env=env, associateData=associate, userName=userName)}")
 
 
 main()

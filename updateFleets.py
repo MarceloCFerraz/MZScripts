@@ -20,6 +20,8 @@ def load_dataframe_from_sheets(fileName, sheets):
 
 
 def update_fleets():
+    userName = input("What is your name?\n> ")
+
     envFromData = pandas.read_csv("Fleets Data.csv")["ENV"].values[0]
     fileName = "Fleet Analysis.xlsx"
     orgs = utils.ORGS[envFromData]
@@ -113,7 +115,7 @@ def update_fleets():
                         print(f">>> Updating {associate['associateId']} with {biggestFleet}")
 
                         associate["fleetId"] = biggestFleet
-                        response = associates.update_associate_data(envFromData, associate)
+                        response = associates.update_associate_data(envFromData, associate, userName)
 
                         print(f">>> Result: {response.status_code}")
 

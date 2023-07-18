@@ -59,6 +59,7 @@ def fill_hubs_list(env, orgId, hubIdsList):
 
 
 def main():
+    userName = input("What is your name?\n> ")
     env = utils.select_env()
     orgId = utils.select_org(env)
 
@@ -140,7 +141,7 @@ def main():
                     associate["fleetId"] = fleetId
             else:
                 associate["hubId"] = newHub['id']
-            print(f">> Result: {associates.update_associate_data(env=env, associateData=associate)}")
+            print(f">> Result: {associates.update_associate_data(env=env, associateData=associate, userName=userName)}")
         else:
             print("Sorry, this associate is a driver and we can't give drivers access to other hubs!")
             print("Finishing script...")

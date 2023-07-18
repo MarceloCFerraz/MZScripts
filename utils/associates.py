@@ -52,7 +52,7 @@ def search_associate(env, org_id, key_type_index, search_key):
         return None
 
 
-def change_associate_state(env, associateData):
+def change_associate_state(env, associateData, userName):
     state = associateData["state"]
     print(f"Was {state}.", end=" ")
 
@@ -64,10 +64,10 @@ def change_associate_state(env, associateData):
     print(f"Updating to {state}")
     associateData["state"] = state
 
-    return update_associate_data(env, associateData)
+    return update_associate_data(env, associateData, userName)
 
 
-def update_associate_data(env, associateData):
+def update_associate_data(env, associateData, userName):
     print("Updating Associate data")
-    url = f"http://lmx.{env}.milezero.com/lmx-war/api/associate?requestor=MZSupport&requestorIdType=NAME"
+    url = f"http://lmx.{env}.milezero.com/lmx-war/api/associate?requestor={str(userName).replace(' ', '%20')}&requestorIdType=NAME"
     return requests.put(url=url, json=associateData, timeout=5)

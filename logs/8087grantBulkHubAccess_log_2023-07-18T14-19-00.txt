@@ -1,0 +1,106 @@
+New Hub: 8087
+
+Updating 1fc4994a-e817-4fd0-a6bd-ac24fab93c8b
+
+>> Associate doesn't have a fleet
+>> Searching for a fleet containing 8087 8857
+>> Fleet found (00e30bbb-a83a-46f9-a905-4f9620e25706)
+Updating Associate data
+>> Result: <Response [204]>
+
+
+Updating 92357b92-ac23-4d45-b28e-ce850c42d479
+
+>> Associate has a fleet ede6a08e-ba55-453f-80ec-72ec6f603071
+>> Hubs in ede6a08e-ba55-453f-80ec-72ec6f603071: ['8764', '8232', '3748', '8109', '8857']
+>> Searching for a fleet with 8764 8232 8087 3748 8109 8857
+Searching for a fleet that contains ['0658bb49-055e-48a4-bd84-2355d26d35c5', '7748a4c5-0704-420f-ad9a-7c225a0451cc', '8560d13d-75b0-48c8-8648-af6b5fc49b46', 'e8fe91b4-c1f9-4226-ba1f-06d391412b5e', 'fd8f68fc-bebc-4e63-a8db-5607ecb415b8', '80c0b005-f17a-4cca-a94f-55631f36de91']
+>> No fleets found.
+>> Checking if ede6a08e-ba55-453f-80ec-72ec6f603071 is present in other associates' data
+>> No other associate use this fleetId
+Updating fleet ede6a08e-ba55-453f-80ec-72ec6f603071 with hubs ['0658bb49-055e-48a4-bd84-2355d26d35c5', '7748a4c5-0704-420f-ad9a-7c225a0451cc', '80c0b005-f17a-4cca-a94f-55631f36de91', '8560d13d-75b0-48c8-8648-af6b5fc49b46', 'e8fe91b4-c1f9-4226-ba1f-06d391412b5e', 'fd8f68fc-bebc-4e63-a8db-5607ecb415b8']
+Searching for:
+ORG ID: 3c897e84-3957-4958-b54d-d02c01b14f15
+Fleet ID: ede6a08e-ba55-453f-80ec-72ec6f603071
+
+>> Result: <Response [204]>
+
+Updating Associate data
+>> Result: <Response [204]>
+
+
+Updating e12e1f5b-cbaa-4972-8051-16d05c1b6c76
+
+>> Associate has a fleet 8f4c4ffd-146d-4202-a00c-08b6731bde73
+>> Hubs in 8f4c4ffd-146d-4202-a00c-08b6731bde73: ['8857']
+>> Searching for a fleet with 8087 8857
+Searching for a fleet that contains ['fd8f68fc-bebc-4e63-a8db-5607ecb415b8', '80c0b005-f17a-4cca-a94f-55631f36de91']
+>> No fleets found.
+>> Checking if 8f4c4ffd-146d-4202-a00c-08b6731bde73 is present in other associates' data
+>> Someone else uses this fleetId as well
+Creating new fleet with hubs 8087 8857 Updating Associate data
+>> Result: <Response [204]>
+
+
+Updating b6440316-9659-419f-b10c-3acda5be30c0
+
+>> Associate doesn't have a fleet
+>> Searching for a fleet containing 8087 8857
+>> Fleet found (00e30bbb-a83a-46f9-a905-4f9620e25706)
+Updating Associate data
+>> Result: <Response [204]>
+
+
+Updating 6d407717-db08-43e4-953b-c919d8c2cc11
+
+>> Associate doesn't have a fleet
+>> Searching for a fleet containing 8087 8857
+>> Fleet found (00e30bbb-a83a-46f9-a905-4f9620e25706)
+Updating Associate data
+>> Result: <Response [204]>
+
+
+Updating d285f395-2b34-4ec8-b829-1a801483014c
+
+>> Associate doesn't have a fleet
+>> Searching for a fleet containing 8087 8857
+>> Fleet found (00e30bbb-a83a-46f9-a905-4f9620e25706)
+Updating Associate data
+>> Result: <Response [204]>
+
+
+Updating c0ea9d05-e2e1-4242-a006-201861620cd5
+
+>> Associate doesn't have a fleet
+>> Searching for a fleet containing 8087 8857
+>> Fleet found (00e30bbb-a83a-46f9-a905-4f9620e25706)
+Updating Associate data
+>> Result: <Response [204]>
+
+
+Updating 170334c3-6327-4df2-8722-21a5a1164e6c
+
+>> Associate doesn't have a fleet
+>> Searching for a fleet containing 8087 8857
+>> Fleet found (00e30bbb-a83a-46f9-a905-4f9620e25706)
+Updating Associate data
+>> Result: <Response [204]>
+
+
+Updating bfd1a659-ef7b-4e16-b24c-8a3ee83bca5b
+
+>> Associate doesn't have a fleet
+>> Searching for a fleet containing 8087 8857
+>> Fleet found (00e30bbb-a83a-46f9-a905-4f9620e25706)
+Updating Associate data
+>> Result: <Response [204]>
+
+
+Updating e26385ab-6748-4910-95a6-7218a5831462
+
+>> Associate has a fleet 8f4c4ffd-146d-4202-a00c-08b6731bde73
+>> Hubs in 8f4c4ffd-146d-4202-a00c-08b6731bde73: ['8087', '8857']
+New hub already in associate's fleet
+Updating Associate data
+>> Result: <Response [204]>
+

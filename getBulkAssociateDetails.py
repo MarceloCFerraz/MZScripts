@@ -4,23 +4,22 @@ from utils import files, utils, associates
 def main():
     env = utils.select_env()
     orgId = utils.select_org(env)
+
     key_type_index = utils.get_associate_key_type_index()
 
-    if key_type_index > 0:
-        print(f"TYPE THE ASSOCIATE'S '{utils.get_associate_key_type(key_type_index)}'")
-        search_key = input("> ")
-    else:
-        search_key = orgId
+    search_keys = files.get_data_from_file("associates")
+    associatesArray = []
+    
+    allOrgAssociates = list(associates.search_associate(env, orgId, 0, orgId))
 
-    if key_type_index == 1:
-        associatesArray = [associates.get_associate_data(env, orgId, associateId=search_key)]
-    else:
-        associatesArray = associates.search_associate(
-            env=env,
-            org_id=orgId,
-            key_type_index=key_type_index - 1,
-            search_key=search_key
-        )
+    for search_key in search_keys:
+        if key_type_index == 0:
+            search_key = orgId
+
+        search_results = [a for a in allOrgAssociates if a[utils.ASSOCIATE_KEY_TYPES[key_type_index]] == search_key]
+        for associate in search_results:
+            associatesArray.append(associate)
+
     associates_count = len(associatesArray)
     print(f"Found {associates_count} associates")
 
