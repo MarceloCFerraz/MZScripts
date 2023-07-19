@@ -1,28 +1,18 @@
 import requests
-from utils import files
-
-def move_packages(env, orgId, newHub, packageId, dispatcher, userName):
-    url = f"https://switchboard.{env}.milezero.com/switchboard-war/api/package/update/{orgId}/{packageId}/hub"
-    
-    payload = {
-        "hubName": newHub,
-        "notes": f"Requested by {dispatcher}. Executed by {userName}"
-    }
-    response = requests.post(url=url, json=payload, timeout=15)
-    print(f"{response} {response.text if response.status_code >= 400 else ''}")
+from utils import files, utils, packages
 
 
 def main():
-    userName = "Marcelo Ferraz"
-    dispatcher = "Kosta Delevski"
-    env = "prod"
-    orgId = "3c897e84-3957-4958-b54d-d02c01b14f15"
-    newHub = "3453"
+    userName = input("What is your name?\n> ").strip()
+    dispatcher = input("Who requested this change?\n> ").strip()
+    env = utils.select_env()
+    orgId = utils.select_org()
+    newHub = input("Type in the new hub name\n> ").strip()
 
     packageIds = files.get_data_from_file("pids")
 
     for packageId in packageIds:
-        move_packages(env, orgId, newHub, packageId, dispatcher, userName)
+        packages.move_package(env, orgId, newHub, packageId, dispatcher, userName)
 
 
 main()

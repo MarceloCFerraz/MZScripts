@@ -1,21 +1,6 @@
 import os
-import requests, sys, json
-from datetime import datetime, timedelta
-
-
-API = "http://switchboard.prod.milezero.com/switchboard-war/api/"
-
-
-def getPackages(KEY_TYPE, KEY):
-    # 
-    endpoint = f"{API}package/histories?keyValue={KEY}&keyType={KEY_TYPE}"
-    print(">>>>> Retrieving Packages From {} {} <<<<<".format(KEY_TYPE.upper(), KEY)+
-          "\n> {}".format(endpoint))
-    return requests.get(endpoint).json()
-
-
-def formatJson(packages):
-    return json.dumps(packages, indent=2)
+import sys
+from utils import files, packages
 
 
 def saveJsonToFile(packages, key):
@@ -44,69 +29,18 @@ def saveJsonToFile(packages, key):
     print(result)
 
 
-def printPackageHistories(package):
-    orgId = package["orgId"]
-    ori = package["orderReferenceId"]            
-    packageID = package["packageId"]
-    hubName = package["hubName"]
-    barcode = package["barcode"]
-    histories = package["histories"]
-
-    half_divisor = "==================="
-
-    print(f"\n{half_divisor} PACKAGE {half_divisor}")
-    print(f"Package ID: {packageID}")
-    print(f"Scannable Barcode: {barcode}")
-    print(f"Order Reference ID: {ori}")
-
-    print(f"\n{half_divisor} ORG & HUB {half_divisor}")
-    print(f"Org ID: {orgId}")
-    print(f"HUB Name: {hubName}")
-
-    print(f"\n{half_divisor} HISTORIES {half_divisor}")
-    for index in range(0, len(histories)):
-        print(f"{index}:")
-        when = histories[index]["timestamp"]
-        print(f"\tTime Stamp: {when}")
-        action = histories[index]["action"]
-        print(f"\tAction: {action}")
-        status = histories[index]["neoStatus"]
-        print(f"\tStatus: {status}")
-        associate_name = histories[index]["associateName"]
-        print(f"\tResponsible: {associate_name}")
-        try:
-            routeId = histories[index]["optionalValues"]["ROUTE_ID"]
-            print(f"\tRoute ID: '{routeId}'")
-        except Exception as e:
-            pass
-        try:
-            notes = histories[index]["notes"]
-            print(f"\tNotes: '{notes}'\n")
-        except Exception as e:
-            pass
-
-
 def main(KEY, KEY_TYPE):
     response = {}
-    packages = getPackages(KEY_TYPE=KEY_TYPE, KEY=KEY)["histories"]
+    pkgs = packages.get_packages_histories(KEY_TYPE=KEY_TYPE, KEY=KEY)["histories"]
 
-    if packages != []:
-        for package in packages:
-            printPackageHistories(package)
+    if pkgs != []:
+        for package in pkgs:
+            packages.print_package_histories(package)
     
-    formattedResponse = formatJson(response)
+    formattedResponse = files.format_json(response)
     saveJsonToFile(packages=formattedResponse, key=KEY)
 
 
-valid_key_types = [
-    "pi (Package Id)",
-    "tn (Tracking Number)",
-    "ci (Container Id)",
-    "bc (Shipment Barcode)",
-    "oi (Order Id)",
-    "ori (Order Reference Id)",
-    "ji (Job Id)"
-]
 # get command line argument
 if (len(sys.argv) < 3):
     print(
@@ -116,7 +50,7 @@ if (len(sys.argv) < 3):
         "SCRIPT USAGE:\n"+
         "--> python getPackageHistories.py <KEY> <KEY_TYPE>\n\n"+
         "-> Accepted keyTypes:\n"+
-        "\n".join(map(str, valid_key_types))+
+        "\n".join(map(str, packages.VALID_KEY_TYPES))+
         
         "\n\nSCRIPT EXAMPLE:\n"+
         "--> python getBulkPackageHistories.py 8506 bc\n"+

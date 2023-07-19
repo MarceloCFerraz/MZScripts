@@ -6,10 +6,9 @@ import sys
 
 
 def get_data_from_file(fileName):
-    file = open(fileName+".txt", "r")
-    lines = file.readlines()
-    file.close()
-
+    with open(fileName+".txt", "r") as file:
+        lines = file.readlines()
+    
     results = []
     
     for line in lines:
@@ -22,7 +21,6 @@ def get_data_from_file(fileName):
     
     print("{} unique lines in file {}\n".format(len(results), fileName))
     return results
-
 
 
 def format_json(data):

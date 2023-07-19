@@ -1,40 +1,7 @@
 import os
-import requests, sys, json
-from datetime import datetime, timedelta
-
-
-API = "http://switchboard.prod.milezero.com/switchboard-war/api/"
-
-
-def getPackages(keyType, key):
-    # 
-    endpoint = f"{API}package/histories?keyValue={key}&keyType={keyType}"
-    print(">>>>> Retrieving Packages From {} {} <<<<<".format(keyType.upper(), key)+
-          "\n> {}".format(endpoint))
-    return requests.get(endpoint).json()
-
-
-def getKeysFromFile(fileName):
-    file = open(fileName+".txt", "r")
-    lines = file.readlines()
-    file.close()
-
-    results = []
-    
-    for line in lines:
-        results.append(line.strip())
-
-    # removing duplicates from list
-    # this make the list unordered. Comment this line if
-    # this impact your workflow somehow
-    results = list(set(results))
-    
-    print("{} lines in file {}.txt\n".format(len(results), fileName))
-    return results
-
-
-def formatJson(packages):
-    return json.dumps(packages, indent=2)
+import sys
+from datetime import datetime
+from utils import files, packages
 
 
 def saveJsonToFile(packages, hubName):
@@ -67,73 +34,25 @@ def saveJsonToFile(packages, hubName):
     print(result)
 
 
-def printPackageHistories(package):
-    orgId = package["orgId"]
-    ori = package["orderReferenceId"]            
-    packageID = package["packageId"]
-    hubName = package["hubName"]
-    barcode = package["barcode"]
-    histories = package["histories"]
-
-    half_divisor = "==================="
-
-    print(f"\n{half_divisor} PACKAGE {half_divisor}")
-    print(f"Package ID: {packageID}")
-    print(f"Scannable Barcode: {barcode}")
-    print(f"Order Reference ID: {ori}")
-
-    print(f"\n{half_divisor} ORG & HUB {half_divisor}")
-    print(f"Org ID: {orgId}")
-    print(f"HUB Name: {hubName}")
-
-    print(f"\n{half_divisor} HISTORIES {half_divisor}")
-    for index in range(0, len(histories)):
-        print(f"{index}:")
-        when = histories[index]["timestamp"]
-        print(f"\tTime Stamp: {when}")
-        action = histories[index]["action"]
-        print(f"\tAction: {action}")
-        status = histories[index]["neoStatus"]
-        print(f"\tStatus: {status}")
-        associate_name = histories[index]["associateName"]
-        print(f"\tResponsible: {associate_name}")
-        try:
-            routeId = histories[index]["optionalValues"]["ROUTE_ID"]
-            print(f"\tRoute ID: '{routeId}'")
-        except Exception as e:
-            pass
-        try:
-            notes = histories[index]["notes"]
-            print(f"\tNotes: '{notes}'\n")
-        except Exception as e:
-            pass
-
 
 def main(fileName, keyType):
-    keys = getKeysFromFile(fileName)
+    keys = files.get_data_from_file(fileName)
     historyList = []
     formattedResponse = {}
 
     for key in keys:
-        packages = getPackages(keyType=keyType, key=key)["histories"]
+        pkgs = packages.get_packages_histories(keyType=keyType, key=key)["histories"]
 
-        if packages != []:
-            historyList.append(packages)
+        if pkgs != []:
+            historyList.append(pkgs)
+            # for package in pkgs:
+                # packages.print_package_histories(package)
     
     formattedResponse["histories"] = historyList
-    formattedResponse = formatJson(formattedResponse)
+    formattedResponse = files.format_json(formattedResponse)
     saveJsonToFile(packages=formattedResponse, hubName=fileName)
 
 
-valid_key_types = [
-    "pi (Package Id)",
-    "tn (Tracking Number)",
-    "ci (Container Id)",
-    "bc (Shipment Barcode)",
-    "oi (Order Id)",
-    "ori (Order Reference Id)",
-    "ji (Job Id)"
-]
 # get command line argument
 if (len(sys.argv) < 3):
     print(
@@ -147,7 +66,7 @@ if (len(sys.argv) < 3):
         "SCRIPT USAGE:\n"+
         "--> python getBulkPackageHistories.py <hubName> <keyType>\n\n"+
         "-> Accepted keyTypes:\n"+
-        "\n".join(map(str, valid_key_types))+
+        "\n".join(map(str, packages.VALID_KEY_TYPES))+
         
         "\n\nSCRIPT EXAMPLE:\n"+
         "--> python getBulkPackageHistories.py 8506 bc\n"+

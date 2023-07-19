@@ -1,100 +1,10 @@
 from datetime import datetime
-from utils import files
-import requests
+from utils import files, packages
 import sys
 
-# CHANGE THIS FROM .prod. TO .stage. IF YOU WANT TO TEST THIS SCRIPT
-API = "http://switchboard.prod.milezero.com/switchboard-war/api/"
-STANDARD_TIMEOUT = 5 # seconds
+
 SUCCESSES = []
 ERRORS = []
-
-
-#assumptions: all provided input barcodes will be from same hub
-def dequeRoute(packages):
-    if not packages:
-        return
-    hubLocationId = packages[0]["packageDetails"]["sourceLocation"]["locationId"]
-    orgId = packages[0]["orgId"]
-
-    print("Deque for org {} locationId {}".format(orgId, hubLocationId))
- 
-    response = requests.post("http://alamo.prod.milezero.com/alamo-war/api/constraints/{}/{}/dequeue".format(orgId, hubLocationId), json={})
-    print(response.read())
-
-
-def markDelivered(packageId):
-    url = f"{API}package/update/3c897e84-3957-4958-b54d-d02c01b14f15/{packageId}/DELIVERED/status"
-
-    result = requests.post(url=url, data={"notes": "Requested by dispatcher"}).json()
-
-    print(result)
-
-def getPackages(keyType, key):
-    endpoint = "{}package?keyType={}&keyValue={}&includeCancelledPackage=true".format(API, keyType, key)
-    print(">>>>> Retrieving Packages From {} {} <<<<<".format(keyType.upper(), key)+
-          "\n> {}".format(endpoint))
-    return requests.get(endpoint, timeout=STANDARD_TIMEOUT).json()
-
-
-def revivePackage(package):
-    orgId = package["orgId"]
-    packageId = package["packageId"]
-    requestData = {
-        "notes": "Requested by dispatcher"
-    }
-
-    endpoint = "{}package/revive/{}/{}".format(API, orgId, packageId)
-
-    print(">>>>> Reviving package <<<<<"+
-          "\n> {}".format(endpoint))
-
-    response = requests.post(endpoint, json=requestData, timeout=STANDARD_TIMEOUT)
-    print(response.status_code)
-
-
-def deliveryFailed(package):
-    orgId = package["orgId"]
-    packageId = package["packageId"]
-
-    requestData = {
-        "notes": "Requested By Dispatcher"
-    }
-
-    endpoint = "{}package/update/{}/{}/DELIVERY_FAILED/status".format(API, orgId, packageId)
-
-    print(">>>>> Marking package as DELIVERY_FAILED <<<<<")
-    
-    try:
-        response = requests.post(endpoint, json=requestData, timeout=STANDARD_TIMEOUT)
-        print("> Package Marked as DELIVERY_FAILED Sucessfuly ({})\n".format(response))
-    except Exception as e:
-        print("> Package couldn't be marked as DELIVERY_FAILED. See error bellow")
-        print(e)
-
-def resubmitRequest(package, next_delivery_date):
-    orgId = package["orgId"]
-    packageId = package["packageId"]
-
-    requestData = {
-        "adjustTimeWindow": True,
-        "treatEverydayAsProcessingDay": False,
-        "targetLocalDate": next_delivery_date,
-        "notes": "Requested by dispatcher"
-    }
-
-    endpoint = "{}fulfillment/resubmit/{}/{}".format(API, orgId, packageId)
-
-    print(">>>>> Resubmitting {} for {} <<<<<".format(packageId, next_delivery_date))
-
-    try: 
-        response = requests.post(endpoint, json=requestData, timeout=STANDARD_TIMEOUT).json()
-        print("> Package Resubmitted Sucessfuly\n\n")
-        SUCCESSES.append(packageId)
-    except Exception as e: 
-        ERRORS.append(packageId)
-        print("> Package couldn't be resubmitted. See error bellow")
-        print(e)
 
 
 def replan(fileName, keyType, next_delivery_date):
@@ -103,16 +13,16 @@ def replan(fileName, keyType, next_delivery_date):
     print("Key Types: {}\n".format(keyType.upper())+
         "Keys: {}\n".format(lines))
     
-    packages = []
+    pkgs = []
     
     for line in lines:
         # getting packages from barcode present in file line
-        packages = getPackages(keyType, line)["packageRecords"]
+        pkgs = packages.get_packages_details(keyType, line)["packageRecords"]
 
-        if (len(packages) == 0):
+        if (len(pkgs) == 0):
             print("> NO PACKAGES FOUND <\n")
     
-        for package in packages:
+        for package in pkgs:
 
             status = package["packageStatuses"]["status"]
             packageID = package["packageId"]
@@ -138,17 +48,22 @@ def replan(fileName, keyType, next_delivery_date):
                 # if package is marked as cancelled, 
                 # revive the package
                 if status == "CANCELLED":
-                    revivePackage(package)
+                    packages.revive_package(package)
                 
                 # if package is marked as rejected or delivered,
                 # change its status to DELIVERY_FAILED
                 if status == "DELIVERED" or status == "REJECTED":
-                    deliveryFailed(package)
+                    packages.mark_package_as_delivered(package)
 
-                resubmitRequest(
+                response = packages.resubmit_package(
                     package, 
                     next_delivery_date
                 )
+
+                for s in response["SUCCESSES"]:
+                    SUCCESSES.append(s)
+                for e in response["ERRORS"]:
+                    ERRORS.append(e)
             else:
                 print("---> Ignored because it isn't from hub {}\n".format(fileName))
     print("Successful Resubmits ({}/{}): ".format(len(SUCCESSES), len(SUCCESSES) + len(ERRORS)))
