@@ -1,7 +1,7 @@
 from utils import packages, files, utils
 
 env = utils.select_env()
-orgId = utils.select_org()
+orgId = utils.select_org(env)
 
 # fileName = input("Type in file name containing the package ids?\n> ").strip()
 

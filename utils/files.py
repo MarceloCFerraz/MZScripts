@@ -99,9 +99,9 @@ def create_logs_file(prefix=None, suffix=None):
     # Create the log file name
     log_file_name = script_name + f"_log_{utils.get_formated_now()}.txt"
     if prefix:
-        log_file_name = prefix + log_file_name
+        log_file_name = prefix + "_" + log_file_name
     if suffix:
-        log_file_name += suffix
+        log_file_name += "_" + suffix
 
     # Open the log file to redirect the standard output
     log_file = open(f"./{dir}/{log_file_name}", "w")
