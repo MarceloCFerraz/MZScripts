@@ -207,7 +207,9 @@ def mark_package_as_delivery_failed(package):
         print(e)
 
 
-def resubmit_package(package, next_delivery_date, ERRORS, SUCCESSES):
+def resubmit_package(package, next_delivery_date):
+    errors = []
+    successes = []
     API = "http://switchboard.prod.milezero.com/switchboard-war/api/"
     orgId = package["orgId"]
     packageId = package["packageId"]
@@ -226,13 +228,13 @@ def resubmit_package(package, next_delivery_date, ERRORS, SUCCESSES):
     try: 
         response = requests.post(endpoint, json=requestData, timeout=15).json()
         print("> Package Resubmitted Sucessfuly\n\n")
-        SUCCESSES.append(packageId)
+        successes.append(packageId)
     except Exception as e: 
-        ERRORS.append(packageId)
+        errors.append(packageId)
         print("> Package couldn't be resubmitted. See error bellow")
         print(e)
 
     return {
-        "SUCCESSES": SUCCESSES,
-        "ERRORS": ERRORS
+        "SUCCESSES": successes,
+        "ERRORS": errors
     }
