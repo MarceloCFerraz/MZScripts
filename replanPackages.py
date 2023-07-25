@@ -23,7 +23,6 @@ def replan(fileName, keyType, next_delivery_date):
             print("> NO PACKAGES FOUND <\n")
     
         for package in pkgs:
-
             status = package["packageStatuses"]["status"]
             packageID = package["packageId"]
             try:
@@ -53,7 +52,7 @@ def replan(fileName, keyType, next_delivery_date):
                 # if package is marked as rejected or delivered,
                 # change its status to DELIVERY_FAILED
                 if status == "DELIVERED" or status == "REJECTED":
-                    packages.mark_package_as_delivered(package)
+                    packages.mark_package_as_delivery_failed(package)
 
                 response = packages.resubmit_package(
                     package, 

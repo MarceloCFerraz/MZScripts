@@ -23,7 +23,7 @@ VALID_KEY_TYPES = [
 ]
 
 
-def move_package(env, orgId, newHub, packageId, dispatcher, userName):
+def move_package_to_hub(env, orgId, newHub, packageId, dispatcher, userName):
     url = f"https://switchboard.{env}.milezero.com/switchboard-war/api/package/update/{orgId}/{packageId}/hub"
     
     payload = {
@@ -31,8 +31,26 @@ def move_package(env, orgId, newHub, packageId, dispatcher, userName):
         "notes": f"Requested by {dispatcher}. Executed by {userName}"
     }
     response = requests.post(url=url, json=payload, timeout=15)
+    print(f"{response} {response.text['message'] if response.status_code >= 400 else ''}")
+
+
+def move_packages_to_route(env, orgId, newRouteId, packageIdsList):
+    url = f"http://alamo.{env}.milezero.com/alamo-war/api/constraints/{orgId}/packages/move"
+
+    payload = {
+    "packageIds": packageIdsList,
+    "newRouteId": newRouteId,
+        "associate": {
+            "associateId": "0ebaddf3-83ea-4713-97da-66552323fc0c",
+            "associateName": "Marcelo Superuser",
+            "associateType": "ORG_SUPERUSER"
+        }
+    }
+    
+    response = requests.post(url=url, json=payload, timeout=60)
     print(f"{response} {response.text if response.status_code >= 400 else ''}")
 
+    return response
 
 
 def bulk_cancel_packages(env, orgId, packageIds):
@@ -66,10 +84,11 @@ def mark_package_as_delivered(orgId, packageId):
     body = {
         "notes": "Requested by dispatcher"
     }
+    print(f">>>>> Marking {packageId} as DELIVERED <<<<<")
 
     result = requests.post(url=url, json=body)
 
-    print(result)
+    print(f"{result.status_code} {result.text if result.status_code > 400 else ''}")
 
 
 def get_packages_details(KEY_TYPE, key):
@@ -238,3 +257,11 @@ def resubmit_package(package, next_delivery_date):
         "SUCCESSES": successes,
         "ERRORS": errors
     }
+
+
+def get_all_packages_on_route(env, orgId, routeId):
+    url = f"http://sortationservices.{env}.milezero.com/SortationServices-war/api/monitor/packages/{orgId}/{routeId}"
+
+    print(f">> Searching for packages in {routeId}")
+
+    return requests.get(url=url, timeout=15).json()

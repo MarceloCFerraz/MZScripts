@@ -12,7 +12,8 @@ def get_data_from_file(fileName):
     results = []
     
     for line in lines:
-        results.append(line.strip())
+        if line != "":
+            results.append(line.strip())
 
     # removing duplicates from list
     # this make the list unordered. Comment this line if
@@ -120,3 +121,9 @@ def start_logging(log_file):
 
 def stop_logging():
     sys.stdout = sys.__stdout__
+
+
+def save_package_ids_to_file(packageIDs, fileName):
+    with open(fileName, "w") as txt:
+        for packageID in packageIDs:
+            txt.write(packageID + "\n")
