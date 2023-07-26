@@ -15,13 +15,13 @@ def main():
     env = utils.select_env()
     orgId = utils.select_org(env)
     
+    hubName = input("Type in the route's hub\n> ")
     newRoute = input("Type in the new route name\n> ").strip().upper()
     cpt = datetime.strptime(
         input("Type in the route date (yyyy-mm-dd)\n> ").strip(),
         "%Y-%m-%d"
     )
     cpt = cpt.strftime("%Y-%m-%d") + "T16:00:00Z"
-    hubName = input("Type in the route's hub\n> ")
 
     allRoutes = routes.get_all_routes_from_hub(env, orgId, hubName, cpt)
     

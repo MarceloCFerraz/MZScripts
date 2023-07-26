@@ -26,7 +26,7 @@ def saveJsonToFile(packages, file_name):
     # even in windows this works out just fine
     current_dir = os.path.realpath(os.path.dirname(__name__)).replace("\\", "/")
     # creates "RESULSTS" folder directory
-    response_dir = current_dir + "/RESULSTS"
+    response_dir = current_dir + "/RESULTS"
     os.makedirs(response_dir, exist_ok=True)
     
     # names the file

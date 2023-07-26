@@ -14,9 +14,9 @@ def main():
     cpt = cpt.strftime("%Y-%m-%d") + "T16:00:00Z"
     routeName = input("Type the desired route name\n> ").strip().upper()
 
-    routes = routes.get_all_routes_from_hub(env, orgId, hubName, cpt)
+    allRoutes = routes.get_all_routes_from_hub(env, orgId, hubName, cpt)
     
-    route = [r for r in routes if routeName in r['routeName'] or routeName in r['routeId']]
+    route = [r for r in allRoutes if routeName in r['routeName'] or routeName in r['routeId']]
     pids = []
 
     if len(route) == 0:
