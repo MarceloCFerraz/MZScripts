@@ -226,12 +226,10 @@ def mark_package_as_delivery_failed(env, package):
         print(e)
 
 
-def resubmit_package(env, package, next_delivery_date):
+def resubmit_package(env, orgId, packageId, next_delivery_date):
     errors = []
     successes = []
     API = f"http://switchboard.{env}.milezero.com/switchboard-war/api/"
-    orgId = package["orgId"]
-    packageId = package["packageId"]
 
     requestData = {
         "adjustTimeWindow": True,
@@ -264,4 +262,8 @@ def get_all_packages_on_route(env, orgId, routeId):
 
     print(f">> Searching for packages in {routeId}")
 
-    return requests.get(url=url, timeout=15).json()
+    response = requests.get(url=url, timeout=15).json()
+
+    print(f"Found {len(response)} packages in {routeId}")
+
+    return response

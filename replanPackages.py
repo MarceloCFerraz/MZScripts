@@ -58,6 +58,8 @@ def replan(fileName, keyType, next_delivery_date):
 
                 response = packages.resubmit_package(
                     env,
+                    orgId,
+                    packageID,
                     package, 
                     next_delivery_date
                 )
