@@ -1,6 +1,6 @@
 import os
 import sys
-from utils import files, packages
+from utils import files, packages, utils
 
 
 
@@ -48,6 +48,9 @@ def saveJsonToFile(packages, file_name):
 
 
 def main(FILE_NAME, KEY_TYPE, STATUSES):
+    env = utils.select_env()
+    orgId = utils.select_org(env)
+
     status_list = []
     
     if STATUSES != "":
@@ -59,7 +62,7 @@ def main(FILE_NAME, KEY_TYPE, STATUSES):
     invalid_packages = 0
 
     for key in keys:
-        pkgs = packages.get_packages_details(KEY_TYPE=KEY_TYPE, key=key)["packageRecords"]
+        pkgs = packages.get_packages_details(env, orgId, KEY_TYPE, key)["packageRecords"]
         for package in pkgs:
             status = package["packageStatuses"]["status"]
 

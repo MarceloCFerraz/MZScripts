@@ -91,10 +91,10 @@ def mark_package_as_delivered(orgId, packageId):
     print(f"{result.status_code} {result.text if result.status_code > 400 else ''}")
 
 
-def get_packages_details(KEY_TYPE, key):
-    API = "http://switchboard.prod.milezero.com/switchboard-war/api/"
+def get_packages_details(env, orgId, KEY_TYPE, key):
+    API = f"http://switchboard.{env}.milezero.com/switchboard-war/api/"
     # f"{API}package/histories?keyValue={key}&keyType={keyType}"
-    endpoint = f"{API}package?keyType={KEY_TYPE}&keyValue={key}&includeCancelledPackage=true"
+    endpoint = f"{API}package?keyType={KEY_TYPE}&keyValue={key}&orgId={orgId}&includeCancelledPackage=true"
     print(f">>>>> Retrieving Packages From {KEY_TYPE.upper()} {key} <<<<<")
 
     return requests.get(endpoint, timeout=5).json()
@@ -189,8 +189,8 @@ def print_package_histories(package):
             pass
 
 
-def revive_package(package):
-    API = "http://switchboard.prod.milezero.com/switchboard-war/api/"
+def revive_package(env, package):
+    API = f"http://switchboard.{env}.milezero.com/switchboard-war/api/"
     orgId = package["orgId"]
     packageId = package["packageId"]
     requestData = {
@@ -205,8 +205,8 @@ def revive_package(package):
     print(response.status_code)
 
 
-def mark_package_as_delivery_failed(package):
-    API = "http://switchboard.prod.milezero.com/switchboard-war/api/"
+def mark_package_as_delivery_failed(env, package):
+    API = f"http://switchboard.{env}.milezero.com/switchboard-war/api/"
     orgId = package["orgId"]
     packageId = package["packageId"]
 
@@ -226,10 +226,10 @@ def mark_package_as_delivery_failed(package):
         print(e)
 
 
-def resubmit_package(package, next_delivery_date):
+def resubmit_package(env, package, next_delivery_date):
     errors = []
     successes = []
-    API = "http://switchboard.prod.milezero.com/switchboard-war/api/"
+    API = f"http://switchboard.{env}.milezero.com/switchboard-war/api/"
     orgId = package["orgId"]
     packageId = package["packageId"]
 

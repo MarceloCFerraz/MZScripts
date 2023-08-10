@@ -1,5 +1,5 @@
 from datetime import datetime
-from utils import files, packages
+from utils import files, packages, utils
 import sys
 
 
@@ -8,6 +8,8 @@ ERRORS = []
 
 
 def replan(fileName, keyType, next_delivery_date):
+    env = utils.select_env()
+    orgId = utils.select_org(env)
     lines = files.get_data_from_file(fileName)
     
     print("Key Types: {}\n".format(keyType.upper())+
@@ -17,7 +19,7 @@ def replan(fileName, keyType, next_delivery_date):
     
     for line in lines:
         # getting packages from barcode present in file line
-        pkgs = packages.get_packages_details(keyType, line)["packageRecords"]
+        pkgs = packages.get_packages_details(env, orgId, keyType, line)["packageRecords"]
 
         if (len(pkgs) == 0):
             print("> NO PACKAGES FOUND <\n")
@@ -47,14 +49,15 @@ def replan(fileName, keyType, next_delivery_date):
                 # if package is marked as cancelled, 
                 # revive the package
                 if status == "CANCELLED":
-                    packages.revive_package(package)
+                    packages.revive_package(env, package)
                 
                 # if package is marked as rejected or delivered,
                 # change its status to DELIVERY_FAILED
                 if status == "DELIVERED" or status == "REJECTED":
-                    packages.mark_package_as_delivery_failed(package)
+                    packages.mark_package_as_delivery_failed(env, package)
 
                 response = packages.resubmit_package(
+                    env,
                     package, 
                     next_delivery_date
                 )

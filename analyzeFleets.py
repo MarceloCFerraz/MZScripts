@@ -78,6 +78,7 @@ def setup_chat():
 
     return chat
 
+
 def setup_agent(dataFrame):
     verify_question_history_file()
 
