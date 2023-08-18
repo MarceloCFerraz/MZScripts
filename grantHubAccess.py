@@ -140,12 +140,14 @@ def main():
                     print(">> Associate doesn't have a fleet")
                     print(f">> Searching for a fleet containing {' '.join([hub['name'] for hub in hubsList])}")
                     
-                    fleetId = search_fleet_with_hubs(env, orgId, hubIdsList)
+                    fleetId = search_fleet_with_hubs(allFleets, hubIdsList)
 
                     if fleetId == None:
-                        print(f">> Creating new fleet with")
+                        print(f">> Creating new fleet", end=" ")
                         
                         fleetId = fleets.create_fleet(env=env, orgId=orgId, hubsArray=hubsList)
+
+                        print(f"Done! {fleetId}")
 
                     associate["fleetId"] = fleetId
             else:

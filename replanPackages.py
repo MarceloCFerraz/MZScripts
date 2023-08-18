@@ -60,7 +60,6 @@ def replan(fileName, keyType, next_delivery_date):
                     env,
                     orgId,
                     packageID,
-                    package, 
                     next_delivery_date
                 )
 
