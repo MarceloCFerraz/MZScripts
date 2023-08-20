@@ -38,12 +38,18 @@ def main():
                 input("Type date for replan (yyyy-mm-dd)\n> ").strip(),
                 "%Y-%m-%d"
             )
+            newDate = newDate.strftime("%Y-%m-%d")
+
             SUCCESSES = []
             ERRORS = []
 
             print("Replanning packages...")
             for package in pkgs:
-                if package['scNodeName'] == newHub:
+                package = packages.get_packages_details(env, orgId, "pi", package['packageID'])['packageRecords'][0]
+
+                hub = package['packageDetails']['sourceLocation']['name']
+
+                if hub == newHub:
                     status = package["packageStatuses"]["status"]
 
                     if status == "CANCELLED":
@@ -55,8 +61,7 @@ def main():
                     response = packages.resubmit_package(
                         env,
                         orgId,
-                        package['packageID'],
-                        package, 
+                        package['packageId'],
                         newDate
                     )
 
@@ -65,7 +70,8 @@ def main():
                     for e in response["ERRORS"]:
                         ERRORS.append(e)
                 else:
-                    ERRORS.append(package['packageID'])
+                    print(f"{package['packageId']} not in {newHub} ({hub})")
+                    ERRORS.append(package['packageId'])
             
             print("Successful Resubmits ({}/{}): ".format(len(SUCCESSES), len(SUCCESSES) + len(ERRORS)))
             for success in SUCCESSES:
