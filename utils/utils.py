@@ -2,6 +2,7 @@ from datetime import datetime
 
 ORGS = {
     "PROD": {
+        "CLM": "8a9e84be-9874-4346-baab-26053d35871e",
         "STAPLES": "3c897e84-3957-4958-b54d-d02c01b14f15",
         "HN": "c88987f9-91e8-4561-9f07-df795ef9b8f0",
         "EDG": "ca3ffc06-b583-409f-a249-bdd014e21e31",

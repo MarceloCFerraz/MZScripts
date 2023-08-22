@@ -93,8 +93,8 @@ def mark_package_as_delivered(orgId, packageId):
 
 def get_packages_details(env, orgId, KEY_TYPE, key):
     API = f"http://switchboard.{env}.milezero.com/switchboard-war/api/"
-    # f"{API}package/histories?keyValue={key}&keyType={keyType}"
     endpoint = f"{API}package?keyType={KEY_TYPE}&keyValue={key}&orgId={orgId}&includeCancelledPackage=true"
+
     print(f">>>>> Retrieving Packages From {KEY_TYPE.upper()} {key} <<<<<")
 
     return requests.get(endpoint, timeout=5).json()
@@ -103,8 +103,9 @@ def get_packages_details(env, orgId, KEY_TYPE, key):
 
 def get_packages_histories(keyType, key):
     API = "http://switchboard.prod.milezero.com/switchboard-war/api/"
-    
     endpoint = f"{API}package/histories?keyValue={key}&keyType={keyType}"
+    
+    # "https://switchboard.{env}.milezero.com/switchboard-war/api/package/histories?keyValue={key}&keyType={keyType}&orgId={orgId}&provider={providerName}&orderBy=timestamp"    
     
     print(">>>>> Retrieving Packages From {} {} <<<<<".format(keyType.upper(), key))
     
