@@ -1,6 +1,6 @@
 import os
 import sys
-from utils import files, packages
+from utils import files, packages, utils
 
 
 def saveJsonToFile(packages, key):
@@ -30,8 +30,10 @@ def saveJsonToFile(packages, key):
 
 
 def main(KEY, KEY_TYPE):
+    env = utils.select_env()
+    orgId = utils.select_org(env)
     response = {}
-    pkgs = packages.get_packages_histories(KEY_TYPE=KEY_TYPE, KEY=KEY)["histories"]
+    pkgs = packages.get_packages_histories(env, orgId, KEY_TYPE, KEY)["histories"]
 
     if pkgs != []:
         for package in pkgs:

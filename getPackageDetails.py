@@ -1,7 +1,7 @@
 from datetime import datetime
 import os
 import sys
-from utils import files, packages
+from utils import files, packages, utils
 
 
 def getStatusList(STATUSES):
@@ -48,6 +48,9 @@ def saveJsonToFile(packages, key):
 
 
 def main(KEY, KEY_TYPE, STATUSES):
+    env = utils.select_env()
+    orgId = utils.select_org(env)
+
     status_list = []
     
     if STATUSES != "":
@@ -57,7 +60,7 @@ def main(KEY, KEY_TYPE, STATUSES):
     valid_packages = []
     invalid_packages = 0
 
-    pkgs = packages.get_packages_details(KEY_TYPE=KEY_TYPE, key=KEY)["packageRecords"]
+    pkgs = packages.get_packages_details(env, orgId, KEY_TYPE, KEY)["packageRecords"]
     for package in pkgs:
         status = package["packageStatuses"]["status"]
 
