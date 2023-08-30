@@ -203,7 +203,7 @@ def revive_package(env, package):
     print(">>>>> Reviving package <<<<<")
 
     response = requests.post(endpoint, json=requestData, timeout=15)
-    print(response.status_code)
+    print(f"{response.status_code} {response.text if response.status_code > 400 else ''}")
 
 
 def mark_package_as_delivery_failed(env, package):
@@ -268,3 +268,25 @@ def get_all_packages_on_route(env, orgId, routeId):
     print(f"Found {len(response)} packages in {routeId}")
 
     return response
+
+def get_all_packages_for_hub(env, orgId, hubName, date):
+    endpoint = f"http://sortationservices.{env}.milezero.com/SortationServices-war/api/monitor/getPackagesInWave/{orgId}/{hubName}/{date}/true"
+
+    packageCount = 0
+    packageIDs = []
+
+    try:
+        packages = requests.get(url=endpoint, timeout=10).json()["packagesMap"]        
+        
+        for statusGroup in packages.keys():
+            for package in packages[statusGroup]:
+                packageId = package["externalPackageId"]
+                packageIDs.append(packageId)
+
+    except Exception as e:
+        pass
+    
+    if packageCount > 0: 
+        print(f"{len(packageIDs)} packages")
+    
+    return packageIDs

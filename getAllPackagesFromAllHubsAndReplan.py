@@ -222,7 +222,9 @@ def main():
 
     packages = []
 
-    for hub in getValidHubs(hubs):
+    validHubs = getValidHubs(hubs)
+
+    for hub in validHubs:
         hubName = hub["name"]
         print(f"> {hubName}")
 
