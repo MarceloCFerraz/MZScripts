@@ -1,4 +1,5 @@
 import concurrent.futures
+import datetime
 import pandas
 import json
 import requests
@@ -6,7 +7,7 @@ import requests
 switchboard_get_url_template = "http://switchboard.{0}.milezero.com/switchboard-war/api/package?keyType={1}&keyValue={2}&orgId={3}"
 
 lockbox_get_url_template = "https://lockbox.{0}.milezero.com/lockbox-war/api/location/{1}"
-geocoder_get_url_template = "http://geocoder.{0}.milezero.com/gc/api/address?street={1}&city={2}&state={3}&zip={4}&cc=US&provider=GOOGLE"
+geocoder_get_url_template = "http://geocoder.{0}.milezero.com/gc/api/address?street={1}&city={2}&state={3}&zip={4}&cc=US{5}"
 lockbox_update_url_template = "https://lockbox.{0}.milezero.com/lockbox-war/api/location/{1}"
 
 alamo_get_url_template = "http://alamo.{0}.milezero.com/alamo-war/api/plannedroutes?orgId={1}&facilityId={2}&startTime={3}&endTime={4}"
@@ -95,8 +96,10 @@ def search_hub_by_name(env, orgId, hubName):
 
 def get_alamo_packages(domain, org_id, location_id, start_date, end_date):
     alamo_get_url = alamo_get_url_template.format(domain, org_id, location_id, start_date, end_date)
-    response = requests.get(url=alamo_get_url,
-                            headers={'Accept': 'application/json'})
+    response = requests.get(
+        url=alamo_get_url,
+        headers={'Accept': 'application/json'}
+    )
     package_id = []
     for order in response.json():
         for pid in order.get('packageConstraints'):
@@ -104,6 +107,7 @@ def get_alamo_packages(domain, org_id, location_id, start_date, end_date):
                 package_id.append(pid.get('packageId'))
 
     return package_id
+
 
 def get_switchboard_package_location(domain, key_type, key_value, org_id):
     switchboard_get_url = switchboard_get_url_template.format(domain, key_type, key_value, org_id)
@@ -118,7 +122,9 @@ def get_switchboard_package_location(domain, key_type, key_value, org_id):
 
 def update_address(domain, location_id, payload):
     headers = {'content-type': 'application/json'}
+    
     lockbox_update_url = lockbox_update_url_template.format(domain, location_id)
+    
     response = requests.put(
         url=lockbox_update_url,
         data=json.dumps(payload), 
@@ -128,145 +134,291 @@ def update_address(domain, location_id, payload):
     return response
 
 
-def get_address(domain, street, city, state, zip):
-    geocoder_get_url = geocoder_get_url_template.format(domain, street, city, state, zip)
-    response = requests.get(url=geocoder_get_url,
-                            headers={'Accept': 'application/json'})
+def get_address(domain, street, city, state, zip, provider=None):
+    if provider:
+        provider = "&provider={}".format(provider)
+    else:
+        provider = "&provider=GOOGLE".format(provider)
+
+    geocoder_get_url = geocoder_get_url_template.format(domain, street, city, state, zip, provider)
+    
+    response = requests.get(
+        url=geocoder_get_url,
+        headers={'Accept': 'application/json'}
+    )
+
     address = response.json()
+
+    # print(json.dumps(address))
+
     return address
 
 
-def get_location(domain, location_id, package_id):
+def get_location(domain, location_id, package_id, hub):
     lockbox_get_url = lockbox_get_url_template.format(domain, location_id)
-    response = requests.get(url=lockbox_get_url,
-                            headers={'Accept': 'application/json'})
+    
+    response = requests.get(
+        url=lockbox_get_url,
+        headers={'Accept': 'application/json'}
+    )
+
     location = response.json()
+
     try:
-
         precision = location.get('precision').get('precision')
-        if precision == 'LOW':
-
+        
+        if precision != 'EXACT' or precision != 'HIGH':
             typed_address = location.get('typedAddress')
             address1 = typed_address.get('address1')
             address2 = typed_address.get('address2')
             city = typed_address.get('city')
             state = typed_address.get('state')
             zip = typed_address.get('postalCode')
-            updated_address = get_address(domain, address1, city, state, zip)
-            if updated_address.get('geocodeQuality') == 'LOW':
-                updated_address = get_address('prod', address2, city, state, zip)
-                print("package ID: " + package_id + "location id: " + location_id + " swapped adress line")
-                payload = {
-                    "name": location.get('name'),
-                    "geo": {
-                        "latitude": updated_address.get('lat'),
-                        "longitude": updated_address.get('lon')
-                    },
-                    "typedAddress": {
-                        "addressType": typed_address.get('addressType'),
-                        "countryCode": typed_address.get('countryCode'),
-                        "name": typed_address.get('name'),
-                        "address1": address2,
-                        "address2": address1,
-                        "city": city,
-                        "state": state,
-                        "briefPostalCode": typed_address.get('briefPostalCode'),
-                        "postalCode": zip
-                    },
-                    "timezone": updated_address.get('timeZone'),
-                    "commercialType": location.get('commercialType'),
-                    "attributes": [
-                    ],
-                    "precision": {
-                        "precision": updated_address.get('geocodeQuality'),
-                        "source": updated_address.get('provider'),
-                    },
-                    "executionScannableIds": {},
-                    "executionProperties": {}
-                }
-            else:
-                payload = {
-                    "name": location.get('name'),
-                    "geo": {
-                        "latitude": updated_address.get('lat'),
-                        "longitude": updated_address.get('lon')
-                    },
-                    "typedAddress": {
-                        "addressType": typed_address.get('addressType'),
-                        "countryCode": typed_address.get('countryCode'),
-                        "name": typed_address.get('name'),
-                        "address1": address1,
-                        "address2": typed_address.get('address2'),
-                        "city": city,
-                        "state": state,
-                        "briefPostalCode": typed_address.get('briefPostalCode'),
-                        "postalCode": zip
-                    },
-                    "timezone": updated_address.get('timeZone'),
-                    "commercialType": location.get('commercialType'),
-                    "attributes": [
-                    ],
-                    "precision": {
-                        "precision": updated_address.get('geocodeQuality'),
-                        "source": updated_address.get('provider'),
-                    },
-                    "executionScannableIds": {},
-                    "executionProperties": {}
-                }
 
+            updated_address = get_address(domain, address1, city, state, zip)
+
+            if updated_address.get('geocodeQuality') == 'LOW':
+                updated_address = get_address(domain, address2, city, state, zip)
+
+                address1 = typed_address.get('address2')
+                address2 = typed_address.get('address1')
+
+                if updated_address.get('geocodeQuality') == 'LOW':
+                    address1 = typed_address.get('address1')
+                    address2 = typed_address.get('address2')
+
+                    updated_address = get_address(domain, address1, city, state, zip, "SMARTY")
+
+                    if updated_address.get('geocodeQuality') == 'LOW':
+                        updated_address = get_address(domain, address2, city, state, zip, "SMARTY")
+
+                        address1 = typed_address.get('address2')
+                        address2 = typed_address.get('address1')
+
+            payload = {
+                "name": location.get('name'),
+                "geo": {
+                    "latitude": updated_address.get('lat'),
+                    "longitude": updated_address.get('lon')
+                },
+                "typedAddress": {
+                    "addressType": typed_address.get('addressType'),
+                    "countryCode": typed_address.get('countryCode'),
+                    "name": typed_address.get('name'),
+                    "address1": address1,
+                    "address2": address2,
+                    "city": city,
+                    "state": state,
+                    "briefPostalCode": typed_address.get('briefPostalCode'),
+                    "postalCode": zip
+                },
+                "timezone": updated_address.get('timeZone'),
+                "commercialType": location.get('commercialType'),
+                "attributes": [
+                ],
+                "precision": {
+                    "precision": updated_address.get('geocodeQuality'),
+                    "source": updated_address.get('provider'),
+                },
+                "executionScannableIds": {},
+                "executionProperties": {}
+            }
+            
             response = update_address(domain, location_id, payload)
 
             payload["id"] = location_id
+            payload["hub"] = hub
 
-            print("Updating " + location_id + "  (" + package_id + ")")
-            print("{0} - {1}: {2}".format(response.status_code, response.reason, response.text))
+            print("      Updating " + location_id + "  (" + package_id + ")")
+            print("      {} - {}, {}: {}".format(location_id, response.status_code, response.reason, response.text))
+
             if response.status_code < 400:
                 CORRECTED_ADDRESSES.append(payload)
+        # else:
+            # print("      Skipping {}".format(location_id))
 
     except AttributeError as e:
-        print(e + " - loc - " + location_id)
+        print("***** " + e + " - loc - " + location_id)
 
 
-def main(env, org_id, hubName):
-    hub_location_id = search_hub_by_name(env, org_id, hubName)[0]['location']['locationId']
+def main(env, org_id, package_id, hub):
+    print("==== New thread created for {}".format(package_id))
+    
+    location_id = get_switchboard_package_location(env, 'pi', package_id, org_id)
 
-    print("Checking for packages in {}".format(hubName))
+    get_location(env, location_id, package_id, hub)
 
-    package_ids = get_alamo_packages(
-        env, 
-        org_id, 
-        hub_location_id,
-        '2023-08-30T08:00:00.000Z', 
-        '2023-08-31T08:00:00.000Z'
-    )
+    print("==== Finished {}".format(package_id))
 
-    print("Found {} packages for hub {}".format(len(package_ids), hubName))
-
-    for p in package_ids:
-        location_id = get_switchboard_package_location(env, 'pi', p, org_id)
-        get_location(env, location_id, p)
-
-    print("==== Finished {} ====".format(hubName))
 
 if __name__ == '__main__':
-
-    pending_hubs = [
-        3886,8743,3716,8211,8377,3937,3926,8027,3941,3327,3034
-    ]
-
     env = select_env()
     org_id = select_org(env)
 
+    starting_time = str(
+        datetime.datetime.now().time().replace(microsecond=0)
+    ).replace(':', '_')
+
+    pending_hubs = [
+        3453,
+        8500,
+        8488,
+        8792,
+        8764,
+        3926,
+        3034,
+        8202,
+        3845,
+        3808,
+        8285,
+        8194,
+        8883,
+        8613,
+        3882,
+        3880,
+        8773,
+        3716,
+        8743,
+        8506,
+        8220,
+        3964,
+        8457,
+        8228,
+        8606,
+        8103,
+        3933,
+        3738,
+        3094,
+        8027,
+        3886,
+        3895,
+        8409,
+        3998,
+        8037,
+        8102,
+        8740,
+        8406,
+        8845,
+        8203,
+        98471,
+        3322,
+        3012,
+        8221,
+        8605,
+        3920,
+        8033,
+        3946,
+        3099,
+        8006,
+        8247,
+        8069,
+        8351,
+        8232,
+        8204,
+        3905,
+        0000,
+        3921,
+        8087,
+        8971,
+        8428,
+        8246,
+        3748,
+        8391,
+        925,
+        8081,
+        8463,
+        8423,
+        8826,
+        8073,
+        3007,
+        8190,
+        8653,
+        8209,
+        3090,
+        8253,
+        3772,
+        3471,
+        3375,
+        8053,
+        3881,
+        8673,
+        3741,
+        8050,
+        8436,
+        3480,
+        8101,
+        8627,
+        8974,
+        8281,
+        8600,
+        8028,
+        98078,
+        8175,
+        8847,
+        3941,
+        8801,
+        8077,
+        7585,
+        8005,
+        8492,
+        8211,
+        3909,
+        8885,
+        8377,
+        8034,
+        8286,
+        8109,
+        3903,
+        8471,
+        8026,
+        3913,
+        8155,
+        8571,
+        8568,
+        8857,
+        8744
+    ]
+
+    package_date = datetime.datetime.strptime(
+        input("Input the date (yyyy-mm-dd): "), 
+        "%Y-%m-%d"
+    )
+    next_day = package_date + datetime.timedelta(1)
+
+    package_date = package_date.strftime("%Y-%m-%d")
+    next_day = next_day.strftime("%Y-%m-%d")
+
+    # print("Searching packages from {} to {}".format(package_date, next_day))
+
     with concurrent.futures.ThreadPoolExecutor() as pool:
         for hub in pending_hubs:
-            pool.submit(main, env, org_id, hub)
+            hub_location_id = search_hub_by_name(env, org_id, hub)[0]['location']['locationId']
+            print("Checking for packages in {}".format(hub))
+
+            package_ids = get_alamo_packages(
+                env, 
+                org_id, 
+                hub_location_id,
+                '{}T08:00:00.000Z'.format(package_date), 
+                '{}T08:00:00.000Z'.format(next_day)
+            )
+
+            print("Found {} packages for hub {}".format(len(package_ids), hub))
+
+            for p in package_ids:
+                pool.submit(main, env, org_id, p, hub)
+
+            print("==== Finished {} ====".format(hub))
 
     pool.shutdown(wait=True)
 
-    print("Finished checking and updating addresses")
-    print("Savind Updated Addresses to .xlsx file")
+    print("Finished checking all hubs")
+    print("Updated {} addresses!".format(len(CORRECTED_ADDRESSES)))
+    print()
+    print("Savind Updated Addresses to report file")
 
     df = pandas.DataFrame()
+    df["HUB"] = []
     df["Name"] = []
     df["Location ID"] = []
     df["Address"] = []
@@ -274,18 +426,21 @@ if __name__ == '__main__':
     df["State"] = []
     df["Zip Code"] = []
     df["Geo Codes"] = []
+    df["Provider"] = []
     df["Precision"] = []
 
     for addr in CORRECTED_ADDRESSES:
         df.loc[len(df)] = {
+            "HUB": addr.get("hub"),
             "Name": addr.get("name"),
             "Location ID": addr.get("id"),
-            "Address": "{}, {}".format(addr.get("typedAddress").get("address1"), addr.get("typedAddress").get("address2")),
+            "Address": "'{}, {}'".format(addr.get("typedAddress").get("address1"), addr.get("typedAddress").get("address2")),
             "City": addr.get("typedAddress").get("city"),
             "State": addr.get("typedAddress").get("state"),
             "Zip Code": addr.get("typedAddress").get("postalCode"),
-            "Geo Codes": "{}, {}".format(addr.get("geo").get("latitude"), addr.get("geo").get("longitude")),
+            "Geo Codes": "'{}, {}'".format(addr.get("geo").get("latitude"), addr.get("geo").get("longitude")),
+            "Provider": addr.get("precision").get("source"),
             "Precision": addr.get("precision").get("precision")
         }
 
-    df.to_excel("Locations Updated.xlsx", index=False)
+    df.to_csv("Locations {}.csv".format(starting_time), index=False)
