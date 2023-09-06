@@ -2,7 +2,7 @@ venv
 results
 history
 responses
-
 aikey.py
+*.txt
 *.csv
 *.xlsx
