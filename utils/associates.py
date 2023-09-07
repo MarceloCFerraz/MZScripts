@@ -32,7 +32,7 @@ def search_associate(env, org_id, key_type_index, search_key):
 
     if key_type_index > 0:
         requestData["orgId"] = org_id
-        time = 10
+        time = 30
     
     key_type = str(key_types[key_type_index])
     

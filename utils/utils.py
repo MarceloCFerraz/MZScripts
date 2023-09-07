@@ -19,6 +19,7 @@ ORGS = {
         "LOWES": "8c381810-baf7-4ebe-a5f2-13c28b1ec7a4",
     },
     "STAGE": {
+        "CLM": "76c23687-43c4-4fe3-b5f0-4cdd386e7895",
         "STAPLES": "3e59b207-cea5-4b00-8035-eed1ae26e566",
         "HN": "c88987f9-91e8-4561-9f07-df795ef9b8f0",
         "EDG": "4a00ea0a-ebe2-4a77-8631-800e0daa50c5",
