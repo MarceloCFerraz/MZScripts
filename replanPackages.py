@@ -1,3 +1,4 @@
+import concurrent.futures
 from datetime import datetime
 from utils import files, packages, utils
 import sys
@@ -7,6 +8,64 @@ SUCCESSES = []
 ERRORS = []
 
 
+def get_package_hub(package):
+    hubName = ""
+    
+    try:
+        hubName = package["packageDetails"]["sourceLocation"]["name"]
+    except:
+        try:
+            hubName = package["packageDetails"]["clientHub"]
+        except:
+            try:
+                hubName = package["packageDetails"]["destination"]["name"]
+            except Exception as e:
+                print(e)
+                # sys.exit()
+    
+    return hubName
+
+
+def main(fileName, package, env, orgId, next_delivery_date):
+    status = package["packageStatuses"]["status"]
+    packageID = package["packageId"]
+    hubName = get_package_hub(package)
+
+    print(
+        f"----> PACKAGE ID: {packageID}\n"+
+        f"--> STATUS: {status}\n"+
+        f"--> HUB: {hubName}\n\n"
+    )
+    
+    # if package is from the correct hub, continues.
+    if hubName == fileName:# and status != "DELIVERED":
+    
+        # if package is marked as cancelled, 
+        # revive the package
+        if status == "CANCELLED":
+            packages.revive_package(env, package)
+        
+        # if package is marked as rejected or delivered,
+        # change its status to DELIVERY_FAILED
+        if status == "DELIVERED" or status == "REJECTED":
+            packages.mark_package_as_delivery_failed(env, package)
+
+        response = packages.resubmit_package(
+            env,
+            orgId,
+            packageID,
+            next_delivery_date
+        )
+
+        for s in response["SUCCESSES"]:
+            SUCCESSES.append(s)
+        for e in response["ERRORS"]:
+            ERRORS.append(e)
+    else:
+        print("---> Ignored because it isn't from hub {}\n".format(fileName))
+
+
+
 def replan(fileName, keyType, next_delivery_date):
     env = utils.select_env()
     orgId = utils.select_org(env)
@@ -14,61 +73,20 @@ def replan(fileName, keyType, next_delivery_date):
     
     print("Key Types: {}\n".format(keyType.upper())+
         "Keys: {}\n".format(lines))
+
+    with concurrent.futures.ThreadPoolExecutor() as pool:
+        for line in lines:
+            # getting packages from barcode present in file line
+            pkgs = packages.get_packages_details(env, orgId, keyType, line)["packageRecords"]
+
+            if (len(pkgs) == 0):
+                print("> NO PACKAGES FOUND <\n")
+
+            for package in pkgs:
+                pool.submit(main, fileName, package, env, orgId, next_delivery_date)
+
+    pool.shutdown(wait=True)
     
-    pkgs = []
-    
-    for line in lines:
-        # getting packages from barcode present in file line
-        pkgs = packages.get_packages_details(env, orgId, keyType, line)["packageRecords"]
-
-        if (len(pkgs) == 0):
-            print("> NO PACKAGES FOUND <\n")
-    
-        for package in pkgs:
-            status = package["packageStatuses"]["status"]
-            packageID = package["packageId"]
-            try:
-                hubName = package["packageDetails"]["sourceLocation"]["name"]
-            except:
-                try:
-                    hubName = package["packageDetails"]["clientHub"]
-                except:
-                    try:
-                        hubName = package["packageDetails"]["destination"]["name"]
-                    except Exception as e:
-                        print(e)
-                        sys.exit()
-
-            print("----> PACKAGE ID: {}".format(packageID))
-            print("--> STATUS: {}".format(status))
-            print("--> HUB: {}\n".format(hubName))
-            
-            # if package is from the correct hub, continues.
-            if hubName == fileName:
-            
-                # if package is marked as cancelled, 
-                # revive the package
-                if status == "CANCELLED":
-                    packages.revive_package(env, package)
-                
-                # if package is marked as rejected or delivered,
-                # change its status to DELIVERY_FAILED
-                if status == "DELIVERED" or status == "REJECTED":
-                    packages.mark_package_as_delivery_failed(env, package)
-
-                response = packages.resubmit_package(
-                    env,
-                    orgId,
-                    packageID,
-                    next_delivery_date
-                )
-
-                for s in response["SUCCESSES"]:
-                    SUCCESSES.append(s)
-                for e in response["ERRORS"]:
-                    ERRORS.append(e)
-            else:
-                print("---> Ignored because it isn't from hub {}\n".format(fileName))
     print("Successful Resubmits ({}/{}): ".format(len(SUCCESSES), len(SUCCESSES) + len(ERRORS)))
     for success in SUCCESSES:
         print("> {}".format(success))

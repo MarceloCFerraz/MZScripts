@@ -1,6 +1,0 @@
-Loadin data from CSV file... Done
-Generating Same Hubs Sheet for Fleet Analysis.xlsx... Done
-Generating Same IDs Sheet for Fleet Analysis.xlsx... Done
-Generating Same Description Sheet for Fleet Analysis.xlsx... Done
-Generating Bad Description Sheet for Fleet Analysis.xlsx... Done
-Saving Fleet Analysis.xlsx...  Done
