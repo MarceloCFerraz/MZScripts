@@ -38,7 +38,7 @@ def main(fileName, package, env, orgId, next_delivery_date):
     )
     
     # if package is from the correct hub, continues.
-    if hubName == fileName and status != "DELIVERED":
+    if hubName == fileName:
     
         # if package is marked as cancelled, 
         # revive the package
