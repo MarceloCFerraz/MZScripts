@@ -119,8 +119,6 @@ def get_original_dict(data):
     # # },
     # ]
     
-   
-
     print("Parsing original data...")
 
     dictionary = {}
