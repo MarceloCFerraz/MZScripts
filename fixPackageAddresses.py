@@ -256,19 +256,13 @@ if __name__ == '__main__':
     org_id = select_org(env)
 
     starting_time = str(
-        datetime.datetime.now().replace(microsecond=0)
+        datetime.datetime.now().time().replace(microsecond=0)
     ).replace(':', '_').replace('/', '-')
 
     pending_hubs = [
-        925,
-        3920,
-        8027,
-        8488,
-        8228,
-        3903,
-        3716,
-        8600,
-        8883 #remember to DELETE this line
+        "8026",
+        "8743",
+        # remember to DELETE or REPLACE uncommented lines
         # 3453, 8500, 8488, 8792, 8764, 3926, 3034, 8202, 3845, 3808, 8285, 8194, 8883,
         # 8613, 3882, 3880, 8773, 3716, 8743, 
         # 8506, 8220, 3964, 8457, 8228, 8606, 8103,
@@ -317,7 +311,7 @@ if __name__ == '__main__':
     print("Finished checking all hubs")
     print("Updated {} addresses!".format(len(CORRECTED_ADDRESSES)))
     print()
-    print("Savind Updated Addresses to report file")
+    print("Saving Updated Addresses to report file")
 
     df = pandas.DataFrame()
     df["HUB"] = []
@@ -344,5 +338,6 @@ if __name__ == '__main__':
             "Provider": addr.get("precision").get("source"),
             "Precision": addr.get("precision").get("precision")
         }
-
-    df.to_csv("Locations {}.csv".format(starting_time), index=False)
+    filename = f"Locations {package_date} ({starting_time}).csv"
+    df.to_csv(filename, index=False)
+    print("File '{}' saved successfully".format(filename))
