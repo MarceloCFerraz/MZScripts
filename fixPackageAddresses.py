@@ -1,6 +1,7 @@
 import concurrent.futures
 import datetime
-import pandas
+import time
+import csv
 import json
 import requests
 
@@ -48,6 +49,7 @@ ORGS = {
     }
 }
 CORRECTED_ADDRESSES = []
+FAILED_ADDRESSES = []
 
 
 def print_array_items(array):
@@ -234,6 +236,9 @@ def get_location(domain, location_id, package_id, hub):
 
             if response.status_code < 400:
                 CORRECTED_ADDRESSES.append(payload)
+            else:
+                payload["ERROR"] = f"'{response.text}'"
+                FAILED_ADDRESSES.append(payload)
         # else:
             # print("      Skipping {}".format(location_id))
 
@@ -251,6 +256,49 @@ def main(env, org_id, package_id, hub):
     print("==== Finished {}".format(package_id))
 
 
+def save_csv_file(fileName, data):
+    start = time.time_ns()
+
+    if len(data) < 1:
+        print(f"Nothing to save on '{fileName}'")
+    else:
+        with open(fileName, 'w', newline='') as file:
+            writer = csv.writer(file)
+            headers = data[0].keys()
+            writer.writerow(headers)
+            
+            for addr in data:
+                row = [
+                    addr.get("hub"),
+                    addr.get("name"),
+                    addr.get("id"),
+                    "'{} - {}'".format(addr.get("typedAddress").get("address1"), addr.get("typedAddress").get("address2")),
+                    addr.get("typedAddress").get("city"),
+                    addr.get("typedAddress").get("state"),
+                    addr.get("typedAddress").get("postalCode"),
+                    "'{} - {}'".format(addr.get("geo").get("latitude"), addr.get("geo").get("longitude")),
+                    addr.get("precision").get("source"),
+                    addr.get("precision").get("precision")
+                ]
+                if "Fail" in fileName:
+                    row.append(addr.get("ERROR"))
+                writer.writerow(row)
+                
+        finish = time.time_ns()
+        elapsed_seconds = (finish - start) // 1000000000
+
+        elapsed_hours = elapsed_seconds // 3600
+        if elapsed_hours >= 1:
+            elapsed_seconds -= (elapsed_hours * 3600)
+
+        elapsed_minutes = elapsed_seconds // 60
+        if elapsed_minutes >= 1:
+            elapsed_seconds -= (elapsed_minutes * 60)
+
+        print("File '{}' saved successfully".format(fileName))
+        print(f"Took {elapsed_hours}h, {elapsed_minutes}m and {elapsed_seconds}s to complete")
+
+
 if __name__ == '__main__':
     env = select_env()
     org_id = select_org(env)
@@ -260,8 +308,7 @@ if __name__ == '__main__':
     ).replace(':', '_').replace('/', '-')
 
     pending_hubs = [
-        "8026",
-        "8743",
+        8974,
         # remember to DELETE or REPLACE uncommented lines
         # 3453, 8500, 8488, 8792, 8764, 3926, 3034, 8202, 3845, 3808, 8285, 8194, 8883,
         # 8613, 3882, 3880, 8773, 3716, 8743, 
@@ -310,34 +357,15 @@ if __name__ == '__main__':
 
     print("Finished checking all hubs")
     print("Updated {} addresses!".format(len(CORRECTED_ADDRESSES)))
+    print("Failed {} updates!".format(len(FAILED_ADDRESSES)))
     print()
-    print("Saving Updated Addresses to report file")
+    print("Saving report file(s)")
 
-    df = pandas.DataFrame()
-    df["HUB"] = []
-    df["Name"] = []
-    df["Location ID"] = []
-    df["Address"] = []
-    df["City"] = []
-    df["State"] = []
-    df["Zip Code"] = []
-    df["Geo Codes"] = []
-    df["Provider"] = []
-    df["Precision"] = []
-
-    for addr in CORRECTED_ADDRESSES:
-        df.loc[len(df)] = {
-            "HUB": addr.get("hub"),
-            "Name": addr.get("name"),
-            "Location ID": addr.get("id"),
-            "Address": "'{}, {}'".format(addr.get("typedAddress").get("address1"), addr.get("typedAddress").get("address2")),
-            "City": addr.get("typedAddress").get("city"),
-            "State": addr.get("typedAddress").get("state"),
-            "Zip Code": addr.get("typedAddress").get("postalCode"),
-            "Geo Codes": "'{}, {}'".format(addr.get("geo").get("latitude"), addr.get("geo").get("longitude")),
-            "Provider": addr.get("precision").get("source"),
-            "Precision": addr.get("precision").get("precision")
-        }
-    filename = f"Locations {package_date} ({starting_time}).csv"
-    df.to_csv(filename, index=False)
-    print("File '{}' saved successfully".format(filename))
+    save_csv_file(
+        f"Corrected Locations {package_date} ({starting_time}).csv", 
+        CORRECTED_ADDRESSES
+    )
+    save_csv_file(
+        f"Failed Locations {package_date} ({starting_time}).csv", 
+        FAILED_ADDRESSES
+    )
