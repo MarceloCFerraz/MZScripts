@@ -127,3 +127,18 @@ def get_associate_key_type_index():
 
 def get_associate_key_type(key_type_index):
     return ASSOCIATE_KEY_TYPES[key_type_index]
+
+
+def calculate_elapsed_time(start, finish):
+    elapsed_seconds = (finish - start) // 1000000000
+
+    elapsed_hours = elapsed_seconds // 3600
+    if elapsed_hours >= 1:
+        elapsed_seconds -= (elapsed_hours * 3600)
+
+    elapsed_minutes = elapsed_seconds // 60
+    if elapsed_minutes >= 1:
+        elapsed_seconds -= (elapsed_minutes * 60)
+
+    return {"hours": elapsed_hours, "minutes": elapsed_minutes, "seconds": elapsed_seconds}
+    

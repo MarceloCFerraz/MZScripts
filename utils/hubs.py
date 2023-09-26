@@ -1,6 +1,13 @@
 import requests
 
 
+def get_hub_config(env, orgId, hubId):
+    url = f"http://alamo.{env}.milezero.com/alamo-war/api/hubconfig/key/orgId/{orgId}?key={hubId}&keyType=HUB_ID"
+
+    response = requests.get(url=url, timeout=30)
+
+    return response.json().get('config')
+
 def search_hubs(env, orgId):
     url = f"http://cromag.{env}.milezero.com/retail/api/hubs/org/{orgId}?hubType=HUB"
 
