@@ -256,6 +256,20 @@ def main(env, org_id, package_id, hub):
     print("==== Finished {}".format(package_id))
 
 
+def elapsed_time(start, finish):
+    elapsed_seconds = (finish - start) // 1000000000
+
+    elapsed_hours = elapsed_seconds // 3600
+    if elapsed_hours >= 1:
+        elapsed_seconds -= (elapsed_hours * 3600)
+
+    elapsed_minutes = elapsed_seconds // 60
+    if elapsed_minutes >= 1:
+        elapsed_seconds -= (elapsed_minutes * 60)
+
+    print(f"Took {elapsed_hours}h, {elapsed_minutes}m and {elapsed_seconds}s to complete")
+
+
 def save_csv_file(fileName, data):
     start = time.time_ns()
 
@@ -264,7 +278,7 @@ def save_csv_file(fileName, data):
     else:
         with open(fileName, 'w', newline='') as file:
             writer = csv.writer(file)
-            headers = data[0].keys()
+            headers = ["HUB", "Customer", "Location ID", "Address", "City", "State", "Zip", "Geocode", "Provider", "Precision", "Error"]
             writer.writerow(headers)
             
             for addr in data:
@@ -285,18 +299,9 @@ def save_csv_file(fileName, data):
                 writer.writerow(row)
                 
         finish = time.time_ns()
-        elapsed_seconds = (finish - start) // 1000000000
-
-        elapsed_hours = elapsed_seconds // 3600
-        if elapsed_hours >= 1:
-            elapsed_seconds -= (elapsed_hours * 3600)
-
-        elapsed_minutes = elapsed_seconds // 60
-        if elapsed_minutes >= 1:
-            elapsed_seconds -= (elapsed_minutes * 60)
 
         print("File '{}' saved successfully".format(fileName))
-        print(f"Took {elapsed_hours}h, {elapsed_minutes}m and {elapsed_seconds}s to complete")
+        elapsed_time(start, finish)
 
 
 if __name__ == '__main__':
@@ -306,9 +311,11 @@ if __name__ == '__main__':
     starting_time = str(
         datetime.datetime.now().time().replace(microsecond=0)
     ).replace(':', '_').replace('/', '-')
+    
+    start = time.time_ns()
 
     pending_hubs = [
-        8974,
+        3880,
         # remember to DELETE or REPLACE uncommented lines
         # 3453, 8500, 8488, 8792, 8764, 3926, 3034, 8202, 3845, 3808, 8285, 8194, 8883,
         # 8613, 3882, 3880, 8773, 3716, 8743, 
@@ -355,7 +362,10 @@ if __name__ == '__main__':
 
     pool.shutdown(wait=True)
 
+    finish = time.time_ns()
+
     print("Finished checking all hubs")
+    elapsed_time(start, finish)
     print("Updated {} addresses!".format(len(CORRECTED_ADDRESSES)))
     print("Failed {} updates!".format(len(FAILED_ADDRESSES)))
     print()

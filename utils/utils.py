@@ -141,4 +141,14 @@ def calculate_elapsed_time(start, finish):
         elapsed_seconds -= (elapsed_minutes * 60)
 
     return {"hours": elapsed_hours, "minutes": elapsed_minutes, "seconds": elapsed_seconds}
+
+
+def print_elapsed_time(start, finish):
+    elt = calculate_elapsed_time(start, finish)
+
+    response = "Took "
+    for key in elt.keys():
+        response += f"{str(elt[key])} {key} " if elt[key] > 0 else ""
+
+    print(response)
     

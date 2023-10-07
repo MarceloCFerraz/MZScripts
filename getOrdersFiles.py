@@ -201,32 +201,34 @@ def get_mz_dict(dataset):
 
 
 def main():
-    env = utils.select_env()
+    # env = utils.select_env()
 
-    fileName = input("Type in the file name ('file' column in orders page): ")
-    token = input("Paste the Authentication token: ")
-    requestId = input("Type in the requestId (requestFile?): ")
-
-    # env =  "PROD"
-    # fileName = "Staples_8764_ORDERDET_20230902_PROD_US0436373"
-    # requestId = "ad2a170b-d98e-46f7-8eda-486a2970a507"
+    env =  "PROD"
+    fileName = "Staples_8109_ORDERDET_20231003_PROD_US0446800"
     
-    # token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdXRob3JpemF0aW9uIjp7Imdyb3VwcyI6WyJTdGFwbGVzIiwiU3RhcGxlcyBNaWxlVmlzaW9uIl0sInJvbGVzIjpbIk1pbGVWaXNpb25fVXNlciJdLCJwZXJtaXNzaW9ucyI6W119LCJvcmdhbml6YXRpb24iOnsib3JnTmFtZSI6IjIyNTU1ZTBkLWYyZGItNDQ1YS04ZjNhLTViMzBlMmNmNDNiMiIsIm9yZ0lkIjoiM2M4OTdlODQtMzk1Ny00OTU4LWI1NGQtZDAyYzAxYjE0ZjE1IiwiQWxhYm8iOnsib3JnTmFtZSI6IjIyNTU1ZTBkLWYyZGItNDQ1YS04ZjNhLTViMzBlMmNmNDNiMiIsIm9yZ0lkIjoiM2M4OTdlODQtMzk1Ny00OTU4LWI1NGQtZDAyYzAxYjE0ZjE1In19LCJvYmplY3RzIjp7ImRyaXZlcklkIjoiYmE1NWU0M2EtMzg4ZC00NWYwLWI0NjgtYzk2ZDc4N2JhNzk5In0sImlzcyI6Imh0dHBzOi8vbWlsZXplcm8uYXV0aDAuY29tLyIsInN1YiI6ImF1dGgwfDVhMjlkNjk1N2E0NTA2NWU0ZDdhZTNkMSIsImF1ZCI6Ijd1bVVMbWxDVEpyM3NPbno1aXdwbkNYblhjNUxlMUxDIiwiaWF0IjoxNjkzOTI5NTY2LCJleHAiOjE2OTM5NjU1NjZ9.6NX4QLitq0aZvYnJ8Wo4Eci7zZXkMUiDuH-tsjWo1us"
+    token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdXRob3JpemF0aW9uIjp7Imdyb3VwcyI6WyJTdGFwbGVzIiwiU3RhcGxlcyBNaWxlVmlzaW9uIl0sInJvbGVzIjpbIk1pbGVWaXNpb25fVXNlciJdLCJwZXJtaXNzaW9ucyI6W119LCJvcmdhbml6YXRpb24iOnsib3JnTmFtZSI6IjIyNTU1ZTBkLWYyZGItNDQ1YS04ZjNhLTViMzBlMmNmNDNiMiIsIm9yZ0lkIjoiM2M4OTdlODQtMzk1Ny00OTU4LWI1NGQtZDAyYzAxYjE0ZjE1IiwiQWxhYm8iOnsib3JnTmFtZSI6IjIyNTU1ZTBkLWYyZGItNDQ1YS04ZjNhLTViMzBlMmNmNDNiMiIsIm9yZ0lkIjoiM2M4OTdlODQtMzk1Ny00OTU4LWI1NGQtZDAyYzAxYjE0ZjE1In19LCJvYmplY3RzIjp7ImRyaXZlcklkIjoiYmE1NWU0M2EtMzg4ZC00NWYwLWI0NjgtYzk2ZDc4N2JhNzk5In0sImlzcyI6Imh0dHBzOi8vbWlsZXplcm8uYXV0aDAuY29tLyIsInN1YiI6ImF1dGgwfDVhMjlkNjk1N2E0NTA2NWU0ZDdhZTNkMSIsImF1ZCI6Ijd1bVVMbWxDVEpyM3NPbno1aXdwbkNYblhjNUxlMUxDIiwiaWF0IjoxNjk2Njg5NzU4LCJleHAiOjE2OTY3MjU3NTh9.Za-Q_FBvxkFFQGQIC0e3BXavegDYIVx5KYDInOvkkEg"
 
-    original_data = get_original_data(env, requestId, token)
+    # fileName = input("Type in the file name ('file' column in orders page): ")
+    # token = input("Paste the Authentication token: ")
+    # requestId = input("Type in the requestId (requestFile?): ")
+    # requestId = "0d194a2e-5bdf-4968-831a-cf9d8a064327"
+    
+    # original_data = get_original_data(env, requestId, token)
 
-    original_dict = get_original_dict(original_data)
-    original_df = pandas.DataFrame(data=original_dict)
+    # original_dict = get_original_dict(original_data)
+    # original_df = pandas.DataFrame(data=original_dict)
 
-    parentId = input("Type in the parentId (request?): ")
-    # parentId = "8e6eefcf-5f2a-4024-bd77-eb9399a7c5f5"
+    # print("Saving original file...")
+    # original_df.to_csv(f"Original {fileName}.csv", index=False)
+    
+    
+    # parentId = input("Type in the parentId (request?): ")
+    parentId = "4bbb089a-6272-41e6-98e0-f78caed62383"
 
     mz_data = get_mz_data(env, parentId, token)
     mz_dict = get_mz_dict(mz_data)
     mz_df = pandas.DataFrame(data=mz_dict)
 
-    print("Saving original file...")
-    original_df.to_csv(f"Original {fileName}.csv", index=False)
 
     print("Saving MZ file...")
     mz_df.to_csv(f"MZ {fileName}.csv", index=False)
