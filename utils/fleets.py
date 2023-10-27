@@ -12,9 +12,9 @@ def search_fleet(env, orgId, fleetId=None):
     if fleetId is not None:
         url += f"?fleetId={fleetId}"
 
-    print(f"Searching for:")
-    print(f"ORG ID: {orgId}")
-    print(f"Fleet ID: {fleetId}\n")
+    # print(f"Searching for:")
+    # print(f"ORG ID: {orgId}")
+    # print(f"Fleet ID: {fleetId}\n")
 
     return requests.get(url=url, timeout=10).json()
 
@@ -42,16 +42,17 @@ def search_fleet_with_hubs(env, orgId, hubIdsArray):
 
 
 def create_fleet(env, orgId, hubsArray):
-    print(f"Creating new fleet with hubs {' '.join([h['name'] for h in hubsArray])}", end=" ")
-    customer = get_org_by_id(env, orgId)
-
-    url = f"http://qilin.{env}.milezero.com/qilin-war/api/fleets/{orgId}"
-
     hubNames = []
     hubIds = []
     for hub in hubsArray:
         hubNames.append(hub["name"])
         hubIds.append(hub["id"])
+
+    print(f"Creating new fleet with hubs {hubNames}", end=" ")
+    customer = get_org_by_id(env, orgId)
+
+    url = f"http://qilin.{env}.milezero.com/qilin-war/api/fleets/{orgId}"
+
 
     requestData = {
       "fleetName": f"{customer['name'].upper()}",
@@ -65,8 +66,7 @@ def create_fleet(env, orgId, hubsArray):
 
 
 def update_fleet(env, orgId, fleet):
-    fleetId = fleet["fleetId"]
-    url = f"http://qilin.{env}.milezero.com/qilin-war/api/fleets/{orgId}/{fleetId}"
+    url = f"http://qilin.{env}.milezero.com/qilin-war/api/fleets/{orgId}/{fleet['fleetId']}"
     return requests.post(url=url, json=fleet, timeout=5)
 
 
@@ -81,7 +81,7 @@ def update_fleet_hubs(env, orgId, fleetId, hubsArray):
     for hub in hubsArray:
         hubNames.append(hub["name"])
         hubIds.append(hub["id"])
-    print(hubIds)
+    print(hubNames)
 
     fleet = search_fleet(env, orgId, fleetId)[0]
     fleet["description"] = f"{customer['name'].upper()} {' '.join(hubNames)} Fleet"

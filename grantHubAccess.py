@@ -2,12 +2,17 @@ import sys
 from utils import utils, associates, hubs, fleets
 
 
-def get_new_hub(env, orgId):
-    print("TYPE THE NEW HUB NAME (numbers only)")
+def get_new_hub(env, orgId, retry=False):
+    if not retry:
+        print("TYPE THE NEW HUB NAME")
     hubName = input("> ").strip()
 
-    hub = hubs.search_hub_by_name(env=env, orgId=orgId, hubName=hubName)[0]
-    print(f"{hubName}'s id is {hub['id']}")
+    try:
+        hub = hubs.search_hub_by_name(env=env, orgId=orgId, hubName=hubName)[0]
+        print(f"Hub found ({hubName} -> {hub['id']})\n")
+    except Exception as e:
+        print("Hub not found, please try again:")
+        hub = get_new_hub(env, orgId, True)
 
     return hub
 
@@ -41,7 +46,7 @@ def get_associate_hubs_from_fleet(env, orgId, associate):
         print(f">> Associate has fleet {fleet}")
 
         fleetHubs = fleets.get_hubs_from_fleet(env=env, orgId=orgId, fleetId=fleet)
-        print(f">> Hubs in {fleet}: {fleetHubs}")
+        # print(f">> Hubs in {fleet}: {fleetHubs}")
         for hubId in fleetHubs:
             idsList.append(hubId)
     else:
@@ -73,13 +78,27 @@ def search_fleet_with_hubs(allFleets, hubIdsArray):
 
                 if found:
                     return fleet["fleetId"]
-        except Exception:
+        except Exception as e:
+            print(f"An error occurred: {e}")
             pass
 
     print("Fleet not found!")
 
     return None
 
+
+def create_new_fleet(env, orgId, hubsList):
+    print(f">> Creating new fleet",)
+    fleetId = fleets.create_fleet(env=env, orgId=orgId, hubsArray=hubsList)
+    print(f">> {fleetId}")
+
+    return fleetId
+
+
+def update_associate(env, associate, userName):
+    response = associates.update_associate_data(env, associate, userName)
+    print(f">> Updating associate data: {response}\n{response.text if response.status_code >= 400 else ''}")
+    
 
 def main():
     userName = input("What is your name?\n> ")
@@ -96,12 +115,12 @@ def main():
         print()
         accountType = associate["associateType"]
 
-        if accountType not in ["DRIVER", "SORTER"]:
-            newHub = get_new_hub(env, orgId)
+        newHub = get_new_hub(env, orgId)
+        answer = keep_previous_hubs()
 
-            answer = keep_previous_hubs()
+        if answer == "Y":
+            if accountType not in ["DRIVER", "SORTER"]:
 
-            if answer == "Y":
                 allFleets = fleets.search_fleet(env, orgId)
 
                 hubIdsList = get_associate_hubs_from_fleet(env, orgId, associate)
@@ -111,79 +130,68 @@ def main():
 
                     hubsList = fill_hubs_list(env, orgId, hubIdsList)
 
-                    if associate_has_fleet(associate):  # if associate already have a fleetId
-                        print(f">> Searching for a fleet with {' '.join([hub['name'] for hub in hubsList])}")
-                        fleet = search_fleet_with_hubs(  # searching for a fleet with same hubs
-                            allFleets=allFleets,
-                            hubIdsArray=hubIdsList
-                        )
+                    print(f">> Searching for a fleet with {' '.join([hub['name'] for hub in hubsList])}")
+                    fleet = search_fleet_with_hubs(  # searching for a fleet with same hubs
+                        allFleets=allFleets,
+                        hubIdsArray=hubIdsList
+                    )
+                    
+                    if fleet is not None:  # if a fleet with the correct hubs already exists
+                        print(f">> Fleet found! Updating associate data with {fleet}")
+                        associate["fleetId"] = fleet
                         
-                        if fleet is not None:  # if a fleet with the correct hubs already exists
-                            print(f">> Fleet found! Updating associate's fleetId with {fleet}")
-                            associate["fleetId"] = fleet
-                            
-                            response = associates.update_associate_data(env, newAssociateData, userName)
-                            print(f">> Result: {response}\n{response.text if response.status_code >= 400 else ''}")
-                        else:
+                        update_associate(env, associate, userName)
+                    else:
+                        if associate_has_fleet(associate):  # if associate already have a fleetId
                             fleet = associate["fleetId"]
-                            print(f">> Searching if {fleet} is present in other associates' data")
+                            
+                            print(f">> Checking if other associates use the same fleet")
                             associatesWithSameFleet = associates.search_associate(
                                 env=env,
                                 org_id=orgId,
                                 key_type_index=11,  # fleetId (11)
                                 search_key=fleet
-                            )                        
+                            )
                             
                             if len(associatesWithSameFleet) == 1 and associatesWithSameFleet is not None:
                                 # if only this associate has this fleet id
                                 # means we can just update his fleet instead of creating another one
                                 print(">> No other associate use this fleetId")
 
-                                print(f">> Result: {fleets.update_fleet_hubs(env, orgId, fleet, hubsList)}")
+                                print(f">> Updating Fleet: {fleets.update_fleet_hubs(env, orgId, fleet, hubsList)}")
                             else:
                                 # In this case we need to create a new fleet
                                 print(">> Someone else uses this fleetId as well")
+                                fleetId = create_new_fleet(env, orgId, hubsList)
 
-                                fleet = fleets.create_fleet(env=env, orgId=orgId, hubsArray=hubsList)
-                                associate["fleetId"] = fleet
-                                
-                                response = associates.update_associate_data(env, newAssociateData, userName)
-                                print(f">> Result: {response}\n{response.text if response.status_code >= 400 else ''}")
-                    else:
-                        print(">> Associate doesn't have a fleet")
-                        print(f">> Searching for a fleet containing {' '.join([hub['name'] for hub in hubsList])}")
-                        
-                        fleetId = search_fleet_with_hubs(allFleets, hubIdsList)
+                                associate["fleetId"] = fleetId
 
-                        if fleetId == None:
-                            print(f">> Creating new fleet", end=" ")
-                            
-                            fleetId = fleets.create_fleet(env=env, orgId=orgId, hubsArray=hubsList)
+                                update_associate(env, associate, userName)
+                        else:
+                            fleetId = create_new_fleet(env, orgId, hubsList)
 
-                            print(f"Done! {fleetId}")
+                            associate["fleetId"] = fleetId
 
-                        associate["fleetId"] = fleetId
-                        response = associates.update_associate_data(env, newAssociateData, userName)
-                        print(f">> Result: {response}\n{response.text if response.status_code >= 400 else ''}")
+                            update_associate(env, associate, userName)
                 else:
                     print("New hub already in associate's fleet")
                     sys.exit()
                     # quits the program if the hub is already on associate's fleet
             else:
-                print(f">> Answer was {answer}. Moving associate to Hub {newHub['name']}")
-                associate["hubId"] = newHub['id']
-                associate["location"]["locationId"] = newHub["location"]["locationId"]
-
-                newAssociateData = {}
-
-                for header in associate.keys():
-                    if header not in ['fleetId', 'preferredVehicle', 'preferredRoute']:
-                        newAssociateData[header] = associate[header]
-                response = associates.update_associate_data(env, newAssociateData, userName)
-                print(f">> Result: {response}\n{response.text if response.status_code >= 400 else ''}")
+                print("Sorry, this associate is a driver and we can't give drivers access to other hubs!")
+                print("Finishing script...")
         else:
-            print("Sorry, this associate is a driver and we can't give drivers access to other hubs!")
-            print("Finishing script...")
+            print(f">> Answer was {answer}. Moving associate to Hub {newHub['name']}")
+            associate["hubId"] = newHub['id']
+            associate["location"]["locationId"] = newHub["location"]["locationId"]
+
+            newAssociateData = {}
+
+            for header in associate.keys():
+                if header not in ['fleetId', 'preferredVehicle', 'preferredRoute']:
+                    newAssociateData[header] = associate[header]
+
+            update_associate(env, newAssociateData, userName)
 
 
 main()
