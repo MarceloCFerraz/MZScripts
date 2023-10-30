@@ -68,19 +68,21 @@ def search_fleet_with_hubs(allFleets, hubIdsArray):
 
     for fleet in allFleets:
         try:
-            fleetHubs = fleet["hubIds"].sort()
+            fleetHubs = fleet.get('hubIds')
+
             if len(fleetHubs) == len(hubIdsArray):
                 found = True
+
+                fleetHubs.sort()
 
                 for hubid in hubIdsArray:
                     if hubid not in fleetHubs:
                         found = False
-
                 if found:
                     return fleet["fleetId"]
+
         except Exception as e:
-            print(f"An error occurred: {e}")
-            pass
+            print(f"** No hubIds in {fleet.get('fleetId')}")
 
     print("Fleet not found!")
 
@@ -111,7 +113,7 @@ def main():
     associate = associates.get_associate_data(env=env, orgId=orgId, associateId=associateId)
 
     if associate is not None:
-        print("Associate Found!")
+        print("Associate Found")
         print()
         accountType = associate["associateType"]
 
@@ -120,11 +122,11 @@ def main():
 
         if answer == "Y":
             if accountType not in ["DRIVER", "SORTER"]:
-
                 allFleets = fleets.search_fleet(env, orgId)
+                print(f">> Loaded {len(allFleets)} fleets")
 
                 hubIdsList = get_associate_hubs_from_fleet(env, orgId, associate)
-
+            
                 if newHub["id"] not in hubIdsList:
                     hubIdsList.append(newHub["id"])
 
@@ -168,6 +170,8 @@ def main():
 
                                 update_associate(env, associate, userName)
                         else:
+                            print(">> Associate doesn't have a fleet")
+                            print(f">> Creating new fleet with {[h.get('name') for h in hubsList]}")
                             fleetId = create_new_fleet(env, orgId, hubsList)
 
                             associate["fleetId"] = fleetId

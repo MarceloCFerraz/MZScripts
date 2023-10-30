@@ -4,9 +4,9 @@ import requests
 def get_associate_data(env, orgId, associateId):
     url = f"http://lmx.{env}.milezero.com/lmx-war/api/associate/org/{orgId}/{associateId}"
 
-    print(f"Searching for ({env})\n" +
-          f"> OrgId {orgId}\n" +
-          f"> AssociateId {associateId}")
+    # print(f"\nSearching for ({env})\n" +
+    #       f"> OrgId {orgId}\n" +
+    #       f"> AssociateId {associateId}")
     response = requests.get(url=url, timeout=10).json()
 
     try:
