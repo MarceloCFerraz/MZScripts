@@ -184,6 +184,7 @@ def main():
             else:
                 print("Sorry, this associate is a driver and we can't give drivers access to other hubs!")
                 print("Finishing script...")
+                sys.exit()
         else:
             print(f">> Answer was {answer}. Moving associate to Hub {newHub['name']}")
             associate["hubId"] = newHub['id']

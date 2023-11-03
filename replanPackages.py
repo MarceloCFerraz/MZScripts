@@ -26,7 +26,7 @@ def get_package_hub(package):
     return hubName
 
 
-def main(fileName, package, env, orgId, next_delivery_date):
+def replan(fileName, package, env, orgId, next_delivery_date):
     status = package["packageStatuses"]["status"]
     packageID = package["packageId"]
     hubName = get_package_hub(package)
@@ -40,7 +40,7 @@ def main(fileName, package, env, orgId, next_delivery_date):
     # if package is from the correct hub, continues.
     if hubName == fileName:
     
-        # if package is marked as cancelled, 
+        # if package is marked as cancelled or damaged, 
         # revive the package
         if status == "CANCELLED":
             packages.revive_package(env, package)
@@ -57,16 +57,15 @@ def main(fileName, package, env, orgId, next_delivery_date):
             next_delivery_date
         )
 
-        for s in response["SUCCESSES"]:
-            SUCCESSES.append(s)
-        for e in response["ERRORS"]:
-            ERRORS.append(e)
+        if response["SUCCESS"]:
+            SUCCESSES.append(response["SUCCESS"])
+        if response["ERROR"]:
+            ERRORS.append(response["ERROR"])
     else:
-        print("---> Ignored because it isn't from hub {}\n".format(fileName))
+        print(f"---> {packageID} Ignored because it isn't from hub {fileName} (it is from {hubName})\n")
 
 
-
-def replan(fileName, keyType, next_delivery_date):
+def main(fileName, keyType, next_delivery_date):
     env = utils.select_env()
     orgId = utils.select_org(env)
     lines = files.get_data_from_file(fileName)
@@ -74,6 +73,7 @@ def replan(fileName, keyType, next_delivery_date):
     print("Key Types: {}\n".format(keyType.upper())+
         "Keys: {}\n".format(lines))
 
+    # Using multithreading to replan multiple packages at once
     with concurrent.futures.ThreadPoolExecutor() as pool:
         for line in lines:
             # getting packages from barcode present in file line
@@ -83,7 +83,7 @@ def replan(fileName, keyType, next_delivery_date):
                 print("> NO PACKAGES FOUND <\n")
 
             for package in pkgs:
-                pool.submit(main, fileName, package, env, orgId, next_delivery_date)
+                pool.submit(replan, fileName, package, env, orgId, next_delivery_date)
 
     pool.shutdown(wait=True)
     
@@ -94,6 +94,7 @@ def replan(fileName, keyType, next_delivery_date):
     print("Unsuccessful Resubmits ({}/{}): ".format(len(ERRORS), len(SUCCESSES) + len(ERRORS)))
     for error in ERRORS:
         print("> {}".format(error))
+        # TODO: add where it failed to the error line and remove logging prints
 
 
 # get command line argument
@@ -124,6 +125,7 @@ if (len(sys.argv) < 4):
 
 # The file name must be to the requester's hub name (e.g. 8506)
 fileName = sys.argv[1].replace(".txt", "").replace(".\\", "")
+
 # A KeyType arg must be provided. provide one of the following keyTypes:
 # -> pi (Package Id)
 # -> tn (Tracking Number)
@@ -133,7 +135,9 @@ fileName = sys.argv[1].replace(".txt", "").replace(".\\", "")
 # -> ori (Order Reference Id)
 # -> ji (Job Id)
 keyType = sys.argv[2].lower()
+
 # A date to do the replan must be provided with the yyyy-mm-dd format
 next_delivery_date = datetime.strptime(sys.argv[3], "%Y-%m-%d")
 next_delivery_date = next_delivery_date.strftime("%Y-%m-%d")
-replan(fileName, keyType, next_delivery_date)
+
+main(fileName, keyType, next_delivery_date)
