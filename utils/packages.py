@@ -254,6 +254,36 @@ def resubmit_package(env, orgId, packageId, next_delivery_date):
     return response
 
 
+def bulk_resubmit_packages(env, orgId, packageIDs, next_delivery_date):
+    res = {
+        "SUCCESS": [],
+        "ERROR": []
+    }
+    API = f"https://switchboard.{env}.milezero.com/switchboard-war/api/"
+
+    requestData = {
+        "packageIds": packageIDs,
+        "adjustTimeWindow": True,
+        "treatEverydayAsProcessingDay": False,
+        "targetLocalDate": next_delivery_date,
+        "notes": "Requested by dispatcher"
+    }
+
+    endpoint = f"{API}fulfillment/resubmit/bulk/{orgId}"
+
+    response = requests.post(endpoint, json=requestData, timeout=15).json()
+
+    for success in response.get('succeededResubmits'):
+        res['SUCCESS'].append(success.get('packageId'))
+    
+    for error in response.get('failedResubmits'):
+        res['ERROR'].append(error.get('packageId'))
+
+    print(f">>>>> Batch Resubmit to {next_delivery_date} <<<<<\n> {len(res['SUCCESS'])} OK\n> {len(res['ERROR'])} FAILED")
+
+    return response
+
+
 def get_all_packages_on_route(env, orgId, routeId):
     url = f"http://sortationservices.{env}.milezero.com/SortationServices-war/api/monitor/packages/{orgId}/{routeId}"
 

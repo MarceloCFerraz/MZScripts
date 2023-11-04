@@ -151,4 +151,11 @@ def print_elapsed_time(start, finish):
         response += f"{str(elt[key])} {key} " if elt[key] > 0 else ""
 
     print(response)
-    
+
+
+def divide_into_batches(lst, batch_size=100):
+    batches = []
+    for i in range(0, len(lst), batch_size):
+        batch = lst[i:i+batch_size]
+        batches.append(batch)
+    return batches

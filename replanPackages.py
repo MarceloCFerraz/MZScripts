@@ -6,6 +6,7 @@ import sys
 
 SUCCESSES = []
 ERRORS = []
+PACKAGES = []
 
 
 def get_package_hub(package):
@@ -26,7 +27,54 @@ def get_package_hub(package):
     return hubName
 
 
-def replan(fileName, package, env, orgId, next_delivery_date):
+def fill_packages_list(env, orgId, keyType, key):
+    pkgs = packages.get_packages_details(env, orgId, keyType, key)["packageRecords"]
+
+    if (len(pkgs) == 0):
+        print("> NO PACKAGES FOUND <\n")
+    for pkg in pkgs:
+        PACKAGES.append(pkg)
+
+
+def replan_batches(env, orgId, hubRequested, batch, next_delivery_date):
+    packageIDs = []
+
+    for package in batch:
+        status = package["packageStatuses"]["status"]
+        packageID = package["packageId"]
+        hubName = get_package_hub(package)
+
+        print(
+            f"----> PACKAGE ID: {packageID}\n"+
+            f"--> STATUS: {status}\n"+
+            f"--> HUB: {hubName}\n\n"
+        )
+        
+        # if package is from the correct hub, continues.
+        if hubName == hubRequested:
+        
+            # if package is marked as cancelled or damaged, 
+            # revive the package
+            if status == "CANCELLED":
+                packages.revive_package(env, package)
+            
+            # if package is marked as rejected or delivered,
+            # change its status to DELIVERY_FAILED
+            if status == "DELIVERED" or status == "REJECTED":
+                packages.mark_package_as_delivery_failed(env, package)
+
+            packageIDs.append(packageID)
+
+    result = packages.bulk_resubmit_packages(env, orgId, packageIDs, next_delivery_date)
+    
+    for success in result('SUCCESS'):
+        SUCCESSES.append(success)
+    
+    for error in result.get('ERROR'):
+        ERRORS.append(error)
+
+
+def replan(env, orgId, hubRequested, package, next_delivery_date):
     status = package["packageStatuses"]["status"]
     packageID = package["packageId"]
     hubName = get_package_hub(package)
@@ -38,7 +86,7 @@ def replan(fileName, package, env, orgId, next_delivery_date):
     )
     
     # if package is from the correct hub, continues.
-    if hubName == fileName:
+    if hubName == hubRequested:
     
         # if package is marked as cancelled or damaged, 
         # revive the package
@@ -62,28 +110,41 @@ def replan(fileName, package, env, orgId, next_delivery_date):
         if response["ERROR"]:
             ERRORS.append(response["ERROR"])
     else:
-        print(f"---> {packageID} Ignored because it isn't from hub {fileName} (it is from {hubName})\n")
+        print(f"---> {packageID} Ignored because it isn't from hub {hubRequested} (it is from {hubName})\n")
 
 
-def main(fileName, keyType, next_delivery_date):
-    env = utils.select_env()
-    orgId = utils.select_org(env)
+def main(fileName, keyType, next_delivery_date, env=None, orgId=None):
+    if not env:
+        env = utils.select_env()
+    if not orgId:
+        orgId = utils.select_org(env)
+
     lines = files.get_data_from_file(fileName)
-    
+
     print("Key Types: {}\n".format(keyType.upper())+
         "Keys: {}\n".format(lines))
 
-    # Using multithreading to replan multiple packages at once
+    # Using multithreading to fetch multiple packages simultaneosly
     with concurrent.futures.ThreadPoolExecutor() as pool:
-        for line in lines:
-            # getting packages from barcode present in file line
-            pkgs = packages.get_packages_details(env, orgId, keyType, line)["packageRecords"]
+        for key in lines:
+            # getting packages from key (ori, bc, etc) present in file line
+            pool.submit(fill_packages_list, env, orgId, keyType, key)
 
-            if (len(pkgs) == 0):
-                print("> NO PACKAGES FOUND <\n")
+    pool.shutdown(wait=True)
 
-            for package in pkgs:
-                pool.submit(replan, fileName, package, env, orgId, next_delivery_date)
+    # If there are 100 or more packages to re-submit, we'll try to reduce
+    # the amount of API calls by calling the bulk resubmit endpoint after
+    # checking everything like the replan method
+    # Using multithreading to replan multiple packages simultaneosly
+    with concurrent.futures.ThreadPoolExecutor() as pool:
+        if len(PACKAGES) >= 100:
+            batches = utils.divide_into_batches(PACKAGES)
+
+            for batch in batches:
+                pool.submit(replan_batches, env, orgId, fileName, batch, next_delivery_date)
+        else:
+            for package in PACKAGES:
+                pool.submit(replan, env, orgId, fileName, package, next_delivery_date)
 
     pool.shutdown(wait=True)
     

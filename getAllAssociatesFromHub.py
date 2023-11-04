@@ -29,8 +29,8 @@ def main():
 
     if associates is not None:
         files.save_txt_file(
-            filePrefix=f"ASSOCIATES_FROM_HUB_{hub['name']}", 
-            data=[associate['associateId'] for associate in associatesArray if associate["associateType"] not in ["DRIVER", "SORTER"]]
+            filePrefix=f"ASSOCIATES_FROM_{hub['name']}", 
+            data=[associate['associateId'] for associate in associatesArray ]#if associate["associateType"] not in ["DRIVER", "SORTER"]]
         )
 
 

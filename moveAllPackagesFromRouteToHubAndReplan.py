@@ -1,5 +1,6 @@
 from datetime import datetime
-from utils import utils, packages, routes
+from utils import utils, packages, routes, files
+import replanPackages
 
 
 def main():
@@ -28,11 +29,23 @@ def main():
         pkgs = packages.get_all_packages_on_route(env, orgId, route[0]['routeId'])
 
         if len(pkgs) > 0:
-            newHub = input("Type the NEW hub name (only numbers)\n> ").strip()
+            newHub = input("Type the NEW hub name\n> ").strip()
+            
+            files.save_txt_file(
+                [pkg.get('packageID') for pkg in pkgs], 
+                newHub
+            )
 
             print("Moving Packages...")
             for package in pkgs:
-                packages.move_package_to_hub(env, orgId, newHub, package['packageID'], dispatcher, userName)
+                packages.move_package_to_hub(
+                    env, 
+                    orgId, 
+                    newHub, 
+                    package['packageID'], 
+                    dispatcher, 
+                    userName
+                )
 
             newDate = datetime.strptime(
                 input("Type date for replan (yyyy-mm-dd)\n> ").strip(),
@@ -40,46 +53,14 @@ def main():
             )
             newDate = newDate.strftime("%Y-%m-%d")
 
-            SUCCESSES = []
-            ERRORS = []
-
             print("Replanning packages...")
-            for package in pkgs:
-                package = packages.get_packages_details(env, orgId, "pi", package['packageID'])['packageRecords'][0]
-
-                hub = package['packageDetails']['sourceLocation']['name']
-
-                if hub == newHub:
-                    status = package["packageStatuses"]["status"]
-
-                    if status == "CANCELLED":
-                        packages.revive_package(env, package)
-
-                    if status == "DELIVERED" or status == "REJECTED":
-                        packages.mark_package_as_delivery_failed(env, package)
-
-                    response = packages.resubmit_package(
-                        env,
-                        orgId,
-                        package['packageId'],
-                        newDate
-                    )
-
-                    for s in response["SUCCESSES"]:
-                        SUCCESSES.append(s)
-                    for e in response["ERRORS"]:
-                        ERRORS.append(e)
-                else:
-                    print(f"{package['packageId']} not in {newHub} ({hub})")
-                    ERRORS.append(package['packageId'])
-            
-            print("Successful Resubmits ({}/{}): ".format(len(SUCCESSES), len(SUCCESSES) + len(ERRORS)))
-            for success in SUCCESSES:
-                print("> {}".format(success))
-
-            print("Unsuccessful Resubmits ({}/{}): ".format(len(ERRORS), len(SUCCESSES) + len(ERRORS)))
-            for error in ERRORS:
-                print("> {}".format(error))
+            replanPackages.main(
+                newHub,
+                "pi",
+                newDate,
+                env,
+                orgId
+            )
 
 
 main()

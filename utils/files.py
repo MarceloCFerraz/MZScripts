@@ -34,17 +34,17 @@ def save_txt_file(data, filePrefix):
     current_dir = os.path.realpath(os.path.dirname(__name__)).replace("\\", "/")
 
     # creates "RESULTS" folder directory
-    response_dir = current_dir + "/RESULTS"
+    response_dir = current_dir #+ "/RESULTS"
 
     os.makedirs(response_dir, exist_ok=True)
 
     # names the file
-    KEY = f"{filePrefix}_{utils.get_formated_now()}.txt"
+    key = f"{filePrefix}.txt"#_{utils.get_formated_now()}.txt"
 
     # this is the complete directory and where the file will be saved
-    final_dir = os.path.join(response_dir, KEY)
+    final_dir = os.path.join(response_dir, key)
 
-    result = f"File {KEY} created SUCCESSFULLY!"
+    result = f"File {key} created SUCCESSFULLY!"
 
     with open(final_dir, "w") as txt:
         for line in data:
@@ -64,12 +64,12 @@ def save_json_to_file(jsonData, filePrefix):
     os.makedirs(response_dir, exist_ok=True)
 
     # names the file
-    KEY = f"{filePrefix}_{utils.get_formated_now()}.json"
+    key = f"{filePrefix}_{utils.get_formated_now()}.json"
 
     # this is the complete directory and where the file will be saved
-    final_dir = os.path.join(response_dir, KEY)
+    final_dir = os.path.join(response_dir, key)
 
-    result = f"File {KEY} "
+    result = f"File {key} "
 
     with open(final_dir, "w") as json_file:
         try:
