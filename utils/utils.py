@@ -60,12 +60,27 @@ ASSOCIATE_KEY_TYPES = [
 
 
 def get_formated_now():
+    """
+    Retrieves the current date and time in a formatted string.
+
+    Returns:
+        str: The formatted current date and time.
+    """
     return str(
         datetime.now().replace(second=0, microsecond=0)
     ).replace(':', '-').replace(' ', 'T')
 
 
 def find_biggest_divisor(number):
+    """
+    Finds the biggest divisor of a given number.
+
+    Args:
+        number (int): The number to find the divisor for.
+
+    Returns:
+        int: The biggest divisor of the number.
+    """
     for i in range(number - 1, 1, -1):
         if number % i == 0 and i != number / 2:
             return i
@@ -74,6 +89,15 @@ def find_biggest_divisor(number):
 
 
 def print_array_items(array):
+    """
+    Prints the items in an array, formatting them into lines.
+
+    Args:
+        array (list): The array of items to print.
+
+    Returns:
+        None
+    """
     divisor = find_biggest_divisor(len(array))
 
     for i in range(0, len(array)):
@@ -85,7 +109,13 @@ def print_array_items(array):
 
 
 def select_env():
-    envs = ["PROD", "STAGE"]
+    """
+    Allows the user to select an environment.
+
+    Returns:
+        str: The selected environment.
+    """
+    envs = ORGS.keys()
     env = ""
     print("SELECT THE ENV")
     print(f"Options: {'   '.join(envs)}")
@@ -96,6 +126,15 @@ def select_env():
 
 
 def select_org(env):
+    """
+    Allows the user to select an organization for a specific environment.
+
+    Args:
+        env (str): The selected environment.
+
+    Returns:
+        str: The selected organization's ID.
+    """
     orgs = list(ORGS[env].keys())
     org = ""
 
@@ -109,6 +148,12 @@ def select_org(env):
 
 
 def get_associate_key_type_index():
+    """
+    Allows the user to select an index for the associate key type.
+
+    Returns:
+        int: The selected index.
+    """
     length = int(len(ASSOCIATE_KEY_TYPES))
 
     for i in range(0, length):
@@ -126,10 +171,29 @@ def get_associate_key_type_index():
 
 
 def get_associate_key_type(key_type_index):
+    """
+    Retrieves the associate key type based on the selected index.
+
+    Args:
+        key_type_index (int): The selected index.
+
+    Returns:
+        str: The associate key type.
+    """
     return ASSOCIATE_KEY_TYPES[key_type_index]
 
 
 def calculate_elapsed_time(start, finish):
+    """
+    Calculates the elapsed time between two timestamps.
+
+    Args:
+        start (int): The start timestamp.
+        finish (int): The finish timestamp.
+
+    Returns:
+        dict: The elapsed time in hours, minutes, and seconds.
+    """
     elapsed_seconds = (finish - start) // 1000000000
 
     elapsed_hours = elapsed_seconds // 3600
@@ -144,6 +208,16 @@ def calculate_elapsed_time(start, finish):
 
 
 def print_elapsed_time(start, finish):
+    """
+    Prints the elapsed time between two timestamps.
+
+    Args:
+        start (int): The start timestamp.
+        finish (int): The finish timestamp.
+
+    Returns:
+        None
+    """
     elt = calculate_elapsed_time(start, finish)
 
     response = "Took "
@@ -154,6 +228,16 @@ def print_elapsed_time(start, finish):
 
 
 def divide_into_batches(lst, batch_size=100):
+    """
+    Divides a list into batches of a specified size.
+
+    Args:
+        lst (list): The list to divide.
+        batch_size (int): The size of each batch. Defaults to 100.
+
+    Returns:
+        list: The list of batches.
+    """
     batches = []
     for i in range(0, len(lst), batch_size):
         batch = lst[i:i+batch_size]

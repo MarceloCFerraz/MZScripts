@@ -2,6 +2,17 @@ import requests
 
 
 def get_associate_data(env, orgId, associateId):
+    """
+    Retrieves associate data by organization ID and associate ID.
+
+    Parameters:
+        env (str): The environment name.
+        orgId (int): The ID of the organization.
+        associateId (int): The ID of the associate.
+
+    Returns:
+        dict or None: The associate data if found, or None if not found.
+    """
     url = f"http://lmx.{env}.milezero.com/lmx-war/api/associate/org/{orgId}/{associateId}"
 
     # print(f"\nSearching for ({env})\n" +
@@ -19,13 +30,44 @@ def get_associate_data(env, orgId, associateId):
 
 
 def search_associate(env, org_id, key_type_index, search_key):
+    """
+    Searches for associates based on a specific key type and search key.
+
+    Parameters:
+        env (str): The environment name.
+        org_id (int): The ID of the organization.
+        key_type_index (int): The index of the key type in the key_types list.
+            0: "orgId"
+            1: "referenceId"
+            2: "name"
+            3: "email"
+            4: "userName"
+            5: "state"
+            6: "type"
+            7: "associateType"
+            8: "skill"
+            9: "skillRatingValue"
+            10: "rating"
+            11: "fleetId"
+            12: "clusterId"
+            13: "hubId"
+            14: "locationId"
+            15: "worldViewId"
+            16: "availabilityFleetId"
+            17: "availabilityClusterId"
+        search_key (str): The search key.
+
+    Returns:
+        list or None: The list of associates if found, or None if not found.
+    """
     time = 30
     url = f"http://lmx.{env}.milezero.com/lmx-war/api/associate/all"
 
     key_types = [
-        "orgId", "referenceId", "name", "email", "userName", "state", "type", "associateType", "skill",
-        "skillRatingValue", "rating", "fleetId", "clusterId", "hubId", "locationId",
-        "worldViewId", "availabilityFleetId", "availabilityClusterId"
+        "orgId", "referenceId", "name", "email", "userName", "state", 
+        "type", "associateType", "skill", "skillRatingValue", "rating",
+        "fleetId", "clusterId", "hubId", "locationId", "worldViewId", 
+        "availabilityFleetId", "availabilityClusterId"
     ]
 
     requestData = {}
@@ -41,7 +83,9 @@ def search_associate(env, org_id, key_type_index, search_key):
     p = "Searching for associates with\n"
     for key in requestData.keys():
         p += f"> {key} {requestData[key]}\n"
+
     print(p)
+    
     response = requests.post(url=url, json=requestData, timeout=time).json()
 
     try:
@@ -53,6 +97,17 @@ def search_associate(env, org_id, key_type_index, search_key):
 
 
 def change_associate_state(env, associateData, userName):
+    """
+    Changes the state of an associate from ACTIVE to INACTIVE or vice versa.
+
+    Parameters:
+        env (str): The environment name.
+        associateData (dict): The associate data.
+        userName (str): The name of the user.
+
+    Returns:
+        Response: The response object from the update request.
+    """
     state = associateData["state"]
     print(f"Was {state}.", end=" ")
 
@@ -68,6 +123,17 @@ def change_associate_state(env, associateData, userName):
 
 
 def update_associate_data(env, associateData, userName):
+    """
+    Updates the data of an associate.
+
+    Parameters:
+        env (str): The environment name.
+        associateData (dict): The associate data.
+        userName (str): The name of the user.
+
+    Returns:
+        Response: The response object from the update request.
+    """
     print("Updating Associate data")
     url = f"http://lmx.{env}.milezero.com/lmx-war/api/associate?requestor={str(userName).replace(' ', '%20')}&requestorIdType=NAME"
     return requests.put(url=url, json=associateData, timeout=5)

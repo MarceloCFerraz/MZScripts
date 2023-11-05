@@ -76,7 +76,7 @@ def fill_file_with_data(logFile):
         print(f"> {len(orgFleets)} fleets found for {orgName}")
 
         # getting all hubs for org (avoids extra api calls)
-        orgHubs = hubs.search_hubs(env, orgId)
+        orgHubs = hubs.get_all_hubs(env, orgId)
         print(f"> {len(orgHubs)} hubs found for {orgName}")
         
         for fleet in orgFleets:

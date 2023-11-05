@@ -132,12 +132,11 @@ def main(fileName, keyType, next_delivery_date, env=None, orgId=None):
 
     pool.shutdown(wait=True)
 
-    # If there are 100 or more packages to re-submit, we'll try to reduce
-    # the amount of API calls by calling the bulk resubmit endpoint after
-    # checking everything like the replan method
+    # If there are a lot of packages to re-submit, we'll split them in batches
+    # to reduce the amount of API calls by calling the 'bulk resubmit' endpoint
     # Using multithreading to replan multiple packages simultaneosly
     with concurrent.futures.ThreadPoolExecutor() as pool:
-        if len(PACKAGES) >= 100:
+        if len(PACKAGES) >= 20:
             batches = utils.divide_into_batches(PACKAGES)
 
             for batch in batches:

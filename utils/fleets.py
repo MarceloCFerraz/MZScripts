@@ -1,13 +1,20 @@
 import requests
-
-
-def get_org_by_id(env, orgId):
-    url = f"http://cromag.{env}.milezero.com/retail/api/organization/{orgId}"
-
-    return requests.get(url=url, timeout=5).json()
+import organizations
 
 
 def search_fleet(env, orgId, fleetId=None):
+    """
+    Searches for a fleet by organization ID and optional fleet ID.
+
+    Parameters:
+        env (str): The environment name.
+        orgId (int): The ID of the organization.
+        fleetId (int, optional): The ID of the fleet (default: None).
+
+    Returns:
+        dict: Matching fleet
+        list: All org fleets if no fleet ID is provided.
+    """
     url = f"http://qilin.{env}.milezero.com/qilin-war/api/fleets/{orgId}"
     if fleetId is not None:
         url += f"?fleetId={fleetId}"
@@ -20,18 +27,40 @@ def search_fleet(env, orgId, fleetId=None):
 
 
 def get_hubs_from_fleet(env, orgId, fleetId):
+    """
+    Retrieves the hub IDs associated with a fleet.
+
+    Parameters:
+        env (str): The environment name.
+        orgId (int): The ID of the organization.
+        fleetId (int): The ID of the fleet.
+
+    Returns:
+        list: The list of hub IDs.
+    """
     return search_fleet(env, orgId, fleetId)[0]["hubIds"]
 
 
-def search_fleet_with_hubs(env, orgId, hubIdsArray):
-    print(f"Searching for a fleet that contains {hubIdsArray}")
-    hubIdsArray.sort()
+def search_fleet_with_hubs(env, orgId, hubIdsList):
+    """
+    Searches for a fleet that contains a specific list of hub IDs.
+
+    Parameters:
+        env (str): The environment name.
+        orgId (int): The ID of the organization.
+        hubIdsList (list): The list of hub IDs to search for.
+
+    Returns:
+        int or None: The fleet ID if found, or None if no fleet is found.
+    """
+    print(f"Searching for a fleet that contains {hubIdsList}")
+    hubIdsList.sort()
     fleets = search_fleet(env, orgId)
 
     for fleet in fleets:
         try:
             fleetHubs = fleet["hubIds"].sort()
-            if fleetHubs == hubIdsArray:
+            if fleetHubs == hubIdsList:
                 return fleet["fleetId"]
         except Exception:
             pass
@@ -41,15 +70,25 @@ def search_fleet_with_hubs(env, orgId, hubIdsArray):
     return None
 
 
-def create_fleet(env, orgId, hubsArray):
+def create_fleet(env, orgId, hubsList):
+    """
+    Creates a new fleet with the given hub IDs.
+
+    Parameters:
+        env (str): The environment name.
+        orgId (int): The ID of the organization.
+        hubsList (list): The list of hubs for the fleet.
+
+    Returns:
+        int: The ID of the created fleet.
+    """
     hubNames = []
     hubIds = []
-    for hub in hubsArray:
+    for hub in hubsList:
         hubNames.append(hub["name"])
         hubIds.append(hub["id"])
 
-    print(f"Creating new fleet with hubs {hubNames}", end=" ")
-    customer = get_org_by_id(env, orgId)
+    customer = organizations.get_org_by_id(env, orgId)
 
     url = f"http://qilin.{env}.milezero.com/qilin-war/api/fleets/{orgId}"
 
@@ -66,22 +105,45 @@ def create_fleet(env, orgId, hubsArray):
 
 
 def update_fleet(env, orgId, fleet):
+    """
+    Updates an existing fleet with new information.
+
+    Parameters:
+        env (str): The environment name.
+        orgId (int): The ID of the organization.
+        fleet (dict): The updated fleet information.
+
+    Returns:
+        Response: The response object from the update request.
+    """
     url = f"http://qilin.{env}.milezero.com/qilin-war/api/fleets/{orgId}/{fleet['fleetId']}"
     return requests.post(url=url, json=fleet, timeout=5)
 
 
-def update_fleet_hubs(env, orgId, fleetId, hubsArray):
-    customer = get_org_by_id(env, orgId)
+def update_fleet_hubs(env, orgId, fleetId, hubsList):
+    """
+    Updates the hub IDs and description of a fleet.
 
-    print(f"Updating fleet {fleetId} with hubs", end=" ")
+    Parameters:
+        env (str): The environment name.
+        orgId (int): The ID of the organization.
+        fleetId (int): The ID of the fleet.
+        hubsList (list): The updated list of hubs for the fleet.
+
+    Returns:
+        Response: The response object from the update request.
+    """
+    customer = organizations.get_org_by_id(env, orgId)
+
+    # print(f"Updating {fleetId} with hubs", end=" ")
 
     hubNames = []
     hubIds = []
 
-    for hub in hubsArray:
+    for hub in hubsList:
         hubNames.append(hub["name"])
         hubIds.append(hub["id"])
-    print(hubNames)
+    # print(' '.join(hubNames))
 
     fleet = search_fleet(env, orgId, fleetId)[0]
     fleet["description"] = f"{customer['name'].upper()} {' '.join(hubNames)} Fleet"
@@ -91,6 +153,18 @@ def update_fleet_hubs(env, orgId, fleetId, hubsArray):
 
 
 def remove_hub_from_fleet(env, orgId, fleetId, hubId):
+    """
+    Removes a hub from a fleet.
+
+    Parameters:
+        env (str): The environment name.
+        orgId (int): The ID of the organization.
+        fleetId (int): The ID of the fleet.
+        hubId (int): The ID of the hub to remove.
+
+    Returns:
+        Response: The response object from the update request.
+    """
     fleet = search_fleet(env, orgId, fleetId)[0]
 
     fleet["hubIds"].remove(hubId)
@@ -99,6 +173,17 @@ def remove_hub_from_fleet(env, orgId, fleetId, hubId):
 
 
 def delete_fleet(env, orgId, fleetId):
+    """
+    Deletes a fleet by ID.
+
+    Parameters:
+        env (str): The environment name.
+        orgId (int): The ID of the organization.
+        fleetId (int): The ID of the fleet to delete.
+
+    Returns:
+        Response: The response object from the delete request.
+    """
     url = f"http://qilin.{env}.milezero.com/qilin-war/api/fleets/{orgId}/{fleetId}"
 
     return requests.delete(url=url, timeout=5)

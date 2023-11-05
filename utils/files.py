@@ -6,6 +6,15 @@ import sys
 
 
 def get_data_from_file(fileName):
+    """
+    Retrieves data from a text file and removes duplicates.
+
+    Parameters:
+        fileName (str): The name of the file (without the extension).
+
+    Returns:
+        list: The unique lines of data from the file.
+    """
     with open(fileName+".txt", "r") as file:
         lines = file.readlines()
     
@@ -25,10 +34,29 @@ def get_data_from_file(fileName):
 
 
 def format_json(data):
+    """
+    Formats JSON data with indentation.
+
+    Parameters:
+        data (dict): The JSON data to format.
+
+    Returns:
+        str: The formatted JSON data.
+    """
     return json.dumps(data, indent=2)
 
 
 def save_txt_file(data, filePrefix):
+    """
+    Saves a list of data to a text file.
+
+    Parameters:
+        data (list): The data to save.
+        filePrefix (str): The prefix for the file name.
+
+    Returns:
+        None
+    """
     # get current file directory and replaces "\" for "/"
     # even in windows this works out just fine
     current_dir = os.path.realpath(os.path.dirname(__name__)).replace("\\", "/")
@@ -54,6 +82,16 @@ def save_txt_file(data, filePrefix):
 
 
 def save_json_to_file(jsonData, filePrefix):
+    """
+    Saves JSON data to a file.
+
+    Parameters:
+        jsonData (str): The JSON data to save.
+        filePrefix (str): The prefix for the file name.
+
+    Returns:
+        None
+    """
     # get current file directory and replaces "\" for "/"
     # even in windows this works out just fine
     current_dir = os.path.realpath(os.path.dirname(__name__)).replace("\\", "/")
@@ -82,6 +120,15 @@ def save_json_to_file(jsonData, filePrefix):
 
 
 def create_dir(dirName):
+    """
+    Creates a directory if it doesn't already exist.
+
+    Parameters:
+        dirName (str): The name of the directory.
+
+    Returns:
+        str: The name of the created directory.
+    """
     if not os.path.isdir(dirName):
         os.mkdir(dirName)
 
@@ -89,6 +136,16 @@ def create_dir(dirName):
 
 
 def create_logs_file(prefix=None, suffix=None):
+    """
+    Creates a log file for logging program output.
+
+    Parameters:
+        prefix (str): Optional prefix for the log file name.
+        suffix (str): Optional suffix for the log file name.
+
+    Returns:
+        file: The log file object.
+    """
     dir = create_dir("logs")
     
     # Get the name of the current script file
@@ -111,19 +168,56 @@ def create_logs_file(prefix=None, suffix=None):
 
 
 def close_logs_file(log_file):
+    """
+    Closes the log file.
+
+    Parameters:
+        log_file (file): The log file object.
+
+    Returns:
+        None
+    """
     log_file.close()
 
 
 def start_logging(log_file):
+    """
+    Starts redirecting the standard output to the log file.
+
+    Parameters:
+        log_file (file): The log file object.
+
+    Returns:
+        None
+    """
     # Redirect the standard output to the log file
     sys.stdout = log_file
 
 
 def stop_logging():
+    """
+    Stops redirecting the standard output to the log file.
+
+    Parameters:
+        None
+
+    Returns:
+        None
+    """
     sys.stdout = sys.__stdout__
 
 
 def save_package_ids_to_file(packageIDs, fileName):
+    """
+    Saves a list of package IDs to a file.
+
+    Parameters:
+        packageIDs (list): The list of package IDs.
+        fileName (str): The name of the file.
+
+    Returns:
+        None
+    """
     with open(fileName, "w") as txt:
         for packageID in packageIDs:
             txt.write(packageID + "\n")

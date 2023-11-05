@@ -41,7 +41,7 @@ def main(fileName, keyType):
 
                 packages.mark_package_as_delivered(orgId, packageID)
             else:
-                print(f"\n----> PACKAGE ID: {packageID} (Ignored - already DELIVERED)\n")
+                print(f"\n----> PACKAGE ID: {packageID} (already DELIVERED)\n")
 
 
 # get command line argument
