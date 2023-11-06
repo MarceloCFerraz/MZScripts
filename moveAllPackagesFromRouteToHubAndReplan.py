@@ -4,13 +4,22 @@ import replanPackages
 
 
 def main():
+    """
+    The main function that prompts the user for their name, dispatcher's name, and other necessary information. It then performs various operations, such as searching for a route, moving packages to a new hub, and performing package replanning.
+
+    Parameters:
+    - None
+
+    Returns:
+    None
+    """
     userName = input("What is your name?\n> ").strip()
     dispatcher = input("Who requested this change?\n> ").strip()
 
     env = utils.select_env()
     orgId = utils.select_org(env)
 
-    oldHub = input("Type the CURRENT hub name (only numbers)\n> ").strip()
+    oldHub = input("Type the CURRENT hub name\n> ").strip()
     routeName = input("Type the desired route name\n> ").strip().upper()
 
     cpt = datetime.strptime(

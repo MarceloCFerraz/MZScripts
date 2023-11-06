@@ -181,6 +181,29 @@ def get_packages_histories(keyType, key):
     return requests.get(endpoint).json()
 
 
+def print_minimal_package_details(package):
+    """
+    Prints reduced details of a package.
+
+    Parameters:
+        package (dict): The package object containing the details.
+
+    Returns:
+        None
+    """
+    packageID = package["packageId"]
+    ori = package["orderDetails"]["orderReferenceId"]            
+    hubName = package["packageDetails"]["sourceLocation"]["name"]
+    barcode = package["packageDetails"]["shipmentBarcode"]
+    status = package["packageStatuses"]["status"]
+
+    print(f"HUB Name: {hubName}")
+    print(f"Package ID: {packageID}")
+    print(f"Order Reference ID: {ori}")
+    print(f"Scannable Barcode: {barcode}")
+    print(f"Curent Status {status}")
+
+
 def print_package_details(package):
     """
     Prints the details of a package.

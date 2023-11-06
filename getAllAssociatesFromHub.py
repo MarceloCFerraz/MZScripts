@@ -2,6 +2,18 @@ from utils import files, utils, associates, hubs
 
 
 def get_hub_id(env, orgId):
+    """
+    Retrieves the hub ID based on user input for the hub name.
+
+    Args:
+    - env (str): The selected environment.
+    - orgId (str): The selected organization ID.
+
+    Returns:
+    - dict: The hub information containing the hub ID.
+
+    This function prompts the user to enter the hub name and searches for the hub by name using the `search_hub_by_name()` function from the `hubs` module. The hub ID is then printed, and the hub information is returned.
+    """
     print("TYPE THE HUB NAME (numbers only)")
     hubName = input("> ").strip()
 
@@ -12,6 +24,9 @@ def get_hub_id(env, orgId):
 
 
 def main():
+    """
+    This function selects the environment and organization ID, retrieves the hub ID based on user input, searches for associates, and saves the associate IDs to a text file.
+    """
     env = utils.select_env()
     orgId = utils.select_org(env)
 

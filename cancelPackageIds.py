@@ -4,6 +4,17 @@ from utils import packages, files, utils
 # fileName = input("Type in file name containing the package ids?\n> ").strip()
 
 def main():
+    """
+    Main function to process data and perform package operations.
+
+    This function serves as the entry point for processing data and performing package operations. It prompts the user to select an environment and organization, loads data from a file, and iterates over each line to retrieve package details based on the provided key type. It then performs various operations on the packages, such as reviving cancelled packages and marking rejected or damaged packages as delivery failed. It also handles bulk cancellation of packages when the package IDs exceed 100.
+
+    Parameters:
+    None
+
+    Returns:
+    None
+    """
     env = utils.select_env()
     orgId = utils.select_org(env)
     

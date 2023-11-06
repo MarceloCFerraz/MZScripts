@@ -1,3 +1,4 @@
+from utils import files, packages, utils
 from datetime import datetime
 import os
 import sys
@@ -5,16 +6,13 @@ import json
 import requests
 
 
-API = "http://switchboard.prod.milezero.com/switchboard-war/api/"
+def get_file_name():
+    """
+    Create a unique log file name based on the current script name and timestamp.
 
-
-def get_formated_now():
-    return str(
-        datetime.now().replace(second=0, microsecond=0)
-    ).replace(':', '-').replace(' ', 'T')
-
-
-def create_file_name():    
+    Returns:
+    str: The unique log file name in the format "<script_name><timestamp>.txt".
+    """  
     
     # Get the name of the current script file
     script_file = os.path.basename(sys.argv[0])
@@ -23,102 +21,58 @@ def create_file_name():
     script_name = os.path.splitext(script_file)[0]
 
     # Create the log file name
-    file_name = script_name + f"{get_formated_now()}.txt"
+    file_name = script_name + f"{utils.get_formated_now()}.txt"
 
     return file_name
 
 
-def create_logs_file():
-    file_name = create_file_name()
-
-    # Open the log file to redirect the standard output
-    log_file = open(f"./{file_name}", "w")
-
-    return log_file
-
-
-def close_logs_file(log_file):
-    log_file.close()
-
-
-def start_logging(log_file):
-    # Redirect the standard output to the log file
-    sys.stdout = log_file
-
-
-def stop_logging():
-    sys.stdout = sys.__stdout__
-
-
-def getPackages(KEY_TYPE, key):
-    # f"{API}package/histories?keyValue={key}&keyType={keyType}"
-    endpoint = f"{API}package?keyType={KEY_TYPE}&keyValue={key}&includeCancelledPackage=true"
-
-    # print(
-    #     f">>>>> Retrieving Packages From {KEY_TYPE.upper()} {key} <<<<<"+
-    #     f"\n> {endpoint}"
-    # )
-    
-    return requests.get(endpoint, timeout=5).json()
-
-
-def printPackageDetails(package):
-    packageID = package["packageId"]
-
-    try:
-        routeId = package["planningDetails"]["plannerRouteId"]
-    except Exception as e:
-        pass
-
-    previousRouteId = package["planningDetails"]["originalRouteId"]
-    routeName = package["planningDetails"]["plannerRouteName"]
-    
-
-    half_divisor = "==================="
-
-    print(f"\n{half_divisor} ROUTE {half_divisor}")
-    print(f"Package ID: {packageID}")
-    print(f"Route Name: {routeName}")
-    print(f"Route ID: {routeId}")
-    print(f"Original Route ID: {previousRouteId}\n")
-
-
-def get_data_from_file(fileName):
-    file = open(fileName+".txt", "r")
-    lines = file.readlines()
-    file.close()
-
-    results = []
-    
-    for line in lines:
-        results.append(line.strip())
-
-    # removing duplicates from list
-    # this make the list unordered. Comment this line if
-    # this impact your workflow somehow
-    results = list(set(results))
-    
-    print("{} unique lines in file {}\n".format(len(results), fileName))
-    return results
-
-
 def main(FILENAME, KEY_TYPE):
-    lines = get_data_from_file(FILENAME)
+    """
+    The main function for retrieving package details.
+
+    Parameters:
+    FILENAME (str): The name of the file containing the key values.
+    KEY_TYPE (str): The type of key used for package retrieval. Valid options include:
+        - "pi" (Package Id)
+        - "bc" (Shipment Barcode)
+        - "ori" (Order Reference Id)
+
+    Returns:
+    None
+    """
+    env = utils.select_env()
+    orgId = utils.select_org(env)
+
+    lines = files.get_data_from_file(FILENAME)
 
     print("Script is generating your file with the full response... ")
 
-    logFile = create_logs_file()
-    start_logging(logFile)
+    logFile = files.create_logs_file()
+    files.start_logging(logFile)
     
     for line in lines:
-        packages = getPackages(KEY_TYPE=KEY_TYPE, key=line)["packageRecords"]
-        for package in packages:
-            printPackageDetails(package)
+        pkgs = packages.get_packages_details(env, orgId, KEY_TYPE, line)["packageRecords"]
 
-    stop_logging()
-    close_logs_file(logFile)
+        for package in pkgs:
+            packageID = package["packageId"]
+            hubName = package["packageDetails"]["sourceLocation"]["name"]
+            try:
+                routeId = package["planningDetails"]["plannerRouteId"]
+            except Exception as e:
+                print("This package/route was probably not executed (not ROUTE_ID found)")
+                routeId = package["planningDetails"]["originalRouteId"]
+            
+            routeName = package["planningDetails"]["plannerRouteName"]
 
-    print(f"Script finished. Check for {create_file_name()}")
+            print(f"Package ID: {packageID}")
+            print(f"HUB Name: {hubName}")
+            print(f"Route Name: {routeName}")
+            print(f"Route ID: {routeId}")
+
+    files.stop_logging()
+    files.close_logs_file(logFile)
+
+    print(f"Script finished. Check for {get_file_name()}")
 
 
 valid_key_types = [

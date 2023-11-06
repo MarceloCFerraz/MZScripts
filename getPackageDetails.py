@@ -4,7 +4,16 @@ import sys
 from utils import files, packages, utils
 
 
-def getStatusList(STATUSES):
+def get_status_list(STATUSES):
+    """
+    Extracts a list of statuses from a string of space-separated statuses.
+
+    Parameters:
+    STATUSES (str): A string of space-separated statuses.
+
+    Returns:
+    list: A list of extracted statuses.
+    """
     status = ""
     status_list = []
 
@@ -21,40 +30,34 @@ def getStatusList(STATUSES):
     return status_list
 
 
-def saveJsonToFile(packages, key):
-    # get current file directory and replaces "\" for "/"
-    # even in windows this works out just fine
-    current_dir = os.path.realpath(os.path.dirname(__name__)).replace("\\", "/")
-    # creates "RESULTS" folder directory
-    response_dir = current_dir + "/RESULTS"
-    os.makedirs(response_dir, exist_ok=True)
-    
-    # names the file
-    KEY = f"{key}_DETAILS.json"
-
-    # this is the complete directory and where the file will be saved
-    final_dir = os.path.join(response_dir, KEY)
-
-    result = f"File {KEY} containing the complete response "
-
-    with open(final_dir, "w") as json_file:
-        try:
-            json_file.write(packages)
-            result += f"was created SUCCESSFULLY and can be accessed on ./RESULTS/{KEY}!"
-        except Exception as e:
-            result += f"COULD NOT be created. See exception bellow:\n\n{e}"
-
-    print(result)
-
-
 def main(KEY, KEY_TYPE, STATUSES):
+    """
+    Retrieves and processes package details.
+
+    This function prompts the user to select the environment and organization ID. It then retrieves a list of status values based on the provided STATUSES parameter. Next, it reads a file containing keys and retrieves package details for each key. The function checks if the package status matches the provided status list. If it does, the package details are printed and added to the final response. The function also keeps track of the number of valid and invalid packages.
+
+    Parameters:
+    KEY (str): The key value corresponding to the specified key type.
+    KEY_TYPE (str): The type of key used for package retrieval. Valid options include:
+        - "pi" (Package Id)
+        - "tn" (Tracking Number)
+        - "ci" (Container Id)
+        - "bc" (Shipment Barcode)
+        - "oi" (Order Id)
+        - "ori" (Order Reference Id)
+        - "ji" (Job Id)
+    STATUSES (str): A string of space-separated statuses to filter the packages.
+
+    Returns:
+    None
+    """
     env = utils.select_env()
     orgId = utils.select_org(env)
 
     status_list = []
     
     if STATUSES != "":
-        status_list = getStatusList(STATUSES)
+        status_list = get_status_list(STATUSES)
     
     response = {}
     valid_packages = []
@@ -80,7 +83,7 @@ def main(KEY, KEY_TYPE, STATUSES):
 
     if valid_packages != []:
         formatted_response = files.format_json(response)
-        saveJsonToFile(packages=formatted_response, key=KEY)
+        files.save_json_to_file(formatted_response, "PKG_DETAILS")
 
 # get command line argument
 if len(sys.argv) < 3:

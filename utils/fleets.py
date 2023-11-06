@@ -70,7 +70,7 @@ def search_fleet_with_hubs(env, orgId, hubIdsList):
     return None
 
 
-def create_fleet(env, orgId, hubsList):
+def create_fleet(env, orgId, hubsList, fleetName=None, fleetLogo=None):
     """
     Creates a new fleet with the given hub IDs.
 
@@ -94,10 +94,10 @@ def create_fleet(env, orgId, hubsList):
 
 
     requestData = {
-      "fleetName": f"{customer['name'].upper()}",
+      "fleetName": fleetName if fleetName != None else f"{customer['name'].upper()}",
       "description": f"{customer['name'].upper()} {' '.join(hubNames)} Fleet",
       "hubIds": hubIds,
-      "logoUrl": f"{customer['logo']}",
+      "logoUrl": fleetLogo if fleetLogo != None else f"{customer['logo']}",
       "active": True
     }
 

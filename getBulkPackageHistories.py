@@ -4,38 +4,24 @@ from datetime import datetime
 from utils import files, packages
 
 
-def saveJsonToFile(packages, hubName):
-    # get current file directory and replaces "\" for "/"
-    # even in windows this works out just fine
-    current_dir = os.path.realpath(os.path.dirname(__name__)).replace("\\", "/")
-    # creates "RESULTS" folder directory
-    response_dir = current_dir + "/RESULTS"
-    os.makedirs(response_dir, exist_ok=True)
-    
-    dateTime = str(
-        datetime.now().replace(second=0, microsecond=0)
-    ).replace(':', '-').replace(' ', 'T')
-
-    # names the file
-    FILE_NAME = f"{dateTime}_{hubName}_PKG_HISTORIES.json"
-
-    # this is the complete directory and where the file will be saved
-    final_dir = os.path.join(response_dir, FILE_NAME)
-
-    result = f"File {FILE_NAME} containing the complete response "
-
-    with open(final_dir, "w") as json_file:
-        try:
-            json_file.write(str(packages))
-            result += f"was created SUCCESSFULLY and can be accessed on ./RESULTS/{FILE_NAME}!"
-        except Exception as e:
-            result += f"COULD NOT be created. See exception bellow:\n\n{e}"
-
-    print(result)
-
-
-
 def main(fileName, keyType):
+    """
+    The main function for retrieving package histories.
+
+    Parameters:
+    KEY (str): The key value corresponding to the specified key type.
+    KEY_TYPE (str): The type of key used for package retrieval. Valid options include:
+        - "pi" (Package Id)
+        - "tn" (Tracking Number)
+        - "ci" (Container Id)
+        - "bc" (Shipment Barcode)
+        - "oi" (Order Id)
+        - "ori" (Order Reference Id)
+        - "ji" (Job Id)
+
+    Returns:
+    None
+    """
     keys = files.get_data_from_file(fileName)
     historyList = []
     formattedResponse = {}
@@ -50,7 +36,7 @@ def main(fileName, keyType):
     
     formattedResponse["histories"] = historyList
     formattedResponse = files.format_json(formattedResponse)
-    saveJsonToFile(packages=formattedResponse, hubName=fileName)
+    files.save_json_to_file(formattedResponse, "PKGS_HISTORIES")
 
 
 # get command line argument

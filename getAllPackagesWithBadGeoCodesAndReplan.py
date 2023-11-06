@@ -8,7 +8,18 @@ SUCCESSES = []
 ERRORS = []
 
 
-def getValidHubs(hubs):
+def get_valid_hubs(hubs):
+    """
+    Filters out the valid hubs from the given list of hubs.
+
+    This function takes a list of hubs and checks if the name of each hub is numeric. If it is, the hub is considered valid and added to the list of valid hubs.
+
+    Parameters:
+    - hubs (list): A list of hubs.
+
+    Returns:
+    - validHubs (list): A list of valid hubs.
+    """
     validHubs = []
 
     for hub in hubs:
@@ -19,6 +30,17 @@ def getValidHubs(hubs):
 
 
 def main():
+    """
+    Retrieves and processes packages with bad geo codes.
+
+    This function prompts the user to select the environment and organization ID. It then prompts the user to input the original date. The function retrieves all hubs for the selected environment and organization ID. It filters out the valid hubs using the `get_valid_hubs()` function. The function prints the number of hubs found and the number of valid hubs. It then searches for packages in each valid hub that have bad geo codes. For each package found, the function retrieves the package details and the corresponding location details. It checks if the location precision is not "EXACT" and adds the package information to a DataFrame. The function saves the DataFrame as an .xlsx file. It then resubmits each package with the new date. The function prints the number of succeeded and failed resubmits, along with the details of each.
+
+    Parameters:
+    - None
+
+    Returns:
+    - None
+    """
     newDate = datetime.min
 
     env = utils.select_env()
@@ -34,7 +56,7 @@ def main():
 
     hbs = hubs.get_all_hubs(env, orgId)
 
-    validHubs = getValidHubs(hbs)
+    validHubs = get_valid_hubs(hbs)
     hubsCount = len(hbs)
 
     print(f"{hubsCount} hubs found ({len(validHubs)} valid)")

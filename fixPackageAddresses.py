@@ -53,6 +53,12 @@ FAILED_ADDRESSES = []
 
 
 def print_array_items(array):
+    """
+    Prints the items in the array, dividing them into groups of four.
+
+    Parameters:
+    - array (list): The array containing the items to be printed.
+    """
     divisor = 4
 
     for i in range(0, len(array)):
@@ -64,6 +70,12 @@ def print_array_items(array):
 
 
 def select_env():
+    """
+    Prompts the user to select the environment.
+
+    Returns:
+    - str: The selected environment.
+    """
     envs = ["PROD", "STAGE"]
     env = ""
     print("SELECT THE ENV")
@@ -75,6 +87,15 @@ def select_env():
 
 
 def select_org(env):
+    """
+    Prompts the user to select the organization based on the selected environment.
+
+    Parameters:
+    - env (str): The selected environment.
+
+    Returns:
+    - str: The selected organization ID.
+    """
     orgs = list(ORGS[env].keys())
     org = ""
 
@@ -88,6 +109,18 @@ def select_org(env):
 
 
 def search_hub_by_name(env, orgId, hubName):
+    """
+    Searches for a hub by name based on the provided environment, organization ID, and hub name.
+
+    Parameters:
+    - env (str): The selected environment.
+    - orgId (str): The selected organization ID.
+    - hubName (str): The name of the hub to search for.
+
+    Returns:
+    - list: The hub information matching the search criteria.
+    """
+
     url = f"http://cromag.{env}.milezero.com/retail/api/hubs/org/{orgId}?hubType=HUB&keyType=name&key={hubName}"
 
     response = requests.get(url=url, timeout=5).json()["hubs"]
@@ -96,8 +129,21 @@ def search_hub_by_name(env, orgId, hubName):
     return response
 
 
-def get_alamo_packages(domain, org_id, location_id, start_date, end_date):
-    alamo_get_url = alamo_get_url_template.format(domain, org_id, location_id, start_date, end_date)
+def get_alamo_packages(env, org_id, location_id, start_date, end_date):
+    """
+    Retrieves Alamo packages based on the provided env, organization ID, location ID, start date, and end date.
+
+    Parameters:
+    - env (str): The env for the Alamo API.
+    - org_id (str): The organization ID.
+    - location_id (str): The location ID.
+    - start_date (str): The start date for the package retrieval.
+    - end_date (str): The end date for the package retrieval.
+
+    Returns:
+    - list: The package IDs retrieved from Alamo.
+    """
+    alamo_get_url = alamo_get_url_template.format(env, org_id, location_id, start_date, end_date)
     response = requests.get(
         url=alamo_get_url,
         headers={'Accept': 'application/json'}
@@ -111,8 +157,20 @@ def get_alamo_packages(domain, org_id, location_id, start_date, end_date):
     return package_id
 
 
-def get_switchboard_package_location(domain, key_type, key_value, org_id):
-    switchboard_get_url = switchboard_get_url_template.format(domain, key_type, key_value, org_id)
+def get_switchboard_package_location(env, key_type, key_value, org_id):
+    """
+    Retrieves the location ID for a package from the Switchboard API based on the provided env, key type, key value, and organization ID.
+
+    Parameters:
+    - env (str): The env for the Switchboard API.
+    - key_type (str): The type of key used for the search (e.g., name, ID).
+    - key_value (str): The value of the key used for the search.
+    - org_id (str): The organization ID.
+
+    Returns:
+    - str: The location ID for the package.
+    """
+    switchboard_get_url = switchboard_get_url_template.format(env, key_type, key_value, org_id)
     response = requests.get(url=switchboard_get_url,
                             headers={'Accept': 'application/json'})
     location_id = ''
@@ -122,10 +180,21 @@ def get_switchboard_package_location(domain, key_type, key_value, org_id):
     return location_id
 
 
-def update_address(domain, location_id, payload):
+def update_address(env, location_id, payload):
+    """
+    Updates the address for a specific location ID using the provided env, location ID, and payload.
+
+    Parameters:
+    - env (str): The env for the address update API.
+    - location_id (str): The location ID for the address update.
+    - payload (dict): The payload containing the updated address information.
+
+    Returns:
+    - object: The response object from the address update API.
+    """
     headers = {'content-type': 'application/json'}
     
-    lockbox_update_url = lockbox_update_url_template.format(domain, location_id)
+    lockbox_update_url = lockbox_update_url_template.format(env, location_id)
     
     response = requests.put(
         url=lockbox_update_url,
@@ -136,13 +205,27 @@ def update_address(domain, location_id, payload):
     return response
 
 
-def get_address(domain, street, city, state, zip, provider=None):
+def get_address(env, street, city, state, zip, provider=None):
+    """
+    Retrieves the address information based on the provided env, street, city, state, ZIP code, and optional provider.
+
+    Parameters:
+    - env (str): The env for the geocoder API.
+    - street (str): The street address.
+    - city (str): The city name.
+    - state (str): The state abbreviation.
+    - zip (str): The ZIP code.
+    - provider (str, optional): The geocoding provider (default is 'GOOGLE').
+
+    Returns:
+    - dict: The address information retrieved from the geocoder API.
+    """
     if provider:
         provider = "&provider={}".format(provider)
     else:
         provider = "&provider=GOOGLE".format(provider)
 
-    geocoder_get_url = geocoder_get_url_template.format(domain, street, city, state, zip, provider)
+    geocoder_get_url = geocoder_get_url_template.format(env, street, city, state, zip, provider)
     
     response = requests.get(
         url=geocoder_get_url,
@@ -156,8 +239,20 @@ def get_address(domain, street, city, state, zip, provider=None):
     return address
 
 
-def get_location(domain, location_id, package_id, hub):
-    lockbox_get_url = lockbox_get_url_template.format(domain, location_id)
+def get_location(env, location_id, package_id, hub):
+    """
+    This function retrieves the location information for a specific location from Lockbox. If the precision of the location is not 'EXACT' or 'HIGH', it attempts to update the address information. The updated address is then used to construct a payload for updating the location. If the update is successful, the payload is added to the `CORRECTED_ADDRESSES` list; otherwise, it is added to the `FAILED_ADDRESSES` list.
+
+    Parameters:
+    - env (str): The environment.
+    - location_id (str): The location ID.
+    - package_id (str): The package ID.
+    - hub (str): The hub information.
+
+    Returns:
+    - None
+    """
+    lockbox_get_url = lockbox_get_url_template.format(env, location_id)
     
     response = requests.get(
         url=lockbox_get_url,
@@ -177,10 +272,10 @@ def get_location(domain, location_id, package_id, hub):
             state = typed_address.get('state')
             zip = typed_address.get('postalCode')
 
-            updated_address = get_address(domain, address1, city, state, zip)
+            updated_address = get_address(env, address1, city, state, zip)
 
             if updated_address.get('geocodeQuality') == 'LOW':
-                updated_address = get_address(domain, address2, city, state, zip)
+                updated_address = get_address(env, address2, city, state, zip)
 
                 address1 = typed_address.get('address2')
                 address2 = typed_address.get('address1')
@@ -189,10 +284,10 @@ def get_location(domain, location_id, package_id, hub):
                     address1 = typed_address.get('address1')
                     address2 = typed_address.get('address2')
 
-                    updated_address = get_address(domain, address1, city, state, zip, "SMARTY")
+                    updated_address = get_address(env, address1, city, state, zip, "SMARTY")
 
                     if updated_address.get('geocodeQuality') == 'LOW':
-                        updated_address = get_address(domain, address2, city, state, zip, "SMARTY")
+                        updated_address = get_address(env, address2, city, state, zip, "SMARTY")
 
                         address1 = typed_address.get('address2')
                         address2 = typed_address.get('address1')
@@ -226,7 +321,7 @@ def get_location(domain, location_id, package_id, hub):
                 "executionProperties": {}
             }
             
-            response = update_address(domain, location_id, payload)
+            response = update_address(env, location_id, payload)
 
             payload["id"] = location_id
             payload["hub"] = hub
@@ -247,6 +342,18 @@ def get_location(domain, location_id, package_id, hub):
 
 
 def main(env, org_id, package_id, hub):
+    """
+    This function serves as the entry point for retrieving and updating location information based on the provided parameters. It retrieves the location information for a specific location from Lockbox using the given environment, organization ID, package ID, and hub information. It then updates the address if necessary by calling the `get_location` function. Finally, it prints a completion message.
+
+    Parameters:
+    - env (str): The environment.
+    - org_id (str): The organization ID.
+    - package_id (str): The package ID.
+    - hub (str): The hub information.
+
+    Returns:
+    - None
+    """
     print("==== New thread created for {}".format(package_id))
     
     location_id = get_switchboard_package_location(env, 'pi', package_id, org_id)
@@ -257,6 +364,16 @@ def main(env, org_id, package_id, hub):
 
 
 def elapsed_time(start, finish):
+    """
+    Calculates and prints the elapsed time in hours, minutes, and seconds.
+
+    Args:
+    - start (int): The starting time in nanoseconds.
+    - finish (int): The finishing time in nanoseconds.
+
+    Returns:
+    - None
+    """
     elapsed_seconds = (finish - start) // 1000000000
 
     elapsed_hours = elapsed_seconds // 3600
@@ -271,6 +388,16 @@ def elapsed_time(start, finish):
 
 
 def save_csv_file(fileName, data):
+    """
+    Saves the provided data as a CSV file with the given filename.
+
+    Args:
+    - fileName (str): The name of the CSV file to be saved.
+    - data (list): The data to be saved in the CSV file.
+
+    Returns:
+    - None
+    """
     start = time.time_ns()
 
     if len(data) < 1:

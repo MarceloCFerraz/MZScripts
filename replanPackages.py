@@ -10,6 +10,15 @@ PACKAGES = []
 
 
 def get_package_hub(package):
+    """
+    Get the hub name associated with a package.
+
+    Parameters:
+    - package: A dictionary representing the package details.
+
+    Returns:
+    - hubName: The name of the hub associated with the package.
+    """
     hubName = ""
     
     try:
@@ -28,6 +37,18 @@ def get_package_hub(package):
 
 
 def fill_packages_list(env, orgId, keyType, key):
+    """
+    Fill the PACKAGES list with package details.
+
+    Parameters:
+    - env: The environment.
+    - orgId: The organization ID.
+    - keyType: The type of key.
+    - key: The key.
+
+    Returns:
+    None
+    """
     pkgs = packages.get_packages_details(env, orgId, keyType, key)["packageRecords"]
 
     if (len(pkgs) == 0):
@@ -37,18 +58,25 @@ def fill_packages_list(env, orgId, keyType, key):
 
 
 def replan_batches(env, orgId, hubRequested, batch, next_delivery_date):
+    """
+    Replan packages in batches based on specific criteria.
+
+    Parameters:
+    - env: The environment.
+    - orgId: The organization ID.
+    - hubRequested: The requested hub name.
+    - batch: A list of packages in a batch.
+    - next_delivery_date: The next delivery date.
+
+    Returns:
+    None
+    """
     packageIDs = []
 
     for package in batch:
         status = package["packageStatuses"]["status"]
         packageID = package["packageId"]
         hubName = get_package_hub(package)
-
-        print(
-            f"----> PACKAGE ID: {packageID}\n"+
-            f"--> STATUS: {status}\n"+
-            f"--> HUB: {hubName}\n\n"
-        )
         
         # if package is from the correct hub, continues.
         if hubName == hubRequested:
@@ -75,15 +103,22 @@ def replan_batches(env, orgId, hubRequested, batch, next_delivery_date):
 
 
 def replan(env, orgId, hubRequested, package, next_delivery_date):
+    """
+    Replan a single package based on specific criteria.
+
+    Parameters:
+    - env: The environment.
+    - orgId: The organization ID.
+    - hubRequested: The requested hub name.
+    - package: A dictionary representing the package details.
+    - next_delivery_date: The next delivery date.
+
+    Returns:
+    None
+    """
     status = package["packageStatuses"]["status"]
     packageID = package["packageId"]
     hubName = get_package_hub(package)
-
-    print(
-        f"----> PACKAGE ID: {packageID}\n"+
-        f"--> STATUS: {status}\n"+
-        f"--> HUB: {hubName}\n\n"
-    )
     
     # if package is from the correct hub, continues.
     if hubName == hubRequested:
@@ -114,6 +149,19 @@ def replan(env, orgId, hubRequested, package, next_delivery_date):
 
 
 def main(fileName, keyType, next_delivery_date, env=None, orgId=None):
+    """
+    The main function that orchestrates the package resubmission process.
+
+    Parameters:
+    - fileName: The name of the file.
+    - keyType: The type of key.
+    - next_delivery_date: The next delivery date.
+    - env: Optional. The environment. Defaults to None.
+    - orgId: Optional. The organization ID. Defaults to None.
+
+    Returns:
+        None
+    """
     if not env:
         env = utils.select_env()
     if not orgId:
@@ -131,6 +179,9 @@ def main(fileName, keyType, next_delivery_date, env=None, orgId=None):
             pool.submit(fill_packages_list, env, orgId, keyType, key)
 
     pool.shutdown(wait=True)
+
+    for pkg in PACKAGES:
+        packages.print_minimal_package_details(pkg)
 
     # If there are a lot of packages to re-submit, we'll split them in batches
     # to reduce the amount of API calls by calling the 'bulk resubmit' endpoint

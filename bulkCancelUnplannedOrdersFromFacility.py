@@ -27,6 +27,15 @@ ORGS = {
 
 
 def print_array_items(array):
+    """
+    Prints the items in an array, dividing them into groups of four.
+
+    Parameters:
+    - array (list): The array of items to be printed.
+
+    Returns:
+    None
+    """
     divisor = 4
 
     for i in range(0, len(array)):
@@ -38,6 +47,12 @@ def print_array_items(array):
 
 
 def select_env():
+    """
+    Prompts the user to select an environment.
+
+    Returns:
+    str: The selected environment.
+    """
     envs = ["PROD", "STAGE"]
     env = ""
     print("SELECT THE ENV")
@@ -49,6 +64,15 @@ def select_env():
 
 
 def select_org(env):
+    """
+    Prompts the user to select an organization based on the selected environment.
+
+    Parameters:
+    - env (str): The selected environment.
+
+    Returns:
+    str: The selected organization ID.
+    """
     orgs = list(ORGS[env].keys())
     org = ""
 
@@ -62,6 +86,17 @@ def select_org(env):
 
 
 def get_unplanned_packages_from_hub(env, orgId, facilityId):
+    """
+    Retrieves unplanned packages from a hub.
+
+    Parameters:
+    - env (str): The environment code used to construct the request URL.
+    - orgId (str): The organization ID associated with the packages.
+    - facilityId (str): The ID of the hub.
+
+    Returns:
+    list: The unplanned packages.
+    """
     url = f"http://alamo.{env}.milezero.com/alamo-war/api/constraints?orgId={orgId}&facilityId={facilityId}&state=UNPLANNED"
 
     response = requests.get(url=url, timeout=3000).json()
@@ -72,6 +107,17 @@ def get_unplanned_packages_from_hub(env, orgId, facilityId):
 
 
 def bulk_cancel_packages(env, orgId, packageIds):
+    """
+    Cancels multiple packages in bulk.
+
+    Parameters:
+    - env (str): The environment code used to construct the request URL.
+    - orgId (str): The organization ID associated with the packages.
+    - packageIds (list): The list of package IDs to be cancelled.
+
+    Returns:
+    None
+    """
     # newStatus = "CANCELLED"
 
     API = f"https://switchboard.{env}.milezero.com/switchboard-war/api/package/cancel"
@@ -99,6 +145,17 @@ def bulk_cancel_packages(env, orgId, packageIds):
 
 
 def main():
+    """
+    Main function to process data and perform package operations.
+
+    This function serves as the entry point for processing data and performing package operations. It prompts the user to select an environment and organization, retrieves unplanned packages from hub facilities, and performs bulk cancellation of packages using multithreading.
+
+    Parameters:
+    None
+
+    Returns:
+    None
+    """
     env = select_env()
     orgId = select_org(env)
 

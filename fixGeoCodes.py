@@ -120,6 +120,20 @@ def get_address(domain, street, city, state, zip, provider=None):
 
 
 def get_location(domain, location_id, package_id, hub):
+    """
+    Retrieves and updates location information based on the provided parameters.
+
+    Args:
+    - domain (str): The domain.
+    - location_id (str): The location ID.
+    - package_id (str): The package ID.
+    - hub (str): The hub information.
+
+    Returns:
+    - None
+
+    This function retrieves the location information for a specific location from Lockbox using the given domain, location ID, and package ID. It then updates the address if necessary by calling the `get_address` function. Finally, it prints the status of the update operation and appends the updated location information to the `CORRECTED_ADDRESSES` list if the update was successful.
+    """
     lockbox_get_url = lockbox_get_url_template.format(domain, location_id)
     
     response = requests.get(
@@ -207,6 +221,18 @@ def get_location(domain, location_id, package_id, hub):
 
 
 def get_gazeteer_location_id(env, org_id, index, hubName):
+    """
+    Retrieves location IDs from the gazetteer based on the provided parameters.
+
+    Args:
+    - env (str): The environment.
+    - org_id (str): The organization ID.
+    - index (int): The index for pagination.
+    - hub_name (str): The hub name.
+
+    Returns:
+    - response (object): The response object containing the retrieved location IDs.
+    """
     print(hubName, " - index: ", index)
 
     headers = {'content-type': 'application/json'}
@@ -238,6 +264,17 @@ def get_gazeteer_location_id(env, org_id, index, hubName):
 
 
 def main(env, orgId, hubName):
+    """
+    Orchestrates the retrieval and updating of location information.
+
+    Args:
+    - env (str): The environment.
+    - org_id (str): The organization ID.
+    - hub_name (str): The hub name.
+
+    Returns:
+    - None
+    """
     
     for index in range (0, 10000, 500):
         print("==== Index: {}".format(index))

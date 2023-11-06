@@ -49,13 +49,37 @@ SUCCESSES = []
 FAILS = []
 
 
-def getAllHubs():
+def get_all_hubs():
+    """
+    Retrieves all hubs for the specified organization.
+
+    This function sends a GET request to the Cromag API to retrieve all hubs associated with the organization ID. It returns a list of hubs.
+
+    Parameters:
+    - None
+
+    Returns:
+    - List of hubs
+    """
     endpoint = f"http://cromag.{ENV}.milezero.com/retail/api/hubs/org/{ORGID}"
 
     return requests.get(url=endpoint, timeout=10).json()["hubs"]
 
 
-def getAllPackagesForHub(hubName, oldDate, status):
+def get_all_packages_for_hub(hubName, oldDate, status):
+    """
+    Retrieves all packages for a specific hub, date, and status.
+
+    This function sends a GET request to the Sortation Services API to retrieve all packages in a wave for the specified organization ID, hub name, date, and status. It returns a list of valid package IDs based on the specified status.
+
+    Parameters:
+    - hubName: The name of the hub (string)
+    - oldDate: The desired date (string)
+    - status: The desired status of the packages (string)
+
+    Returns:
+    - List of valid package IDs
+    """
     endpoint = f"http://sortationservices.{ENV}.milezero.com/SortationServices-war/api/monitor/getPackagesInWave/{ORGID}/{hubName}/{oldDate}/true"
 
     packageCount = 0
@@ -81,7 +105,20 @@ def getAllPackagesForHub(hubName, oldDate, status):
     return validPackages
 
 
-def resubmitPackages(packageId, newDate, notes):
+def resubmit_packages(packageId, newDate, notes):
+    """
+    Resubmits packages with a new date and notes.
+
+    This function sends a POST request to the Switchboard API to resubmit a package with the specified package ID, new date, and notes. It handles the response and prints the success or failure message.
+
+    Parameters:
+    - packageId: The ID of the package to resubmit (string)
+    - newDate: The new date for the package (string)
+    - notes: Additional notes for the resubmission (string)
+
+    Returns:
+    - None
+    """
     endpoint = f"https://switchboard.{ENV}.milezero.com/switchboard-war/api/fulfillment/resubmit/{ORGID}/{packageId}"
 
     payload = {
@@ -102,7 +139,18 @@ def resubmitPackages(packageId, newDate, notes):
         SUCCESSES.append(packageId)
 
 
-def createDirectory(directoryName):
+def create_dir(directoryName):
+    """
+    Creates a directory with the specified name.
+
+    This function creates a directory with the specified name in the current file directory. It returns the path of the created directory.
+
+    Parameters:
+    - directoryName: The name of the directory (string)
+
+    Returns:
+    - Path of the created directory (string)
+    """
     # get current file directory and replaces "\" for "/"
     # even in windows this works out just fine
     currentDir = os.path.realpath(os.path.dirname(__name__)).replace("\\", "/")
@@ -113,9 +161,22 @@ def createDirectory(directoryName):
     return newDir
 
 
-def createFile(directory, fileName, content):
+def create_file(directory, fileName, content):
+    """
+    Creates a file with the specified name and content in the specified directory.
 
-    creationResult = f"Creating file... "
+    This function creates a file with the specified name and writes the content to the file in the specified directory. It handles any exceptions that occur during the file creation process and prints the result.
+
+    Parameters:
+    - directory: The directory where the file will be created (string)
+    - fileName: The name of the file (string)
+    - content: The content to write to the file (list of strings)
+
+    Returns:
+    - None
+    """
+
+    creationResult = f"Creating {fileName}... "
     fail = False
 
     with open(directory, "w") as file:
@@ -134,26 +195,49 @@ def createFile(directory, fileName, content):
     print(creationResult)
 
 
-def saveFile(oldDate, newDate):
+def save_file(oldDate, newDate):
+    """
+    Saves the successes and fails to separate files.
+
+    This function creates a directory named "RESULTS" and saves two separate files: one for the successes and one for the fails. The file names are based on the old date and new date. It calls the createFile() function to create the files.
+
+    Parameters:
+    - oldDate: The old date (string)
+    - newDate: The new date (string)
+
+    Returns:
+    - None
+    """
     oldDate = str(oldDate).replace('T16%3A00%3A00Z', '')
-    directory = createDirectory(directoryName="RESULTS")
+    directory = create_dir(directoryName="RESULTS")
     
     # names the file
     successesFileName = f"{oldDate}_{newDate}_SUCCESSES.txt"
     # complete directory and where the files will be saved
     successesDir = os.path.join(directory, successesFileName)
     # saving file
-    createFile(directory=successesDir, fileName=successesFileName, content=SUCCESSES)
+    create_file(directory=successesDir, fileName=successesFileName, content=SUCCESSES)
 
     # names the file
     failsFileName = f"{oldDate}_{newDate}_FAILS.txt"
     # complete directory and where the files will be saved
     failsDir = os.path.join(directory, failsFileName)
     # saving file
-    createFile(directory=failsDir, fileName=failsFileName, content=FAILS)
+    create_file(directory=failsDir, fileName=failsFileName, content=FAILS)
 
 
-def printValidStatuses():
+def print_valid_statuses():
+    """
+    Prints the valid statuses.
+
+    This function prints the valid statuses stored in the STATUSES list.
+
+    Parameters:
+    - None
+
+    Returns:
+    - None
+    """
     for status in STATUSES:
         if status == "":
             print("''")
@@ -161,7 +245,18 @@ def printValidStatuses():
             print(status)
     
 
-def getInvalidHubsCount(hubs):
+def get_invalid_hubs_count(hubs):
+    """
+    Retrieves the count of invalid hubs.
+
+    This function takes a list of hubs and returns the count of hubs that have a non-numeric name.
+
+    Parameters:
+    - hubs: List of hubs
+
+    Returns:
+    - Count of invalid hubs (integer)
+    """
     count = 0
 
     for hub in hubs:
@@ -171,7 +266,18 @@ def getInvalidHubsCount(hubs):
     return count
 
 
-def getValidHubs(hubs):
+def get_valid_hubs(hubs):
+    """
+    Retrieves the list of valid hubs.
+
+    This function takes a list of hubs and returns a new list containing only the hubs with a numeric name.
+
+    Parameters:
+    - hubs: List of hubs
+
+    Returns:
+    - List of valid hubs
+    """
     validHubs = []
 
     for hub in hubs:
@@ -182,6 +288,27 @@ def getValidHubs(hubs):
 
 
 def main():
+    """
+    This script aims to automate the complex process of capturing all packages from all hubs and replan them to a new date.
+
+    User Input:
+    - The Original Date (yyyy-mm-dd): The date for which packages will be searched.
+    - The Packages' Status (optional): Only packages with matching status will be considered.
+    - The New Date (yyyy-mm-dd): The new date to which the packages will be replanned.
+    - Resubmit Notes (optional): A message to be displayed for future reference.
+
+    Steps:
+    1. Retrieve the list of all hubs.
+    2. Calculate the count of valid and invalid hubs.
+    3. Search for packages by iterating over the valid hubs.
+    4. Store the retrieved packages in an array.
+    5. If there are valid packages found:
+       - Prompt the user for the new date and resubmit notes.
+       - Resubmit the packages.
+       - Keep track of successful and failed resubmits.
+       - If the total number of resubmits is greater than 100, create separate files to save the resubmit results.
+       - Otherwise, print the successful and failed resubmits.
+    """
     print(
         "\n"
         "This script aims to automate the complex process of capturing all packages from all hubs and replan them to a new date.\n"+
@@ -207,14 +334,14 @@ def main():
 
     status = "a"
     print(f"Valid Statuses:")
-    printValidStatuses()
+    print_valid_statuses()
     while status not in STATUSES:
         status = str(input("Input the Package Status (optional): ")).upper().strip()
 
-    hubs = getAllHubs()
+    hubs = get_all_hubs()
 
     hubsCount = len(hubs)
-    invalidHubsCount = getInvalidHubsCount(hubs)
+    invalidHubsCount = get_invalid_hubs_count(hubs)
     validHubsCount = hubsCount - invalidHubsCount
 
     print(f"{len(hubs)} hubs found ({validHubsCount} valid and {invalidHubsCount} invalid)")
@@ -222,13 +349,13 @@ def main():
 
     packages = []
 
-    validHubs = getValidHubs(hubs)
+    validHubs = get_valid_hubs(hubs)
 
     for hub in validHubs:
         hubName = hub["name"]
         print(f"> {hubName}")
 
-        hubPackages = getAllPackagesForHub(hubName, oldDate, status)
+        hubPackages = get_all_packages_for_hub(hubName, oldDate, status)
         
         # this needs to be done in order to add all packages from all hubs to the array
         for package in hubPackages:
@@ -249,7 +376,7 @@ def main():
         print("\nResubmitting...")
         for packageId in packages:
             print(f"> {packageId}", end=" ")
-            resubmitPackages(packageId, newDate, notes)
+            resubmit_packages(packageId, newDate, notes)
 
         succeededResubmits = len(SUCCESSES)
         failedResubmits = len(FAILS)
@@ -257,7 +384,7 @@ def main():
 
         if totalResubmits > 100:
             print("\nCreating files with resubmit results")
-            saveFile(oldDate=oldDate, newDate=newDate)
+            save_file(oldDate=oldDate, newDate=newDate)
         else:
             print(f"\n({succeededResubmits}/{totalResubmits}) SUCCESSFUL resubmits:")
             for resubmit in SUCCESSES:

@@ -8,6 +8,16 @@ ERRORS = []
 
 
 def main(fileName, keyType):
+    """
+    The main function that reads data from a file, retrieves package details based on the specified key type, and performs operations on the packages, such as marking them as delivered.
+
+    Parameters:
+    - fileName (str): The name of the file to read data from. Every line should be a package reference (ori, pi, bc)
+    - keyType (str): The type of key to use for retrieving package details such as bc, ori, pi and so on.
+
+    Returns:
+    None
+    """
     lines = files.get_data_from_file(fileName)
     
     print("Key Types: {}\n".format(keyType.upper())+

@@ -10,6 +10,19 @@ FULL_RESPONSE = []
 
 
 def main(env, orgId, hubId):
+    """
+    Fills data for a specific hub.
+
+    This function retrieves the hub configuration using the provided environment, organization ID, and hub ID. It then iterates over the route start times of the hub and creates a payload containing the hub name, route name, and start time. The payloads are appended to the FULL_RESPONSE list.
+
+    Parameters:
+    - env (str): The environment in which the hub data is stored.
+    - orgId (str): The organization ID associated with the hub.
+    - hubId (str): The ID of the hub.
+
+    Returns:
+    - None
+    """
     hubConfig = hubs.get_hub_config(env, orgId, hubId)
 
     hubName = f"'{hubConfig.get('hubName')} - {hubConfig.get('hubDescription')}'"
@@ -33,6 +46,18 @@ def main(env, orgId, hubId):
 
 
 def save_csv_file(fileName, data):
+    """
+    Saves data to a CSV file.
+
+    This function saves the provided data to a CSV file with the given file name. If the data is empty, a message stating that there is nothing to save is printed. Otherwise, the data is written row by row to the CSV file. If the file name contains the word "Fail", an additional column with the error information is included in each row.
+
+    Parameters:
+    - fileName (str): The name of the CSV file to be saved.
+    - data (list): The data to be saved in the CSV file.
+
+    Returns:
+    - None
+    """
     start = time.time_ns()
 
     if len(data) < 1:

@@ -3,6 +3,17 @@ from utils import files, utils, packages, routes
 from datetime import datetime
 
 def main():
+    """
+    The main function for route search.
+
+    This function serves as the entry point for searching routes. It prompts the user to select the environment, organization ID, hub name, desired date, and route name. It then calls the necessary functions from the `utils` and `routes` modules to retrieve the routes and search for the desired route based on the provided inputs.
+
+    Parameters:
+    None
+
+    Returns:
+    None
+    """
     env = utils.select_env()
     orgId = utils.select_org(env)
     hubName = input("Type the hub (only numbers)\n> ").strip()

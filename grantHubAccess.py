@@ -2,6 +2,18 @@ from utils import utils, associates, hubs, fleets
 
 
 def get_associate(env, orgId):
+    """
+    Retrieves associate data based on the associate's ID or search key.
+
+    This function prompts the user to enter the associate's ID or search key (email or username) and retrieves the associate's data using the provided information.
+
+    Parameters:
+    - env (str): The environment in which the associate data is stored.
+    - orgId (str): The organization ID associated with the associate.
+
+    Returns:
+    - associate (dict): The associate's data.
+    """
     answer = select_answer(question=">> Do you have an associate ID?")
     if answer == "Y":
         print(f">> Insert the Associate ID")
@@ -18,6 +30,20 @@ def get_associate(env, orgId):
 
 
 def get_new_hub(env, orgId, hubName=None, hubsNames=None):
+    """
+    Obtains information about a new hub.
+
+    This function prompts the user to enter the name of the new hub and validates its existence. If the hub already exists, the user is prompted to try again.
+
+    Parameters:
+    - env (str): The environment in which the hub data is stored.
+    - orgId (str): The organization ID associated with the hub.
+    - hubName (str, optional): The name of the new hub. If not provided, the user will be prompted to enter it.
+    - hubsNames (list, optional): A list of existing hub names to check for duplicates.
+
+    Returns:
+    - hub (dict): The information of the new hub.
+    """
     if hubName == None:
         hubName = input("> ").strip()
 
@@ -38,6 +64,18 @@ def get_new_hub(env, orgId, hubName=None, hubsNames=None):
 
 
 def select_answer(question=None, answers=None):
+    """
+    Presents a question to the user and expects a specific answer.
+
+    This function presents a question to the user and expects a specific answer. It ensures that the user's input matches the available answer options.
+
+    Parameters:
+    - question (str, optional): The question to be presented. If not provided, a default question will be used.
+    - answers (list, optional): The available answer options. If not provided, "Y" or "N" will be used.
+
+    Returns:
+    - answer (str): The user's selected answer.
+    """
     if answers == None:
         answers = ["Y", "N"]
 
@@ -53,6 +91,17 @@ def select_answer(question=None, answers=None):
 
 
 def associate_has_fleet(associate):
+    """
+    Checks whether an associate has a fleet.
+
+    This function checks whether an associate has a fleet by examining the associate's data.
+
+    Parameters:
+    - associate (dict): The associate's data.
+
+    Returns:
+    - has_fleet (bool): True if the associate has a fleet, False otherwise.
+    """
     fleetId = ""
 
     try:
@@ -64,6 +113,19 @@ def associate_has_fleet(associate):
 
 
 def get_associate_hubs_from_fleet(env, orgId, associate):
+    """
+    Retrieves the hub IDs associated with an associate's fleet.
+
+    This function retrieves the hub IDs associated with an associate's fleet. It collects the hub IDs from the fleet and includes the associate's current hub ID if applicable.
+
+    Parameters:
+    - env (str): The environment in which the fleet data is stored.
+    - orgId (str): The organization ID associated with the fleet.
+    - associate (dict): The associate's data.
+
+    Returns:
+    - idsList (list): The list of hub IDs associated with the associate's fleet.
+    """
     idsList = []
     fleet = ""
 
@@ -83,6 +145,19 @@ def get_associate_hubs_from_fleet(env, orgId, associate):
 
 
 def fill_hubs_list(env, orgId, hubIdsList):
+    """
+    Fills a list of hubs by searching for each hub's information.
+
+    This function fills a list of hubs by searching for each hub's information based on the provided hub IDs.
+
+    Parameters:
+    - env (str): The environment in which the hub data is stored.
+    - orgId (str): The organization ID associated with the hubs.
+    - hubIdsList (list): The list of hub IDs to search for.
+
+    Returns:
+    - hubsList (list): The list of hub information corresponding to the provided hub IDs.
+    """
     hubsList = []
 
     for hubId in hubIdsList:
@@ -92,67 +167,112 @@ def fill_hubs_list(env, orgId, hubIdsList):
 
 
 def search_fleet_with_hubs(allFleets, hubIdsList):
-    hubIdsList.sort()
+    """
+    Searches for a fleet that contains the exact set of hub IDs.
+
+    This function searches for a fleet that contains the exact set of hub IDs provided. It checks if any fleet matches the hub IDs and returns the fleet ID if found.
+
+    Parameters:
+    - allFleets (list): The list of all fleets to search within.
+    - hubIdsList (list): The list of hub IDs to match.
+
+    Returns:
+    - fleetId (str): The ID of the fleet that matches the provided hub IDs, or None if no match is found.
+    """
+    hubIdsSet = set(hubIdsList)  # Convert hubIdsList to a set for efficient comparison
 
     for fleet in allFleets:
         try:
-            fleetHubs = fleet.get('hubIds')
+            fleetHubIdsSet = set(fleet['hubIds'])
 
-            if len(fleetHubs) == len(hubIdsList):
-                found = True
-
-                fleetHubs.sort()
-
-                for hubid in hubIdsList:
-                    if hubid not in fleetHubs:
-                        found = False
-                if found:
-                    return fleet["fleetId"]
-
-        except Exception as e:
-            print(f"** No hubIds in {fleet.get('fleetId')}")
+            if fleetHubIdsSet == hubIdsSet:
+                return fleet['fleetId']
+        except Exception:
+            pass
 
     print(">>>> Fleet not found!")
-
     return None
 
 
-def create_new_fleet(env, orgId, hubsList):
-    fleetId = fleets.create_fleet(env=env, orgId=orgId, hubsList=hubsList)
+def create_new_fleet(env, orgId, hubsList, fleetName=None, fleetLogo=None):
+    """
+    Creates a new fleet using the provided information.
+
+    This function creates a new fleet using the provided hub list, fleet name, and fleet logo. It returns the newly created fleet ID.
+
+    Parameters:
+    - env (str): The environment in which the fleet will be created.
+    - orgId (str): The organization ID associated with the fleet.
+    - hubsList (list): The list of hubs to be included in the fleet.
+    - fleetName (str, optional): The name of the new fleet. If not provided, the org name will be used.
+    - fleetLogo (str, optional): The logo for the new fleet. If not provided, the org logo will be used.
+
+    Returns:
+    - fleetId (str): The ID of the newly created fleet.
+    """
+    fleetId = fleets.create_fleet(env, orgId, hubsList, fleetName, fleetLogo)
     print(f">> {fleetId}")
 
     return fleetId
 
 
 def update_associate(env, associate, userName):
+    """
+    Updates the associate's data.
+
+    This function updates the associate's data using the provided environment, associate information, and the name of the user making the changes. It prints the update status and any relevant error messages.
+
+    Parameters:
+    - env (str): The environment in which the associate data is stored.
+    - associate (dict): The associate's data to be updated.
+    - userName (str): The name of the user making the changes.
+
+    Returns:
+    None
+    """
     response = associates.update_associate_data(env, associate, userName)
 
     print(f">> Update Status: {'OK' if response.status_code < 400 else 'FAILED'}")
     print(f"{response.text if response.status_code >= 400 else ''}")
 
 
-def apply_changes(env, orgId, hubsList, allFleets, associate, userName):
+def get_company_name(name):
     """
-    This function manages the assignment and updating of associate access to hubs within fleets based on the availability of fleets and hubs. It performs necessary updates and creations, and communicates the results to the user.
+    Extracts the company name from a given string.
+
+    This function extracts the company name from a given string by removing any spaces after the first word.
 
     Parameters:
-    - env: The environment where the fleet organization operates.
-    - orgId: The organization ID within the chosen environment.
-    - hubsList: A list of hubs to which the associate should have access.
-    - allFleets: A list of all fleets within the selected environment and organization.
-    - associate: The associate whose access is being managed.
-    - userName: The name of the user making the changes.
+    - name (str): The input string containing the company name.
 
-    This function performs the following logical steps:
+    Returns:
+    - companyName (str): The extracted company name.
+    """
+    companyName = ""
 
-    1. Retrieve the names and IDs of hubs from the provided hubsList.
-    2. Search for a fleet that has the same hubs as the associate's access.
-    3. If a fleet with the correct hubs already exists, update the associate's data with that fleet.
-    4. If the associate already has a fleet, check if other associates use the same fleet.
-        - If no other associate uses the same fleet, update the existing fleet with the new hubs.
-        - If other associates use the same fleet, create a new fleet with the provided hubs.
-    5. If the associate doesn't have a fleet, create a new fleet with the provided hubs and associate it with the associate.
+    for char in name:
+        if char != " ":
+            companyName += char
+        else:
+            return companyName
+    
+    return companyName
 
+
+def apply_changes(env, orgId, hubsList, allFleets, associate, userName):
+    """
+    Applies changes to the associate's fleet based on the provided information.
+
+    Parameters:
+    - env (str): The environment in which the changes are being applied. Valid values are 'stage', or 'prod'.
+    - orgId (int): The ID of the organization to which the associate belongs.
+    - hubsList (list): A list of dictionaries containing information about the hubs.
+    - allFleets (list): A list of all existing fleets.
+    - associate (dict): A dictionary containing LMX information of the associate.
+    - userName (str): The name of the user making the changes.
+
+    Returns:
+    None
     """
     hubsNames = [h.get('name') for h in hubsList]
     hubsIds = [h.get('id') for h in hubsList]
@@ -170,14 +290,14 @@ def apply_changes(env, orgId, hubsList, allFleets, associate, userName):
         update_associate(env, associate, userName)
     else:
         if associate_has_fleet(associate):  # if associate already have a fleetId
-            fleet = associate["fleetId"]
+            fleetId = associate["fleetId"]
             
             print(f">> Checking if other associates use the same fleet")
             associatesWithSameFleet = associates.search_associate(
                 env=env,
                 org_id=orgId,
                 key_type_index=11,  # fleetId (11)
-                search_key=fleet
+                search_key=fleetId
             )
             
             if len(associatesWithSameFleet) == 1 and associatesWithSameFleet is not None:
@@ -185,11 +305,13 @@ def apply_changes(env, orgId, hubsList, allFleets, associate, userName):
                 # means we can just update his fleet instead of creating another one
                 print(">> No other associate use this fleetId")
 
-                print(f">> Updating Fleet: {fleets.update_fleet_hubs(env, orgId, fleet, hubsList)}")
+                print(f">> Updating Fleet: {fleets.update_fleet_hubs(env, orgId, fleetId, hubsList)}")
             else:
                 # In this case we need to create a new fleet
                 print(">> Someone else uses this fleetId as well")
-                fleetId = create_new_fleet(env, orgId, hubsList)
+                fleet = fleets.search_fleet(env, orgId, fleetId)
+                companyName = get_company_name(associate.get('companyId'))
+                fleetId = create_new_fleet(env, orgId, hubsList, companyName, fleet.get('logoUrl'))
 
                 associate["fleetId"] = fleetId
 
@@ -197,7 +319,7 @@ def apply_changes(env, orgId, hubsList, allFleets, associate, userName):
         else:
             print(">> Associate doesn't have a fleet")
             print(f">> Creating new fleet with {' '.join(hubsNames)}")
-            fleetId = create_new_fleet(env, orgId, hubsList)
+            fleetId = create_new_fleet(env, orgId, hubsList, associate.get('companyId'))
 
             associate["fleetId"] = fleetId
 
@@ -205,6 +327,19 @@ def apply_changes(env, orgId, hubsList, allFleets, associate, userName):
 
 
 def move_to_new_hub(env, orgId, associate, userName, newHub=None):
+    """
+    Moves the associate to a new hub and updates their information accordingly.
+
+    Parameters:
+    - env (str): The environment in which the changes are being applied.
+    - orgId (int): The ID of the organization to which the associate belongs.
+    - associate (dict): A dictionary containing information about the associate.
+    - userName (str): The name of the user making the changes.
+    - newHub (dict, optional): A dictionary containing information about the new hub. If not provided, the user will be prompted to enter the new hub's name.
+
+    Returns:
+    None
+    """
     print(">> Moving associate, removing fleet, vehicle and pref. route")
 
     if newHub == None:
@@ -224,6 +359,17 @@ def move_to_new_hub(env, orgId, associate, userName, newHub=None):
 
 
 def main():
+    """
+    The main function that interacts with the user, retrieves associate information, and performs necessary actions based on the associate's type and input.
+
+    This function prompts the user to enter the associate's ID, name, fleet information, and the desired action to be performed. It then validates the input, retrieves additional information if needed, and executes the corresponding function based on the associate's type and action.
+
+    Parameters:
+    None
+
+    Returns:
+    None
+    """
     userName = input("What is your name?\n> ")
     env = utils.select_env()
     orgId = utils.select_org(env)

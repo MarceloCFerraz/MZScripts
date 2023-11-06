@@ -1,5 +1,6 @@
 import sys
 from utils import utils, associates, hubs, fleets
+import grantHubAccess
 
 
 def get_old_hub(env, orgId, retry=False):
@@ -93,14 +94,6 @@ def search_fleet_with_hubs(allFleets, hubIdsArray):
     return None
 
 
-def create_new_fleet(env, orgId, hubsList):
-    print(f">> Creating new fleet",)
-    fleetId = fleets.create_fleet(env=env, orgId=orgId, hubsArray=hubsList)
-    print(f">> {fleetId}")
-
-    return fleetId
-
-
 def update_associate(env, associate, userName):
     response = associates.update_associate_data(env, associate, userName)
     print(f">> Updating associate data: {response}\n{response.text if response.status_code >= 400 else ''}")
@@ -125,7 +118,7 @@ def main():
             oldHub = get_old_hub(env, orgId)
 
             allFleets = fleets.search_fleet(env, orgId)
-            print(f">> Loaded {len(allFleets)} fleets")
+            # print(f">> Loaded {len(allFleets)} fleets")
 
             hubIdsList = get_associate_hubs_from_fleet(env, orgId, associate)
         
@@ -147,14 +140,14 @@ def main():
                     update_associate(env, associate, userName)
                 else:
                     if associate_has_fleet(associate):  # if associate already have a fleetId
-                        fleet = associate["fleetId"]
+                        fleetId = associate["fleetId"]
                         
                         print(f">> Checking if other associates use the same fleet")
                         associatesWithSameFleet = associates.search_associate(
                             env=env,
                             org_id=orgId,
                             key_type_index=11,  # fleetId (11)
-                            search_key=fleet
+                            search_key=fleetId
                         )
                         
                         if len(associatesWithSameFleet) == 1 and associatesWithSameFleet is not None:
@@ -162,11 +155,15 @@ def main():
                             # means we can just update his fleet instead of creating another one
                             print(">> No other associate use this fleetId")
 
-                            print(f">> Updating Fleet: {fleets.update_fleet_hubs(env, orgId, fleet, hubsList)}")
+                            print(f">> Updating Fleet: {fleets.update_fleet_hubs(env, orgId, fleetId, hubsList)}")
                         else:
                             # In this case we need to create a new fleet
                             print(">> Someone else uses this fleetId as well")
-                            fleetId = create_new_fleet(env, orgId, hubsList)
+
+                            fleet = fleets.search_fleet(env, orgId, fleetId)
+                            
+                            companyName = grantHubAccess.get_company_name(associate.get('companyId'))
+                            fleetId = grantHubAccess.create_new_fleet(env, orgId, hubsList, companyName, fleet.get('logoUrl'))
 
                             associate["fleetId"] = fleetId
 
@@ -174,7 +171,9 @@ def main():
                     else:
                         print(">> Associate doesn't have a fleet")
                         print(f">> Creating new fleet with {[h.get('name') for h in hubsList]}")
-                        fleetId = create_new_fleet(env, orgId, hubsList)
+                        
+                        companyName = grantHubAccess.get_company_name(associate.get('companyId'))
+                        fleetId = grantHubAccess.create_new_fleet(env, orgId, hubsList, companyName)
 
                         associate["fleetId"] = fleetId
 

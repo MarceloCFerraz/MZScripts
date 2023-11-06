@@ -7,6 +7,19 @@ ASSOCIATES = []
 
 
 def get_associate(env, orgId, associateId):
+    """
+    Retrieves associate data and adds it to the ASSOCIATES list.
+
+    This function retrieves the associate data for a given `associateId` using the `get_associate_data` function from the `associates` module. If the associate is found, their data is appended to the ASSOCIATES list. If the associate is not found, a message is printed indicating that the associate was not found.
+
+    Parameters:
+    - env (str): The environment.
+    - orgId (str): The organization ID.
+    - associateId (str): The associate ID to retrieve.
+
+    Returns:
+    None
+    """
     associate = associates.get_associate_data(env, orgId, associateId)
 
     if associate != None:
@@ -16,6 +29,19 @@ def get_associate(env, orgId, associateId):
 
 
 def get_new_hubs(env, orgId, hubsNames):
+    """
+    Retrieves new hubs and adds them to the newHubs list.
+
+    This function prompts the user to enter the names of new hubs. It continues to prompt until the user leaves the input blank. For each new hub name entered, it calls the `get_new_hub` function from the `grantHubAccess` module to retrieve the hub data. The retrieved hub data is then added to the `newHubs` list, and the hub name is appended to the `hubsNames` list. The function stops prompting for new hub names if the user leaves the input blank or if the `updated` flag is set to True.
+
+    Parameters:
+    - env (str): The environment.
+    - orgId (str): The organization ID.
+    - hubsNames (list): The list of existing hub names.
+
+    Returns:
+    - newHubs (list): The list of new hub data.
+    """
     hubName = "init"
     newHubs = []
     updated = False

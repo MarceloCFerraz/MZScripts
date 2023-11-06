@@ -3,33 +3,24 @@ import sys
 from utils import files, packages, utils
 
 
-def saveJsonToFile(packages, key):
-    # get current file directory and replaces "\" for "/"
-    # even in windows this works out just fine
-    current_dir = os.path.realpath(os.path.dirname(__name__)).replace("\\", "/")
-    # creates "RESULTS" folder directory
-    response_dir = current_dir + "/RESULTS"
-    os.makedirs(response_dir, exist_ok=True)
-    
-    # names the file
-    FILE_NAME = f"{key}_HISTORIES.json"
-
-    # this is the complete directory and where the file will be saved
-    final_dir = os.path.join(response_dir, FILE_NAME)
-
-    result = f"File {FILE_NAME} containing the complete response "
-
-    with open(final_dir, "w") as json_file:
-        try:
-            json_file.write(packages)
-            result += f"was created SUCCESSFULLY and can be accessed on ./RESULTS/{FILE_NAME}!"
-        except Exception as e:
-            result += f"COULD NOT be created. See exception bellow:\n\n{e}"
-
-    print(result)
-
-
 def main(KEY, KEY_TYPE):
+    """
+    The main function for retrieving package histories.
+
+    Parameters:
+    KEY (str): The key value corresponding to the specified key type.
+    KEY_TYPE (str): The type of key used for package retrieval. Valid options include:
+        - "pi" (Package Id)
+        - "tn" (Tracking Number)
+        - "ci" (Container Id)
+        - "bc" (Shipment Barcode)
+        - "oi" (Order Id)
+        - "ori" (Order Reference Id)
+        - "ji" (Job Id)
+
+    Returns:
+    None
+    """
     env = utils.select_env()
     orgId = utils.select_org(env)
     response = {}
@@ -40,7 +31,7 @@ def main(KEY, KEY_TYPE):
             packages.print_package_histories(package)
     
     formattedResponse = files.format_json(response)
-    saveJsonToFile(packages=formattedResponse, key=KEY)
+    files.save_json_to_file(formattedResponse, "PKG_HISTORY")
 
 
 # get command line argument

@@ -5,6 +5,17 @@ from utils import utils
 # fileName: Staples_8764_ORDERDET_20230902_PROD_US0436373.csv
 
 def get_original_data(env, requestId, token):
+    """
+    Retrieves the original data on the file from staples SFTP/EDI, using the provided request ID and authentication token.
+
+    Parameters:
+    - env (str): The environment from which to retrieve the data.
+    - requestId (str): The ID of the request for the original data.
+    - token (str): The authentication token for accessing the data.
+
+    Returns:
+    - response (dict): The JSON response containing the original data.
+    """
     # requestId: ad2a170b-d98e-46f7-8eda-486a2970a507 (arquivo original)
     # https://milevision.milezero.com/mv/uploads/requestfile?requestId=ad2a170b-d98e-46f7-8eda-486a2970a507
     
@@ -36,6 +47,17 @@ def get_original_data(env, requestId, token):
 
 
 def get_mz_data(env, parentId, token):
+    """
+    Retrieves the data from the converted MZ file format, using the provided parent ID and authentication token.
+
+    Parameters:
+    - env (str): The environment from which to retrieve the data.
+    - parentId (str): The ID of the parent for the MZ data.
+    - token (str): The authentication token for accessing the data.
+
+    Returns:
+    - response (dict): The JSON response containing the MZ data.
+    """
     # parentId: 8e6eefcf-5f2a-4024-bd77-eb9399a7c5f5 (arquivo gerado)
     # https://milevision.milezero.com/mv/uploads/request?requestId=8e6eefcf-5f2a-4024-bd77-eb9399a7c5f5
     
@@ -67,6 +89,15 @@ def get_mz_data(env, parentId, token):
 
 
 def get_data_in_string(data_string):
+    """
+    Converts a comma-separated string into a list of individual data elements.
+
+    Parameters:
+    - data_string (str): The comma-separated string to be converted.
+
+    Returns:
+    - dataset (list): The list of individual data elements.
+    """
     dataset = []
     data = ""
 
@@ -87,6 +118,16 @@ def get_data_in_string(data_string):
 
 
 def fix_product_description(content, difference):
+    """
+    Fixes the product description by combining multiple elements into a single element.
+
+    Parameters:
+    - content (list): The list of content elements.
+    - difference (int): The difference between the length of content and headers.
+
+    Returns:
+    - new_list (list): The updated list with fixed product descriptions.
+    """
     new_list = []
     
     i = 0
@@ -110,6 +151,15 @@ def fix_product_description(content, difference):
 
 
 def get_original_dict(data):
+    """
+    Parses the original data and converts it into a dictionary.
+
+    Parameters:
+    - data (list): The list of original data elements.
+
+    Returns:
+    - dictionary (dict): The dictionary representation of the original data.
+    """
     #         [
     # # {
     # #     "number": 0,
@@ -152,6 +202,15 @@ def get_original_dict(data):
 
 
 def get_mz_dict(dataset):
+    """
+    Parses the MZ data and converts it into a dictionary.
+
+    Parameters:
+    - dataset (list): The list of MZ data elements.
+
+    Returns:
+    - dictionary (dict): The dictionary representation of the MZ data.
+    """
     # [
     #     {
     #         "refId": "0517614062334001001",
@@ -201,6 +260,17 @@ def get_mz_dict(dataset):
 
 
 def main():
+    """
+    The main function that orchestrates the data retrieval and processing.
+
+    This function prompts the user to enter the environment, request ID, parent ID, and authentication token for accessing the data. It then retrieves the original and MZ data from the specified environment using the provided IDs and token. The original and MZ data are parsed into dictionaries. Finally, the dictionaries are saved as CSV files.
+
+    Parameters:
+    - None
+
+    Returns:
+    - None
+    """
     # env = utils.select_env()
 
     env =  "PROD"
@@ -208,27 +278,25 @@ def main():
     
     token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdXRob3JpemF0aW9uIjp7Imdyb3VwcyI6WyJTdGFwbGVzIiwiU3RhcGxlcyBNaWxlVmlzaW9uIl0sInJvbGVzIjpbIk1pbGVWaXNpb25fVXNlciJdLCJwZXJtaXNzaW9ucyI6W119LCJvcmdhbml6YXRpb24iOnsib3JnTmFtZSI6IjIyNTU1ZTBkLWYyZGItNDQ1YS04ZjNhLTViMzBlMmNmNDNiMiIsIm9yZ0lkIjoiM2M4OTdlODQtMzk1Ny00OTU4LWI1NGQtZDAyYzAxYjE0ZjE1IiwiQWxhYm8iOnsib3JnTmFtZSI6IjIyNTU1ZTBkLWYyZGItNDQ1YS04ZjNhLTViMzBlMmNmNDNiMiIsIm9yZ0lkIjoiM2M4OTdlODQtMzk1Ny00OTU4LWI1NGQtZDAyYzAxYjE0ZjE1In19LCJvYmplY3RzIjp7ImRyaXZlcklkIjoiYmE1NWU0M2EtMzg4ZC00NWYwLWI0NjgtYzk2ZDc4N2JhNzk5In0sImlzcyI6Imh0dHBzOi8vbWlsZXplcm8uYXV0aDAuY29tLyIsInN1YiI6ImF1dGgwfDVhMjlkNjk1N2E0NTA2NWU0ZDdhZTNkMSIsImF1ZCI6Ijd1bVVMbWxDVEpyM3NPbno1aXdwbkNYblhjNUxlMUxDIiwiaWF0IjoxNjk2Njg5NzU4LCJleHAiOjE2OTY3MjU3NTh9.Za-Q_FBvxkFFQGQIC0e3BXavegDYIVx5KYDInOvkkEg"
 
-    # fileName = input("Type in the file name ('file' column in orders page): ")
-    # token = input("Paste the Authentication token: ")
-    # requestId = input("Type in the requestId (requestFile?): ")
-    # requestId = "0d194a2e-5bdf-4968-831a-cf9d8a064327"
+    fileName = input("Type in the file name ('file' column in orders page): ")
+    token = input("Paste the Authentication token: ")
+    requestId = input("Type in the requestId (requestFile?): ")
+    requestId = "0d194a2e-5bdf-4968-831a-cf9d8a064327"
     
-    # original_data = get_original_data(env, requestId, token)
+    original_data = get_original_data(env, requestId, token)
 
-    # original_dict = get_original_dict(original_data)
-    # original_df = pandas.DataFrame(data=original_dict)
+    original_dict = get_original_dict(original_data)
+    original_df = pandas.DataFrame(data=original_dict)
 
-    # print("Saving original file...")
-    # original_df.to_csv(f"Original {fileName}.csv", index=False)
-    
-    
+    print("Saving original file...")
+    original_df.to_csv(f"Original {fileName}.csv", index=False)
+
     # parentId = input("Type in the parentId (request?): ")
     parentId = "4bbb089a-6272-41e6-98e0-f78caed62383"
 
     mz_data = get_mz_data(env, parentId, token)
     mz_dict = get_mz_dict(mz_data)
     mz_df = pandas.DataFrame(data=mz_dict)
-
 
     print("Saving MZ file...")
     mz_df.to_csv(f"MZ {fileName}.csv", index=False)

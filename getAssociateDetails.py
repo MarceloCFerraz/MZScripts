@@ -2,6 +2,17 @@ from utils import files, utils, associates
 
 
 def main():
+    """
+    Retrieves and displays associate details based on the selected key type.
+
+    This function prompts the user to select the environment and organization ID. It then prompts the user to select the key type index. If the key type index is greater than 0, the function prompts the user to enter the associate's specific key. Otherwise, it uses the organization ID as the search key. The function retrieves the associate data based on the selected environment, organization ID, key type index, and search key. The function prints the number of associates found and their details, including their state, account type, associate ID, contact information, location ID, hub ID, fleet ID (if available), and WorldView ID. If there are more than 10 associates, a message is displayed indicating that there are too many associates, and the full response is saved in the 'RESULTS' folder.
+
+    Parameters:
+    - None
+
+    Returns:
+    - None
+    """
     env = utils.select_env()
     orgId = utils.select_org(env)
     key_type_index = utils.get_associate_key_type_index()

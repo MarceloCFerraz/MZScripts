@@ -4,6 +4,12 @@ from utils import utils, packages, files, routes
 
 
 def main():
+    """
+    The main function that retrieves package IDs from a file, prompts for user input, searches for a route, and moves the packages to the specified route.
+
+    Returns:
+    None
+    """
     SUCCESSES = []
     ERRORS = []
 
@@ -15,7 +21,7 @@ def main():
     env = utils.select_env()
     orgId = utils.select_org(env)
     
-    hubName = input("Type in the route's hub\n> ")
+    hubName = input("Type in the route's hub name\n> ")
     newRoute = input("Type in the new route name\n> ").strip().upper()
     cpt = datetime.strptime(
         input("Type in the route date (yyyy-mm-dd)\n> ").strip(),

@@ -2,33 +2,21 @@
 # https://stackoverflow.com/questions/1345827/how-do-i-find-the-time-difference-between-two-datetime-objects-in-python
 import sys
 import requests
+from utils import associates, utils
 from datetime import datetime, timezone
 from dateutil import parser
 
-API = "http://lmx.prod.milezero.com/lmx-war/api/"
-ORGS = {
-    "STAPLES": {
-        "PROD": "3c897e84-3957-4958-b54d-d02c01b14f15" 
-    }
-}
 
+def calculate_telemetries_interval(telemetries):
+    """
+    Calculate time intervals with a difference greater than 5 minutes within a list of telemetries.
 
-def getTelemetries(associateId, startTime, endTime):
-    endpoint = f"{API}lmxtelemetry/org/{ORGS['STAPLES']['PROD']}/owner/{associateId}?startTime={str(startTime).replace(':', '%3A')}&endTime={str(endTime).replace(':', '%3A')}"
+    Parameters:
+    - telemetries: A list of telemetry events.
 
-    print(f"\n{startTime} to {endTime}")
-    print(f"Retrieving Telemetries for {associateId}")
-
-    return requests.get(url=endpoint, timeout=10).json()["events"]
-    
-
-
-def main(associateId, startTime, endTime):
-    telemetries = getTelemetries(associateId=associateId, startTime=startTime, endTime=endTime)
-
-    print("> Telemetries gathered")
-    print("\n> Searching...")
-
+    Returns:
+    None
+    """
     count = 0
 
     previous_stamp = parser.isoparse( # python 3.6
@@ -52,7 +40,33 @@ def main(associateId, startTime, endTime):
         print("\nNo difference greater than 5 minutes was found in the reported interval!")
 
 
-associateId = input("insert associateId: ")
-startTime = str(input("insert startTime (zulu format -> yyyy-mm-ddTHH:mm:ssZ): "))
-endTime = str(input("insert endTime (zulu format -> yyyy-mm-ddTHH:mm:ssZ): "))
-main(associateId, startTime, endTime)
+def main(env, orgId, associateId, startTime, endTime):
+    """
+    The main function that retrieves telemetries and searches for time intervals with a difference greater than 5 minutes.
+
+    Parameters:
+    - env: The environment.
+    - orgId: The ID of the organization.
+    - associateId: The ID of the associate.
+    - startTime: The start time of the telemetry range.
+    - endTime: The end time of the telemetry range.
+
+    Returns:
+    None
+    """
+    telemetries = associates.get_telemetries(env, orgId, associateId, startTime, endTime)
+
+    print("> Calculating telemetries interval")
+
+    calculate_telemetries_interval(telemetries)
+
+
+env = utils.select_env()
+orgId = utils.select_org(env)
+
+associateId = input("Insert associateId: ")
+
+startTime = str(input("Insert startTime (zulu format -> yyyy-mm-ddTHH:mm:ssZ): "))
+endTime = str(input("Insert endTime (zulu format -> yyyy-mm-ddTHH:mm:ssZ): "))
+
+main(env, orgId, associateId, startTime, endTime)

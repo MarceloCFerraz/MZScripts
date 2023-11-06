@@ -137,3 +137,25 @@ def update_associate_data(env, associateData, userName):
     print("Updating Associate data")
     url = f"http://lmx.{env}.milezero.com/lmx-war/api/associate?requestor={str(userName).replace(' ', '%20')}&requestorIdType=NAME"
     return requests.put(url=url, json=associateData, timeout=5)
+
+
+def get_telemetries(env, orgId, associateId, startTime, endTime):
+    """
+    Retrieve telemetries for a specific associate within a given time range.
+
+    Parameters:
+    - env: The environment.
+    - orgId: The ID of the organization.
+    - associateId: The ID of the associate.
+    - startTime: The start time of the telemetry range.
+    - endTime: The end time of the telemetry range.
+
+    Returns:
+    - events: A list of telemetry events.
+    """
+    formattedStart = str(startTime).replace(':', '%3A')
+    formattedEnd = str(endTime).replace(':', '%3A')
+
+    endpoint = f"http://lmx.{env}.milezero.com/lmx-war/api/lmxtelemetry/org/{orgId}/owner/{associateId}?startTime={formattedStart}&endTime={formattedEnd}"
+
+    return requests.get(url=endpoint, timeout=10).json()["events"]
