@@ -1,18 +1,17 @@
-import os
 import sys
 from utils import files, packages, utils
 import getPackageDetails
 
 
-def main(FILE_NAME, KEY_TYPE, STATUSES):
+def main(file_name, key_type, statuses):
     """
     Retrieves and processes package details.
 
-    This function prompts the user to select the environment and organization ID. It then retrieves a list of status values based on the provided STATUSES parameter. Next, it reads a file containing keys and retrieves package details for each key. The function checks if the package status matches the provided status list. If it does, the package details are printed and added to the final response. The function also keeps track of the number of valid and invalid packages.
+    This function prompts the user to select the environment and organization ID. It then retrieves a list of status values based on the provided statuses parameter. Next, it reads a file containing keys and retrieves package details for each key. The function checks if the package status matches the provided status list. If it does, the package details are printed and added to the final response. The function also keeps track of the number of valid and invalid packages.
 
     Parameters:
-    - FILE_NAME (str): The name of the file containing the keys.
-    - KEY_TYPE (str): The type of key.
+    - file_name (str): The name of the file containing the keys.
+    - key_type (str): The type of key.
         - "pi" (Package Id)
         - "tn" (Tracking Number)
         - "ci" (Container Id)
@@ -20,7 +19,7 @@ def main(FILE_NAME, KEY_TYPE, STATUSES):
         - "oi" (Order Id)
         - "ori" (Order Reference Id)
         - "ji" (Job Id)
-    - STATUSES (str): A comma-separated string of statuses to filter the packages. If empty, all statuses are considered valid.
+    - statuses (str): A comma-separated string of statuses to filter the packages. If empty, all statuses are considered valid.
 
     Returns:
     - None
@@ -30,16 +29,16 @@ def main(FILE_NAME, KEY_TYPE, STATUSES):
 
     status_list = []
     
-    if STATUSES != "":
-        status_list = getPackageDetails.get_status_list(STATUSES)
+    if statuses != "":
+        status_list = getPackageDetails.get_status_list(statuses)
     
-    keys = files.get_data_from_file(FILE_NAME)
+    keys = files.get_data_from_file(file_name)
     response = {}
     valid_packages = []
     invalid_packages = 0
 
     for key in keys:
-        pkgs = packages.get_packages_details(env, orgId, KEY_TYPE, key)["packageRecords"]
+        pkgs = packages.get_packages_details(env, orgId, key_type, key)["packageRecords"]
         for package in pkgs:
             status = package["packageStatuses"]["status"]
 
@@ -47,8 +46,8 @@ def main(FILE_NAME, KEY_TYPE, STATUSES):
                 print(f"Package ignored (not marked as {', '.join(status_list)})")
                 invalid_packages += 1
             else:
-                packages.print_package_details(package)
-                print(f"Package added to final response ({status})")
+                packages.print_minimal_package_details(package)
+                print(f"\nPackage added to final response ({status})\n\n")
                 valid_packages.append(package)
     
     response["packageRecords"] = valid_packages
@@ -60,7 +59,6 @@ def main(FILE_NAME, KEY_TYPE, STATUSES):
     if valid_packages != []:
         formatted_response = files.format_json(response)
         files.save_json_to_file(formatted_response, "PKGS_DETAILS")
-
 
 
 # get command line argument
@@ -75,13 +73,13 @@ if len(sys.argv) < 3:
         "--> hubName: the hub that requested support\n\n"+
 
         "SCRIPT USAGE:\n"+
-        "--> python getBulkPackageDetails.py <HUB_NAME> <KEY_TYPE> (OPTIONAL) <STATUSES>\n\n"+
+        "--> python getBulkPackageDetails.py <HUB_NAME> <key_type> (OPTIONAL) <statuses>\n\n"+
 
-        "-> Accepted KEY_TYPEs:\n"+
-        "\n".join(map(str, packages.VALID_KEY_TYPES))+
+        "-> Accepted key_types:\n"+
+        "\n".join(map(str, packages.VALID_key_typeS))+
 
         "\n\n--> Valid Statuses:\n"+
-        "\n".join(map(str, packages.VALID_STATUSES))+
+        "\n".join(map(str, packages.VALID_statuses))+
 
         "\n\nSCRIPT EXAMPLE:\n"+
         "--> python getBulkPackageDetails.py 8506 bc 'cancelled delivered'\n"+
@@ -92,16 +90,16 @@ if len(sys.argv) < 3:
         " If no filter status is informed, all statuses will be displayed\n\n"+
 
         "NOTES:\n"+
-        "> Check comments on code to update relevant data such as KEY_TYPE (bc, ori, etc)\n"
+        "> Check comments on code to update relevant data such as key_type (bc, ori, etc)\n"
     )
     sys.exit(1)
 
 # The file name must be to the requester's hub name (e.g. 8506)
-FILE_NAME = sys.argv[1].replace(".txt", "").replace(".\\", "")
-KEY_TYPE = sys.argv[2].lower()
-STATUSES = ""
+file_name = sys.argv[1].replace(".txt", "").replace(".\\", "")
+key_type = sys.argv[2].lower()
+statuses = ""
 try:
-    STATUSES = sys.argv[3]
+    statuses = sys.argv[3]
 except Exception as e:
     pass
-main(FILE_NAME, KEY_TYPE, STATUSES)
+main(file_name, key_type, statuses)
