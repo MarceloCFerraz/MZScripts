@@ -160,7 +160,7 @@ def get_packages_details(env, orgId, KEY_TYPE, key):
 
 
 
-def get_packages_histories(keyType, key):
+def get_packages_histories(env, orgId, keyType, key):
     """
     Retrieves the histories of packages based on a specific key.
 
@@ -171,13 +171,10 @@ def get_packages_histories(keyType, key):
     Returns:
         response (object): The response object from the API call.
     """
-    API = "http://switchboard.prod.milezero.com/switchboard-war/api/"
-    endpoint = f"{API}package/histories?keyValue={key}&keyType={keyType}"
-    
-    # "https://switchboard.{env}.milezero.com/switchboard-war/api/package/histories?keyValue={key}&keyType={keyType}&orgId={orgId}&provider={providerName}&orderBy=timestamp"    
-    
+    endpoint = f"https://switchboard.{env}.milezero.com/switchboard-war/api/package/histories?keyValue={key}&keyType={keyType}&orgId={orgId}&orderBy=timestamp"
+
     print(">>>>> Retrieving Packages From {} {} <<<<<".format(keyType.upper(), key))
-    
+
     return requests.get(endpoint).json()
 
 

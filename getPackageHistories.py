@@ -29,7 +29,11 @@ def main(KEY, KEY_TYPE):
     if pkgs != []:
         for package in pkgs:
             packages.print_package_histories(package)
+            response.append(pkgs)
+            # for package in pkgs:
+                # packages.print_package_histories(package)
     
+    formattedResponse["histories"] = response
     formattedResponse = files.format_json(response)
     files.save_json_to_file(formattedResponse, "PKG_HISTORY")
 
