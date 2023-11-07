@@ -128,6 +128,7 @@ def fix_product_description(content, difference):
     Returns:
     - new_list (list): The updated list with fixed product descriptions.
     """
+    print("Fixing difference between columns and items...")
     new_list = []
     
     i = 0
@@ -160,7 +161,7 @@ def get_original_dict(data):
     Returns:
     - dictionary (dict): The dictionary representation of the original data.
     """
-    #         [
+    # [
     # # {
     # #     "number": 0,
     # #     "code": "TE200",
@@ -187,8 +188,8 @@ def get_original_dict(data):
 
         if difference != 0:
             content = fix_product_description(content, difference)
-            difference = len(content) - len(headers)
-            
+            # difference = len(content) - len(headers)
+            # print(difference)
 
         for j in range(0, len(content)):
             dictionary[headers[j]].append(content[j])
@@ -271,17 +272,17 @@ def main():
     Returns:
     - None
     """
-    # env = utils.select_env()
+    env = utils.select_env()
 
-    env =  "PROD"
-    fileName = "Staples_8109_ORDERDET_20231003_PROD_US0446800"
+    # env =  "PROD"
+    # fileName = "Staples_8109_ORDERDET_20231003_PROD_US0446800"
     
-    token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdXRob3JpemF0aW9uIjp7Imdyb3VwcyI6WyJTdGFwbGVzIiwiU3RhcGxlcyBNaWxlVmlzaW9uIl0sInJvbGVzIjpbIk1pbGVWaXNpb25fVXNlciJdLCJwZXJtaXNzaW9ucyI6W119LCJvcmdhbml6YXRpb24iOnsib3JnTmFtZSI6IjIyNTU1ZTBkLWYyZGItNDQ1YS04ZjNhLTViMzBlMmNmNDNiMiIsIm9yZ0lkIjoiM2M4OTdlODQtMzk1Ny00OTU4LWI1NGQtZDAyYzAxYjE0ZjE1IiwiQWxhYm8iOnsib3JnTmFtZSI6IjIyNTU1ZTBkLWYyZGItNDQ1YS04ZjNhLTViMzBlMmNmNDNiMiIsIm9yZ0lkIjoiM2M4OTdlODQtMzk1Ny00OTU4LWI1NGQtZDAyYzAxYjE0ZjE1In19LCJvYmplY3RzIjp7ImRyaXZlcklkIjoiYmE1NWU0M2EtMzg4ZC00NWYwLWI0NjgtYzk2ZDc4N2JhNzk5In0sImlzcyI6Imh0dHBzOi8vbWlsZXplcm8uYXV0aDAuY29tLyIsInN1YiI6ImF1dGgwfDVhMjlkNjk1N2E0NTA2NWU0ZDdhZTNkMSIsImF1ZCI6Ijd1bVVMbWxDVEpyM3NPbno1aXdwbkNYblhjNUxlMUxDIiwiaWF0IjoxNjk2Njg5NzU4LCJleHAiOjE2OTY3MjU3NTh9.Za-Q_FBvxkFFQGQIC0e3BXavegDYIVx5KYDInOvkkEg"
+    token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdXRob3JpemF0aW9uIjp7Imdyb3VwcyI6WyJFbmRlYXZvdXIiLCJFbmRlYXZvdXIgTWlsZVZpc2lvbiJdLCJyb2xlcyI6WyJNaWxlVmlzaW9uX1VzZXIiXSwicGVybWlzc2lvbnMiOltdfSwib3JnYW5pemF0aW9uIjp7IkFsYWJvIjp7Im9yZ05hbWUiOiJiMDgyOGU4My1iY2FlLTRkMGEtOTY5YS1lNTA5YjI1MzY3NTAiLCJvcmdJZCI6IjJjMjIxYmZkLTFhNTgtNDQ5NC1iMmI1LTIwZGMyNDA3YWNkOSJ9fSwib2JqZWN0cyI6eyJkcml2ZXJJZCI6ImMxZTQ4MTU5LWEyZTktNDI2Ni05MWRjLTdjNGU4YTI1MmVlMyJ9LCJpc3MiOiJodHRwczovL21pbGV6ZXJvLmF1dGgwLmNvbS8iLCJzdWIiOiJhdXRoMHw1YmUxNTBlNjk0NTc1NzdkNWEwMzNlYjQiLCJhdWQiOiI3dW1VTG1sQ1RKcjNzT256NWl3cG5DWG5YYzVMZTFMQyIsImlhdCI6MTY5OTM3OTgyMCwiZXhwIjoxNjk5NDE1ODIwfQ.iBgravSRUIbTxK7-1HkGUZgG7-zcjjY7AprqrN4aif8"
 
     fileName = input("Type in the file name ('file' column in orders page): ")
-    token = input("Paste the Authentication token: ")
+    # token = input("Paste the Authentication token: ")
     requestId = input("Type in the requestId (requestFile?): ")
-    requestId = "0d194a2e-5bdf-4968-831a-cf9d8a064327"
+    # requestId = "0d194a2e-5bdf-4968-831a-cf9d8a064327"
     
     original_data = get_original_data(env, requestId, token)
 
@@ -291,8 +292,8 @@ def main():
     print("Saving original file...")
     original_df.to_csv(f"Original {fileName}.csv", index=False)
 
-    # parentId = input("Type in the parentId (request?): ")
-    parentId = "4bbb089a-6272-41e6-98e0-f78caed62383"
+    parentId = input("Type in the parentId (request?): ")
+    # parentId = "4bbb089a-6272-41e6-98e0-f78caed62383"
 
     mz_data = get_mz_data(env, parentId, token)
     mz_dict = get_mz_dict(mz_data)
