@@ -1,4 +1,4 @@
-from utils import files, utils, associates
+from utils import files, utils, associates, hubs
 
 
 def main():
@@ -15,6 +15,8 @@ def main():
     """
     env = utils.select_env()
     orgId = utils.select_org(env)
+    allHubs = hubs.get_all_hubs(env, orgId)
+    
     key_type_index = utils.get_associate_key_type_index()
 
     if key_type_index > 0:
@@ -38,20 +40,22 @@ def main():
     if associates is not None:
         if associates_count <= 10:
             for associate in associatesArray:
+                hub = [hub for hub in allHubs if hub["id"] == associate["hubId"]][0]
                 print(f"Associate State: {associate['state']}")
-                print(f"Account Type: {associate['associateType']}")
-                print(f"Associate ID: {associate['associateId']}")
-                print(f"   User Name: {associate['contact']['userName']}")
-                print(f"        Name: {associate['contact']['name']}")
-                print(f"      E-Mail: {associate['contact']['email']}")
-                print(f"       Phone: {associate['contact']['phone']}")
-                print(f"Location ID: {associate['location']['locationId']}")
-                print(f"HUB ID: {associate['hubId']}")
+                print(f"   Account Type: {associate['associateType']}")
+                print(f"   Associate ID: {associate['associateId']}")
+                print(f"      User Name: {associate['contact']['userName']}")
+                print(f"           Name: {associate['contact']['name']}")
+                print(f"         E-Mail: {associate['contact']['email']}")
+                print(f"          Phone: {associate['contact']['phone']}")
+                print(f"    Location ID: {associate['location']['locationId']}")
+                print(f"   WorldView ID: {associate['worldViewId']}\n")
                 try:
-                    print(f"Fleet ID: {associate['fleetId']}")
+                    print(f"       Fleet ID: {associate['fleetId']}")
                 except Exception:
                     pass
-                print(f"WorldView ID: {associate['worldViewId']}\n")
+                print(f"         HUB ID: {associate['hubId']}")
+                print(f"       HUB Name: {hub.get('name')}")
         else:
             print("Too many associates, check 'RESULTS' folder to see the full response!")
             files.save_json_to_file(filePrefix="ASSOCIATES", jsonData=files.format_json(associatesArray))
