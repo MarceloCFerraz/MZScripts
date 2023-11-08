@@ -180,8 +180,12 @@ def main(fileName, keyType, next_delivery_date, env=None, orgId=None):
 
     pool.shutdown(wait=True)
 
+    print()
+    print("===============================")
     for pkg in PACKAGES:
         packages.print_minimal_package_details(pkg)
+        print("===============================")
+    print()
 
     # If there are a lot of packages to re-submit, we'll split them in batches
     # to reduce the amount of API calls by calling the 'bulk resubmit' endpoint

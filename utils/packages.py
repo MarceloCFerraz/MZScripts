@@ -194,11 +194,11 @@ def print_minimal_package_details(package):
     barcode = package["packageDetails"]["shipmentBarcode"]
     status = package["packageStatuses"]["status"]
 
-    print(f"HUB Name: {hubName}")
-    print(f"Package ID: {packageID}")
+    print(f"HUB Name:           {hubName}")
+    print(f"Package ID:         {packageID}")
     print(f"Order Reference ID: {ori}")
-    print(f"Scannable Barcode: {barcode}")
-    print(f"Curent Status {status}")
+    print(f"Scannable Barcode:  {barcode}")
+    print(f"Curent Status:      {status}")
 
 
 def print_package_details(package):
@@ -229,21 +229,21 @@ def print_package_details(package):
     half_divisor = "==================="
 
     print(f"\n{half_divisor} PACKAGE {half_divisor}")
-    print(f"Package ID: {packageID}")
-    print(f"Scannable Barcode: {barcode}")
+    print(f"Package ID:         {packageID}")
+    print(f"Scannable Barcode:  {barcode}")
     print(f"Order Reference ID: {ori}")
-    print(f"Delivery Window: {deliveryWindow}")
-    print(f"Curent Status {status}")
+    print(f"Delivery Window:    {deliveryWindow}")
+    print(f"Curent Status       {status}")
 
     print(f"\n{half_divisor} ORG & HUB {half_divisor}")
-    print(f"Org ID: {orgId}")
-    print(f"HUB Name: {hubName}")
-    print(f"HUB ID: {hubId}")
+    print(f"Org ID:             {orgId}")
+    print(f"HUB Name:           {hubName}")
+    print(f"HUB ID:             {hubId}")
 
     print(f"\n{half_divisor} ROUTE {half_divisor}")
-    print(f"Route Name: {routeName}")
-    print(f"Route ID: {routeId}")
-    print(f"Original Route ID: {previousRouteId}\n")
+    print(f"Route Name:         {routeName}")
+    print(f"Route ID:           {routeId}")
+    print(f"Original Route ID:  {previousRouteId}\n")
 
 
 def print_package_histories(package):
