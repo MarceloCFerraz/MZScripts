@@ -8,14 +8,11 @@ ORGS = {
         "EDG": "ca3ffc06-b583-409f-a249-bdd014e21e31",
         "M3": "e9b34629-061d-4e24-93b1-717c00e2f116",
         "CFM": "8a9e84be-9874-4346-baab-26053d35871e",
-        # "WALT'S": "ce8766a5-1d0f-4146-8a7c-98c0879cef10",  # Sandbox
-        # "CUB": "6591e63e-6065-442d-87c3-20a5cd98cdba",  # not a client anymore
+        # "CUB": "6591e63e-6065-442d-87c3-20a5cd98cdba",
         "CUBPHARMA": "706660ca-71f6-4c01-a9ff-3a480acebaf4",
         "SHOPRITE-MM": "3f7539c3-ebbb-4d97-ac9f-bc66862c6ab8",
         "SHOPRITE": "3f7539c3-ebbb-4d97-ac9f-bc66862c6ab8",
-        # "EMPIRE": "de03ba9f-7baa-4f64-9628-5eb75b970af1",  # Sandbox
         "ESSENDANT": "3d765297-0e0e-4178-843b-0ebdac333c7a",
-        # "DELIVERY SOLUTIONS": "1bced832-4e3b-4f21-b803-477869cf02af", # Sandbox
         "LOWES": "8c381810-baf7-4ebe-a5f2-13c28b1ec7a4",
     },
     "STAGE": {
@@ -24,16 +21,30 @@ ORGS = {
         "HN": "c88987f9-91e8-4561-9f07-df795ef9b8f0",
         "EDG": "4a00ea0a-ebe2-4a77-8631-800e0daa50c5",
         "M3": "28d04fba-012b-46ee-ab9a-d2909672e70e",
-        "CFM": "76c23687-43c4-4fe3-b5f0-4cdd386e7895",
+        "CFM": "58953b8f-f14e-4998-ba5b-19e00d3f2221",
+        "CLM": "76c23687-43c4-4fe3-b5f0-4cdd386e7895",
         "WALT'S": "f7c63075-2eb4-4056-9fe7-f403278f253b",
-        # "CUB": "12d035f7-16c7-4c02-9b38-f1212b6f92f3",  # not a client anymore
+        # "CUB": "12d035f7-16c7-4c02-9b38-f1212b6f92f3",
         "CUBPHARMA": "6591e63e-6065-442d-87c3-20a5cd98cdba",
         "SHOPRITE-MM": "46474980-b149-4779-b9b5-76ea3d7baa90",
         "SHOPRITE": "397190aa-18ab-4bef-a8aa-d5875d738911",
         "EMPIRE": "09de776e-10cc-437d-9abc-ee5103d3b974",
         "ESSENDANT": "af0db6df-c6fd-4ad3-919c-350501c25bae",
-        "DELIVERY SOLUTIONS": "cc2a4805-5b7e-49e1-80a1-a62cf906214d" #,
-        # "LOWES": "",  # doesn't have a stage org so far
+        "DELIVERY SOLUTIONS": "cc2a4805-5b7e-49e1-80a1-a62cf906214d"
+    },
+    "INTEG": {
+        "HN": "1aaae948-7cbc-4fc2-9cbf-8e17fe8c1457",
+        "EDG": "2c221bfd-1a58-4494-b2b5-20dc2407acd9",
+        "M3": "1bdc25a0-d75e-4f9e-a648-e16af9d2f5f6",
+        "CLM": "33d7ccef-e43e-4e1c-940a-a9120b504888",
+        # "CUB": "1aac6c19-e564-4d96-8778-910fadd9a513",
+        # "WALT'S": "ce8766a5-1d0f-4146-8a7c-98c0879cef10",
+        "CUBPHARMA": "93e0eee5-50e6-4200-86cf-1ab48303bb15",
+        "SHOPRITE-MM": "44cf45b0-18f7-4f68-a43f-28fbeee9f8f9",
+        "SHOPRITE": "c5ad97fe-db54-4522-a166-2ad3e0a85edb",
+        "ESSENDANT": "0ed1589a-30f8-4b87-b458-120149bcd89e",
+        "DELIVERY SOLUTIONS": "1bced832-4e3b-4f21-b803-477869cf02af"
+        "EMPIRE": "de03ba9f-7baa-4f64-9628-5eb75b970af1",
     }
 }
 ASSOCIATE_KEY_TYPES = [
