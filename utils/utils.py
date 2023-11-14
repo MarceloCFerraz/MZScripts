@@ -43,7 +43,7 @@ ORGS = {
         "SHOPRITE-MM": "44cf45b0-18f7-4f68-a43f-28fbeee9f8f9",
         "SHOPRITE": "c5ad97fe-db54-4522-a166-2ad3e0a85edb",
         "ESSENDANT": "0ed1589a-30f8-4b87-b458-120149bcd89e",
-        "DELIVERY SOLUTIONS": "1bced832-4e3b-4f21-b803-477869cf02af"
+        "DELIVERY SOLUTIONS": "1bced832-4e3b-4f21-b803-477869cf02af",
         "EMPIRE": "de03ba9f-7baa-4f64-9628-5eb75b970af1",
     }
 }
