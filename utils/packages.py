@@ -67,8 +67,10 @@ def move_packages_to_route(env, orgId, newRouteId, packageIdsList):
     "packageIds": packageIdsList,
     "newRouteId": newRouteId,
         "associate": {
-            "associateId": "0ebaddf3-83ea-4713-97da-66552323fc0c",
-            "associateName": "Marcelo Superuser",
+            # "associateId": "0ebaddf3-83ea-4713-97da-66552323fc0c",
+            # "associateName": "Marcelo Superuser",
+            "associateId": "MZSupport",
+            "associateName": "MZSupport",
             "associateType": "ORG_SUPERUSER"
         }
     }
@@ -188,11 +190,11 @@ def print_minimal_package_details(package):
     Returns:
         None
     """
-    packageID = package["packageId"]
-    ori = package["orderDetails"]["orderReferenceId"]            
-    hubName = package["packageDetails"]["sourceLocation"]["name"]
-    barcode = package["packageDetails"]["shipmentBarcode"]
-    status = package["packageStatuses"]["status"]
+    packageID = package.get("packageId")
+    ori = package.get("orderDetails").get("orderReferenceId")            
+    hubName = package.get("packageDetails").get("sourceLocation").get("name")
+    barcode = package.get("packageDetails").get("shipmentBarcode")
+    status = package.get("packageStatuses").get("status")
 
     print(f"HUB Name:           {hubName}")
     print(f"Package ID:         {packageID}")
@@ -211,20 +213,20 @@ def print_package_details(package):
     Returns:
         None
     """
-    packageID = package["packageId"]
-    orgId = package["orgId"]
-    hubId = package["hubId"]
-    ori = package["orderDetails"]["orderReferenceId"]            
-    hubName = package["packageDetails"]["sourceLocation"]["name"]
-    barcode = package["packageDetails"]["shipmentBarcode"]
+    packageID = package.get("packageId")
+    orgId = package.get("orgId")
+    hubId = package.get("hubId")
+    ori = package.get("orderDetails").get("orderReferenceId")            
+    hubName = package.get("packageDetails").get("sourceLocation").get("name")
+    barcode = package.get("packageDetails").get("shipmentBarcode")
     try:
-        routeId = package["planningDetails"]["plannerRouteId"]
+        routeId = package.get("planningDetails").get("plannerRouteId")
     except Exception as e:
         print("This package/route was probably not executed (not ROUTE_ID found)")
-    previousRouteId = package["planningDetails"]["originalRouteId"]
-    routeName = package["planningDetails"]["plannerRouteName"]
-    deliveryWindow = package["planningDetails"]["requestedTimeWindow"]["start"] + " - " + package["planningDetails"]["requestedTimeWindow"]["end"]
-    status = package["packageStatuses"]["status"]
+    previousRouteId = package.get("planningDetails").get("originalRouteId")
+    routeName = package.get("planningDetails").get("plannerRouteName")
+    deliveryWindow = package.get("planningDetails").get("requestedTimeWindow").get("start") + " - " + package.get("planningDetails").get("requestedTimeWindow").get("end")
+    status = package.get("packageStatuses").get("status")
 
     half_divisor = "==================="
 
@@ -256,12 +258,12 @@ def print_package_histories(package):
     Returns:
         None
     """
-    orgId = package["orgId"]
-    ori = package["orderReferenceId"]            
-    packageID = package["packageId"]
-    hubName = package["hubName"]
-    barcode = package["barcode"]
-    histories = package["histories"]
+    orgId = package.get("orgId")
+    ori = package.get("orderReferenceId")            
+    packageID = package.get("packageId")
+    hubName = package.get("hubName")
+    barcode = package.get("barcode")
+    histories = package.get("histories")
 
     half_divisor = "==================="
 
@@ -277,25 +279,31 @@ def print_package_histories(package):
     print(f"\n{half_divisor} HISTORIES {half_divisor}")
     for index in range(0, len(histories)):
         print(f"{index}:")
-        when = histories[index]["timestamp"]
-        print(f"\tTime Stamp: {when}")
-        action = histories[index]["action"]
-        print(f"\tAction: {action}")
-        status = histories[index]["neoStatus"]
-        print(f"\tStatus: {status}")
-        associate_name = histories[index]["associateName"]
-        print(f"\tResponsible: {associate_name}")
-        try:
-            routeId = histories[index]["optionalValues"]["ROUTE_ID"]
-            print(f"\tRoute ID: '{routeId}'")
-        except Exception as e:
-            pass
-        try:
-            notes = histories[index]["notes"]
-            print(f"\tNotes: '{notes}'\n")
-        except Exception as e:
-            pass
 
+        when = histories[index].get("timestamp")
+        print(f"\tTime Stamp: {when}")
+        
+        action = histories[index].get("action")
+        print(f"\tAction: {action}")
+        
+        status = histories[index].get("neoStatus")
+        print(f"\tStatus: {status}")
+        
+        associate_name = histories[index].get("associateName")
+        print(f"\tResponsible: {associate_name}")
+
+        associate = histories[index].get("associate")
+        if associate != None:
+            associate_id = associate.get("id")
+            associate_type = associate.get("type")
+        
+        routeId = histories[index].get("optionalValues").get("ROUTE_ID")
+        if routeId != None:
+            print(f"\tRoute ID: '{routeId}'")
+    
+        notes = histories[index].get("notes")
+        print(f"\tNotes: '{notes}'\n")
+        
 
 def revive_package(env, package):
     """

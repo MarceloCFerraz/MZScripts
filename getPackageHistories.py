@@ -23,19 +23,15 @@ def main(KEY, KEY_TYPE):
     """
     env = utils.select_env()
     orgId = utils.select_org(env)
-    response = {}
-    pkgs = packages.get_packages_histories(env, orgId, KEY_TYPE, KEY)["histories"]
 
-    if pkgs != []:
-        for package in pkgs:
-            packages.print_package_histories(package)
-            response.append(pkgs)
-            # for package in pkgs:
-                # packages.print_package_histories(package)
-    
-    formattedResponse["histories"] = response
-    formattedResponse = files.format_json(response)
-    files.save_json_to_file(formattedResponse, "PKG_HISTORY")
+    histories = packages.get_packages_histories(env, orgId, KEY_TYPE, KEY)["histories"]
+
+    if histories != []:
+        for history in histories:
+            packages.print_package_histories(history)
+
+    response = files.format_json(histories)
+    files.save_json_to_file(response, "PKG_HISTORY")
 
 
 # get command line argument
