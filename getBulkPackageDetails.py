@@ -94,12 +94,14 @@ if len(sys.argv) < 3:
     )
     sys.exit(1)
 
-# The file name must be to the requester's hub name (e.g. 8506)
-file_name = sys.argv[1].replace(".txt", "").replace(".\\", "")
-key_type = sys.argv[2].lower()
-statuses = ""
-try:
-    statuses = sys.argv[3]
-except Exception as e:
-    pass
-main(file_name, key_type, statuses)
+
+if __name__ == "__main__":
+    # The file name must be to the requester's hub name (e.g. 8506)
+    file_name = sys.argv[1].replace(".txt", "").replace(".\\", "")
+    key_type = sys.argv[2].lower()
+    statuses = ""
+    try:
+        statuses = sys.argv[3]
+    except Exception as e:
+        pass
+    main(file_name, key_type, statuses)
