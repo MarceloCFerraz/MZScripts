@@ -1,5 +1,6 @@
 import requests
-import organizations
+
+from utils.organizations import get_org_by_id
 
 
 def search_fleet(env, orgId, fleetId=None):
@@ -88,7 +89,7 @@ def create_fleet(env, orgId, hubsList, fleetName=None, fleetLogo=None):
         hubNames.append(hub["name"])
         hubIds.append(hub["id"])
 
-    customer = organizations.get_org_by_id(env, orgId)
+    customer = get_org_by_id(env, orgId)
 
     url = f"http://qilin.{env}.milezero.com/qilin-war/api/fleets/{orgId}"
 
@@ -133,7 +134,7 @@ def update_fleet_hubs(env, orgId, fleetId, hubsList):
     Returns:
         Response: The response object from the update request.
     """
-    customer = organizations.get_org_by_id(env, orgId)
+    customer = get_org_by_id(env, orgId)
 
     # print(f"Updating {fleetId} with hubs", end=" ")
 

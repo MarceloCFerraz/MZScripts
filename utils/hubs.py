@@ -79,8 +79,11 @@ def search_hub_by_id(env, orgId, hubId):
         list: A list of hubs matching the search criteria.
     """
     url = f"http://cromag.{env}.milezero.com/retail/api/hubs/org/{orgId}?hubType=HUB&keyType=id&key={hubId}"
+    response = None
 
     try:
         response = requests.get(url=url, timeout=5).json()["hubs"]
     except ConnectionError as e: 
         print(f"Connection Error. Please connect to the VPN!\n {e}")
+
+    return response

@@ -6,3 +6,4 @@ aikey.py
 *.txt
 *.csv
 *.xlsx
+*.pyc

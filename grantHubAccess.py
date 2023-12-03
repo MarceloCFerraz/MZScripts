@@ -1,7 +1,7 @@
 from utils import utils, associates, hubs, fleets
 
 
-def get_associate(env, orgId):
+def get_associate(env, orgId, acceptBlank):
     """
     Retrieves associate data based on the associate's ID or search key.
 
@@ -14,22 +14,89 @@ def get_associate(env, orgId):
     Returns:
     - associate (dict): The associate's data.
     """
-    answer = select_answer(question=">> Do you have an associate ID?")
+    associate = None
+    answer = select_answer(question=">> Do you have an associate ID? ")
+
     if answer == "Y":
-        print(f">> Insert the Associate ID")
+        print(f">> Insert the Associate ID ", "(leave blank and hit enter if done)" if acceptBlank else "(or hit Ctrl + C to quit program)")
         associateId = input("> ")
-        associate = associates.get_associate_data(env, orgId, associateId)
+
+        if associateId == "":
+            if acceptBlank:
+                return None
+            else:
+                print(">> Can't accept blank. Try again (or hit Ctrl + C to quit program)")
+                associate = get_associate(env, orgId, acceptBlank)
+        else:
+            associate = associates.get_associate_data(env, orgId, associateId)
     else:
-        search_key = input(">> Type the associate's e-mail or username\n> ")
-        search_key_index = 3 if "@" in search_key else 4
-        # 👆 based on key_types list in associates.search_associate()
-        associates.search_associate(env, orgId, search_key_index, search_key)
+        associate = search_associate_name_or_mail(env, orgId, acceptBlank)
+
+        if associate == None and acceptBlank:
+            return None
+
+    return associate["associateId"]
 
 
-    return associate
+def search_associate_name_or_mail(env, orgId, acceptBlank):
+    associate = None
+
+    while associate is None:
+        print(">> Type the associate's e-mail or name ", "(leave blank and hit enter if done)" if acceptBlank else "(or hit Ctrl + C to quit program)")
+        search_key = input("> ")
+
+        if search_key != "":
+            search_key_index = 3 if "@" in search_key else 2
+            # based on key_types list in associates.search_associate()
+
+            associate = associates.search_associate(env, orgId, search_key_index, search_key)
+
+            if associate == None:
+                if not acceptBlank:
+                    print(">> Associate wasn't found and blank is not allowed. Try again or hit CTRL + C to quit")
+                    associate = search_associate_name_or_mail(env, orgId, acceptBlank)
+                else:
+                    return None    
+        elif acceptBlank:
+            return None
+
+    return associate[0]
 
 
-def get_new_hub(env, orgId, hubName=None, hubsNames=None):
+def get_new_hubs(hubsNames, allHubs):
+    """
+    Retrieves new hubs and adds them to the newHubs list.
+
+    This function prompts the user to enter the names of new hubs. It continues to prompt until the user leaves the input blank. For each new hub name entered, it calls the `get_new_hub` function from the `grantHubAccess` module to retrieve the hub data. The retrieved hub data is then added to the `newHubs` list, and the hub name is appended to the `hubsNames` list. The function stops prompting for new hub names if the user leaves the input blank or if the `updated` flag is set to True.
+
+    Parameters:
+    - env (str): The environment.
+    - orgId (str): The organization ID.
+    - hubsNames (list): The list of existing hub names.
+
+    Returns:
+    - newHubs (list): The list of new hub data.
+    """
+    hubName = "init"
+    newHubs = []
+    updated = False
+
+    while hubName != "" and not updated:
+        print(">> Type the new HUB's name (leave blank and hit enter if done)")
+
+        newHub = get_new_hub(allHubs, hubsNames, True, None)
+
+        if newHub == None: # means the user entered a blank line
+            break
+
+        hubsNames.append(newHub.get('name'))
+
+        newHubs.append(newHub)
+    
+    return newHubs
+
+
+def get_new_hub(allHubs, hubsNames, acceptBlank, hubName=None):
     """
     Obtains information about a new hub.
 
@@ -45,22 +112,25 @@ def get_new_hub(env, orgId, hubName=None, hubsNames=None):
     - hub (dict): The information of the new hub.
     """
     if hubName == None:
-        hubName = input("> ").strip()
+        hubName = input("> ").strip().upper()
 
-    if hubsNames != None:
-        while hubName in hubsNames:
+        if hubName == "" and acceptBlank:
+            return None
+
+    newHub = list(filter(lambda h: h["name"] == hubName, allHubs))
+
+    if newHub != []: # if hubName is valid and exists
+        newHub = newHub[0]
+
+        if hubsNames != None and newHub["name"] not in hubsNames: # and if it is not on the associate's hub list already
+            return newHub
+        else:
             print(f">> Associate already have access to {hubName}")
-            hubName = input(">> Try again or hit 'CTRL' + 'C' to quit the program\n> ")
+    else:
+        print(f">> {hubName} does not exist.")
 
-    try:
-        hub = hubs.search_hub_by_name(env=env, orgId=orgId, hubName=hubName)[0]
-        print(f">> {hubName} (OK -> {hub['id']})")
-    except Exception as e:
-        print(">> Hub not found, please try again!")
-        hub = get_new_hub(env, orgId, None, hubsNames)
-
-    print()
-    return hub
+    print(">> Try again", " (leave blank and hit enter if done)" if acceptBlank else "") # this can't be prompted always
+    return get_new_hub(allHubs, hubsNames, acceptBlank, None)
 
 
 def select_answer(question=None, answers=None):
@@ -76,11 +146,13 @@ def select_answer(question=None, answers=None):
     Returns:
     - answer (str): The user's selected answer.
     """
-    if answers == None:
+    if answers is None:
         answers = ["Y", "N"]
 
     if question == None:
-        question = f">> Does the associate need to maintain access to all previous hubs? ({'/'.join(answers)})"
+        question = f">> Does the associate need to maintain access to all previous hubs? "
+
+    question = question + f"({'/'.join(answers)})"
 
     answer = ""
     print(question)
@@ -112,7 +184,7 @@ def associate_has_fleet(associate):
     return fleetId != ""
 
 
-def get_associate_hubs_from_fleet(env, orgId, associate):
+def get_associate_hubs_from_fleet(associate, allFleets, allHubs):
     """
     Retrieves the hub IDs associated with an associate's fleet.
 
@@ -122,9 +194,10 @@ def get_associate_hubs_from_fleet(env, orgId, associate):
     - env (str): The environment in which the fleet data is stored.
     - orgId (str): The organization ID associated with the fleet.
     - associate (dict): The associate's data.
+    - allHubs (list[dict]): A list with every hub on the associate's organization
 
     Returns:
-    - idsList (list): The list of hub IDs associated with the associate's fleet.
+    - hubsList (list[dict]): The list of hubs associated with the associate's fleet.
     """
     idsList = []
     fleet = ""
@@ -133,35 +206,42 @@ def get_associate_hubs_from_fleet(env, orgId, associate):
         fleet = associate["fleetId"]
         print(f">> Associate has fleet {fleet}")
 
-        fleetHubs = fleets.get_hubs_from_fleet(env=env, orgId=orgId, fleetId=fleet)
-        # print(f">> Hubs in {fleet}: {fleetHubs}")
-        for hubId in fleetHubs:
-            idsList.append(hubId)
+        fleetHubs = [f["hubIds"] for f in allFleets if f["fleetId"] == fleet]
+        if fleetHubs != []:
+            fleetHubs = fleetHubs[0]
 
-        if associate.get('hubId') not in idsList:
-            idsList.append(associate.get('hubId'))
+            for hubId in fleetHubs:
+                idsList.append(hubId)
 
-    return idsList
+    if associate.get('hubId') not in idsList:
+        idsList.append(associate.get('hubId'))
+    
+    hubsList = fill_hubs_list(idsList, allHubs)
+
+    return hubsList
 
 
-def fill_hubs_list(env, orgId, hubIdsList):
+def fill_hubs_list(idsList, allHubs):
     """
     Fills a list of hubs by searching for each hub's information.
 
     This function fills a list of hubs by searching for each hub's information based on the provided hub IDs.
 
     Parameters:
-    - env (str): The environment in which the hub data is stored.
-    - orgId (str): The organization ID associated with the hubs.
-    - hubIdsList (list): The list of hub IDs to search for.
+    - idsList (list): A list with the hubIds from the associate's fleet
+    - allHubs (list[dict]): A list with every hub on the associate's organization
 
     Returns:
-    - hubsList (list): The list of hub information corresponding to the provided hub IDs.
+    - hubsList (list[dict]): The list of hub information corresponding to the provided hub IDs.
     """
     hubsList = []
 
-    for hubId in hubIdsList:
-        hubsList.append(hubs.search_hub_by_id(env, orgId, hubId)[0])
+    for hubId in idsList:
+        h = list(filter(lambda h: h["id"] == hubId, allHubs)) # a list with every match of the hubID
+
+        if h != []: # if hubName is valid and exists
+            h = h[0]
+            hubsList.append(h) # Add found hub to the hubsList        
 
     return hubsList
 
@@ -230,7 +310,16 @@ def update_associate(env, associate, userName):
     Returns:
     None
     """
+    print(f">> Updating Fleet {associate["associateId"]}")
     response = associates.update_associate_data(env, associate, userName)
+
+    print(f">> Update Status: {'OK' if response.status_code < 400 else 'FAILED'}")
+    print(f"{response.text if response.status_code >= 400 else ''}")
+
+
+def update_fleet(env, orgId, fleetId, hubsList):
+    print(f">> Updating Fleet {fleetId}")
+    response = fleets.update_fleet_hubs(env, orgId, fleetId, hubsList)
 
     print(f">> Update Status: {'OK' if response.status_code < 400 else 'FAILED'}")
     print(f"{response.text if response.status_code >= 400 else ''}")
@@ -305,11 +394,14 @@ def apply_changes(env, orgId, hubsList, allFleets, associate, userName):
                 # means we can just update his fleet instead of creating another one
                 print(">> No other associate use this fleetId")
 
+                update_fleet(env, orgId, fleetId, hubsList)
                 print(f">> Updating Fleet: {fleets.update_fleet_hubs(env, orgId, fleetId, hubsList)}")
             else:
                 # In this case we need to create a new fleet
                 print(">> Someone else uses this fleetId as well")
-                fleet = fleets.search_fleet(env, orgId, fleetId)
+                print(f">> Creating new fleet with {' '.join(hubsNames)}")
+
+                fleet = fleets.search_fleet(env, orgId, associate["fleetId"])[0]
                 companyName = get_company_name(associate.get('companyId'))
                 fleetId = create_new_fleet(env, orgId, hubsList, companyName, fleet.get('logoUrl'))
 
@@ -326,7 +418,7 @@ def apply_changes(env, orgId, hubsList, allFleets, associate, userName):
             update_associate(env, associate, userName)
 
 
-def move_to_new_hub(env, orgId, associate, userName, newHub=None):
+def move_to_new_hub(env, associate, userName, newHub):
     """
     Moves the associate to a new hub and updates their information accordingly.
 
@@ -342,10 +434,6 @@ def move_to_new_hub(env, orgId, associate, userName, newHub=None):
     """
     print(">> Moving associate, removing fleet, vehicle and pref. route")
 
-    if newHub == None:
-        print("\n>> Type the new HUB's name")
-        newHub = get_new_hub(env, orgId)
-
     associate["hubId"] = newHub['id']
     associate["location"]["locationId"] = newHub["location"]["locationId"]
 
@@ -358,9 +446,76 @@ def move_to_new_hub(env, orgId, associate, userName, newHub=None):
     update_associate(env, newAssociateData, userName)
 
 
-def main():
+def main (env, orgId, associate, userName, allHubs, allFleets):
     """
-    The main function that interacts with the user, retrieves associate information, and performs necessary actions based on the associate's type and input.
+    The main function that performs necessary actions based on the associate's type and input.
+
+    Executes the corresponding function based on the associate's type and action.
+
+    Parameters:
+        env (str): prod or stage
+        orgId (str): the ID of the associate's org
+        associate (dict): the associate data
+        userName (str): who is operating the script
+
+    Returns:
+    None
+    """
+    hubsList = get_associate_hubs_from_fleet(associate, allFleets, allHubs)
+    hubsNames = [h.get('name') for h in hubsList]
+
+    name = associate.get('contact').get('name')
+    print(f"============ STARTING {str(name).upper} ============")
+
+    if associate["associateType"] not in ["DRIVER", "SORTER"]:
+        
+        print(f">> HUBs: {' '.join(hubsNames)}\n")
+
+        newHubs = get_new_hubs(hubsNames, allHubs)
+        answer = select_answer()
+
+        if answer == "Y":
+            # associate needs to maintain his previous hubs + the new one(s)
+            for newHub in newHubs:
+                hubsList.append(newHub)
+
+            print(f">> Adding access to new hubs...")
+            apply_changes(env, orgId, hubsList, allFleets, associate, userName)
+        else:
+            # associate doesn't need the previous hubs,
+            if len(newHubs) > 1:
+                # only the new ones
+                print(f">> Granting access to new hubs only...")
+                apply_changes(env, orgId, newHubs, allFleets, associate, userName)
+            else:
+                # only the new one, so move him to the new hub
+                print(">> Moving associate to new hub...")
+                move_to_new_hub(
+                    env,
+                    associate,
+                    userName,
+                    newHubs[0]
+                )
+    else:
+        print(f">> {name} is a driver/sorter. We can't give drivers access to other hubs!")
+        answer = select_answer(question="Do you want to move this associate to a new HUB? ")
+
+        if answer == "Y":
+            print(">> Moving associate to new hub...")
+            newHub = get_new_hub(allHubs, hubsNames, False, None)
+            move_to_new_hub(
+                env,
+                associate,
+                userName,
+                newHub
+            )
+
+    print(f"============ FINISHED {str(name).upper} ============\n\n")
+
+
+def __init():
+    """
+    The initialization function that interacts with the user, retrieves associate information, and calls main logic. performs necessary actions based on the associate's type and input.
 
     This function prompts the user to enter the associate's ID, name, fleet information, and the desired action to be performed. It then validates the input, retrieves additional information if needed, and executes the corresponding function based on the associate's type and action.
 
@@ -374,54 +529,16 @@ def main():
     env = utils.select_env()
     orgId = utils.select_org(env)
 
-    associate = get_associate(env, orgId)
+    associate = get_associate(env, orgId, False)
 
-    if associate is not None:
-        name = associate.get('contact').get('name')
-        print("Associate Found")
-        print()
+    print("Associate Found")
+    print()
+    allFleets = fleets.search_fleet(env, orgId)
+    print()
+    allHubs = hubs.get_all_hubs(env, orgId)
+    print()
 
-        if associate["associateType"] not in ["DRIVER", "SORTER"]:
-            allFleets = fleets.search_fleet(env, orgId)
-            # print(f">> Loaded {len(allFleets)} fleets")
-
-            hubIdsList = get_associate_hubs_from_fleet(env, orgId, associate)
-            hubsList = fill_hubs_list(env, orgId, hubIdsList)
-
-            hubsNames = [hub['name'] for hub in hubsList]
-            print(f">> HUBs: {' '.join(hubsNames)}")
-        
-            newHubName = input(
-                "\n>> Type the new HUB name\n"
-                "> "
-            )
-            newHub = get_new_hub(env, orgId, newHubName, hubsNames)
-            answer = select_answer()
-
-            if answer == "Y":                
-                hubsList.append(newHub)
-
-                apply_changes(env, orgId, hubsList, allFleets, associate, userName)
-            else:
-                print(f">> Answer was '{answer}'...")
-                move_to_new_hub(
-                    env,
-                    orgId,
-                    associate,
-                    userName,
-                    newHub
-                )
-        else:
-            print(f">> {name} is a driver/sorter. We can't give drivers access to other hubs!")
-            answer = select_answer(question="Do you want to move this associate to a new HUB?")
-
-            if answer == "Y":
-                move_to_new_hub(
-                    env,
-                    orgId,
-                    associate,
-                    userName
-                    )
+    main(env, orgId, associate, userName, allHubs, allFleets)
 
 
-main()
+__init()
