@@ -333,7 +333,7 @@ def update_associate(env, associate, userName):
     Returns:
     None
     """
-    print(f">> Updating Fleet {associate["associateId"]}")
+    print(f">> Updating associate {associate["associateId"]}")
     response = associates.update_associate_data(env, associate, userName)
 
     print(f">> Update Status: {'OK' if response.status_code < 400 else 'FAILED'}")
@@ -369,29 +369,6 @@ def get_company_name(name):
             return companyName
     
     return companyName
-
-
-def create_new_fleet(env, orgId, hubsList, fleetName=None, fleetLogo=None):
-    """
-    Creates a new fleet using the provided information.
-
-    This function creates a new fleet using the provided hub list, fleet name, and fleet logo. It returns the newly created fleet ID.
-
-    Parameters:
-    - env (str): The environment in which the fleet will be created.
-    - orgId (str): The organization ID associated with the fleet.
-    - hubsList (list): The list of hubs to be included in the fleet.
-    - fleetName (str, optional): The name of the new fleet. If not provided, the org name will be used.
-    - fleetLogo (str, optional): The logo for the new fleet. If not provided, the org logo will be used.
-
-    Returns:
-    - fleetId (str): The ID of the newly created fleet.
-    """
-    print(f">> Creating fleet")
-    fleetId = fleets.create_fleet(env, orgId, hubsList, fleetName, fleetLogo)
-    print(f">>>> {fleetId}")
-
-    return fleetId
 
 
 def apply_changes(env, orgId, hubsList, allFleets, associate, userName):
@@ -446,7 +423,7 @@ def apply_changes(env, orgId, hubsList, allFleets, associate, userName):
                 print(">> Someone else uses this fleetId as well")
                 print(f">> Creating new fleet with {' '.join(hubsNames)}")
 
-                fleet = fleets.search_fleet(env, orgId, associate["fleetId"])[0]
+                fleet = [f for f in allFleets if f["fleetId"] == associate["fleetId"]][0]
                 companyName = get_company_name(associate.get('companyId'))
                 fleetId = create_new_fleet(env, orgId, hubsList, companyName, fleet.get('logoUrl'))
 
@@ -556,7 +533,7 @@ def process_associate (env, orgId, associate, userName, allHubs, allFleets):
                 newHub
             )
 
-    print(f"============ FINISHED {str(name).upper} ============\n\n")
+    print(f"============ FINISHED {str(name).upper()} ============\n\n")
 
 
 def main():

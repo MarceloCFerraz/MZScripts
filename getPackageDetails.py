@@ -85,36 +85,36 @@ def main(KEY, KEY_TYPE, STATUSES):
         formatted_response = files.format_json(response)
         files.save_json_to_file(formatted_response, "PKG_DETAILS")
 
-# get command line argument
-if len(sys.argv) < 3:
-    print(
-        "\nNO ARGS PROVIDED!\n"+
-        "Please, check the correct script usage bellow:\n\n"+
-
-        "SCRIPT USAGE:\n"+
-        "--> python getPackageDetails.py <KEY> <KEY_TYPE> (OPTIONAL) <STATUSES>\n\n"+
-
-        "-> Accepted KEY_TYPEs:\n"+
-        "\n".join(map(str, packages.VALID_KEY_TYPES))+
-
-        "\n\n--> Valid Statuses:\n"+
-        "\n".join(map(str, packages.VALID_STATUSES))+
-
-        "\n\nSCRIPT EXAMPLE:\n"+
-        "--> python getPackageDetails.py 8506 bc 'cancelled delivered'\n"+
-        "> This will load all the barcodes on 8506.txt, print the HTTP request for "+
-        "each of them on a json file and console IF their status corresponds to"+
-        " 'CANCELLED' or 'DELIVERED'.\n\n"+
-        
-        " If no filter status is informed, all statuses will be displayed\n\n"+
-
-        "NOTES:\n"+
-        "> Check comments on code to update relevant data such as KEY_TYPE (bc, ori, etc)\n"
-    )
-    sys.exit(1)
-
 
 if __name__ == "__main__":
+    # get command line argument
+    if len(sys.argv) < 3:
+        print(
+            "\nNO ARGS PROVIDED!\n"+
+            "Please, check the correct script usage bellow:\n\n"+
+
+            "SCRIPT USAGE:\n"+
+            "--> python getPackageDetails.py <KEY> <KEY_TYPE> (OPTIONAL) <STATUSES>\n\n"+
+
+            "-> Accepted KEY_TYPEs:\n"+
+            "\n".join(map(str, packages.VALID_KEY_TYPES))+
+
+            "\n\n--> Valid Statuses:\n"+
+            "\n".join(map(str, packages.VALID_STATUSES))+
+
+            "\n\nSCRIPT EXAMPLE:\n"+
+            "--> python getPackageDetails.py 8506 bc 'cancelled delivered'\n"+
+            "> This will load all the barcodes on 8506.txt, print the HTTP request for "+
+            "each of them on a json file and console IF their status corresponds to"+
+            " 'CANCELLED' or 'DELIVERED'.\n\n"+
+            
+            " If no filter status is informed, all statuses will be displayed\n\n"+
+
+            "NOTES:\n"+
+            "> Check comments on code to update relevant data such as KEY_TYPE (bc, ori, etc)\n"
+        )
+        sys.exit(1)
+
     # The file name must be to the requester's hub name (e.g. 8506)
     KEY = sys.argv[1].replace(".txt", "").replace(".\\", "")
     KEY_TYPE = sys.argv[2].lower()

@@ -134,7 +134,6 @@ def update_associate_data(env, associateData, userName):
     Returns:
         Response: The response object from the update request.
     """
-    print("Updating Associate data")
     url = f"http://lmx.{env}.milezero.com/lmx-war/api/associate?requestor={str(userName).replace(' ', '%20')}&requestorIdType=NAME"
     return requests.put(url=url, json=associateData, timeout=5)
 

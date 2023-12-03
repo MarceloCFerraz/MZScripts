@@ -61,41 +61,40 @@ def main(file_name, key_type, statuses):
         files.save_json_to_file(formatted_response, "PKGS_DETAILS")
 
 
-# get command line argument
-if len(sys.argv) < 3:
-    print(
-        "\nNO ARGS PROVIDED!\n"+
-        "Please, check the correct script usage bellow:\n\n"+
-
-        "PRE REQUISITES:\n"+
-        "> A file <hubName>.txt should be created in this same directory.\n"+
-        "You should paste the barcodes/ORIs to be replanned there\n"+
-        "--> hubName: the hub that requested support\n\n"+
-
-        "SCRIPT USAGE:\n"+
-        "--> python getBulkPackageDetails.py <HUB_NAME> <key_type> (OPTIONAL) <statuses>\n\n"+
-
-        "-> Accepted key_types:\n"+
-        "\n".join(map(str, packages.VALID_key_typeS))+
-
-        "\n\n--> Valid Statuses:\n"+
-        "\n".join(map(str, packages.VALID_statuses))+
-
-        "\n\nSCRIPT EXAMPLE:\n"+
-        "--> python getBulkPackageDetails.py 8506 bc 'cancelled delivered'\n"+
-        "> This will load all the barcodes on 8506.txt, print the HTTP request for "+
-        "each of them on a json file and console IF their status corresponds to"+
-        " 'CANCELLED' or 'DELIVERED'.\n\n"+
-        
-        " If no filter status is informed, all statuses will be displayed\n\n"+
-
-        "NOTES:\n"+
-        "> Check comments on code to update relevant data such as key_type (bc, ori, etc)\n"
-    )
-    sys.exit(1)
-
-
 if __name__ == "__main__":
+    # get command line argument
+    if len(sys.argv) < 3:
+        print(
+            "\nNO ARGS PROVIDED!\n"+
+            "Please, check the correct script usage bellow:\n\n"+
+
+            "PRE REQUISITES:\n"+
+            "> A file <hubName>.txt should be created in this same directory.\n"+
+            "You should paste the barcodes/ORIs to be replanned there\n"+
+            "--> hubName: the hub that requested support\n\n"+
+
+            "SCRIPT USAGE:\n"+
+            "--> python getBulkPackageDetails.py <HUB_NAME> <key_type> (OPTIONAL) <statuses>\n\n"+
+
+            "-> Accepted key_types:\n"+
+            "\n".join(map(str, packages.VALID_key_typeS))+
+
+            "\n\n--> Valid Statuses:\n"+
+            "\n".join(map(str, packages.VALID_statuses))+
+
+            "\n\nSCRIPT EXAMPLE:\n"+
+            "--> python getBulkPackageDetails.py 8506 bc 'cancelled delivered'\n"+
+            "> This will load all the barcodes on 8506.txt, print the HTTP request for "+
+            "each of them on a json file and console IF their status corresponds to"+
+            " 'CANCELLED' or 'DELIVERED'.\n\n"+
+            
+            " If no filter status is informed, all statuses will be displayed\n\n"+
+
+            "NOTES:\n"+
+            "> Check comments on code to update relevant data such as key_type (bc, ori, etc)\n"
+        )
+        sys.exit(1)
+
     # The file name must be to the requester's hub name (e.g. 8506)
     file_name = sys.argv[1].replace(".txt", "").replace(".\\", "")
     key_type = sys.argv[2].lower()
