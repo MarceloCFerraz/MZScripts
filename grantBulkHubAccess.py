@@ -1,5 +1,5 @@
 import concurrent.futures
-import grantHubAccess
+from grantHubAccess import select_answer, get_associate, process_associate
 from utils import utils, associates, fleets, files, hubs
 
 
@@ -28,6 +28,30 @@ def get_associate(env, orgId, associateId):
         print(f">> {associateId} not found")
 
 
+def get_associates(env, orgId):
+    fileName = "associates"
+    print(f">> Reading '{fileName}.txt' to get Associate IDs")
+
+    associateIDs = files.get_data_from_file(fileName)
+
+    if not associateIDs:
+        print(">> No associates in 'associates.txt'")
+        if select_answer(question=">> Do you want to search for the associates? ") == "Y":
+
+            while len(ASSOCIATES) == 0:
+                associate = get_associate(env, orgId, True)
+                if associate:
+                    ASSOCIATES.append(associate)
+                else:
+                    print(">> The associates list is empty. Please enter at least one associate or hit CTRL + C to quit the program")
+    else:
+        # Using multithreading to get multiple associates simultaneosly
+        with concurrent.futures.ThreadPoolExecutor() as pool:
+            for associateId in associateIDs:
+                pool.submit(get_associate, env, orgId, associateId)
+        pool.shutdown(True)
+
+
 def main():
     """
     The main function of the script for managing associate access to hubs within fleets and handling driver/sorter associates differently. The script allows users to make decisions regarding access and updates based on prompts and user input.
@@ -49,42 +73,21 @@ def main():
     env = utils.select_env()
     orgId = utils.select_org(env)
 
-    print(">> Reading 'associates.txt' to get Associate IDs")
+    get_associates(env, orgId)
 
-    associateIDs = files.get_data_from_file("associates")
+    # loading all fleets from org
+    allFleets = fleets.search_fleet(env, orgId)
 
-    if associateIDs == []:
+    # loading all hubs from org
+    allHubs = hubs.get_all_hubs(env, orgId)
 
-        print(">> No associates in 'associates.txt'")
-        if grantHubAccess.select_answer(question="Do you want to search for the associates?") == "Y":
-            associateID = grantHubAccess.get_associate(env, orgId, False)
-
-            while associateIDs == [] and associateID == None:
-                associateID = grantHubAccess.get_associate(env, orgId, True)
-
-                if associateID != None:
-                    associateIDs.append(associateID)
-                elif associateIDs == []:
-                    print(">> The associates list is empty. Please enter an associate or hit CTRL + C to quit the program")
-                    associateID = grantHubAccess.get_associate(env, orgId, True)
-                else:
-                    break
-    else:
-        # Using multithreading to get multiple associates simultaneosly
-        with concurrent.futures.ThreadPoolExecutor() as pool:
-            for associateId in associateIDs:
-                pool.submit(get_associate, env, orgId, associateId)
-        pool.shutdown(True)
-    
     for associate in ASSOCIATES:
-        allFleets = fleets.search_fleet(env, orgId)
-        print()
-        allHubs = hubs.get_all_hubs(env, orgId)
-        print()
-        grantHubAccess.main(env, orgId, associate, userName, allHubs, allFleets)
+        process_associate(env, orgId, associate, userName, allHubs, allFleets)
 
+    print(">> Finishing script")
 
-main()
+if __name__ == "__main__":
+    main()
 # How the script works:
 # - Get associate IDs from 'associates.txt,' with each new line representing a new associate ID. No need for special formatting.
 # - Use multithreading to search for associate IDs and save them in the ASSOCIATES List when found.

@@ -5,19 +5,39 @@ def get_associate(env, orgId, acceptBlank):
     """
     Retrieves associate data based on the associate's ID or search key.
 
-    This function prompts the user to enter the associate's ID or search key (email or username) and retrieves the associate's data using the provided information.
+    Parameters:
+    - env (str): The environment in which the associate data is stored.
+    - orgId (str): The organization ID associated with the associate.
+    - acceptBlank (bool): Whether to accept blank input from the user.
+
+    Returns:
+    - associate (dict): an associate LMX data.
+    - None: if an associate wasn't found or if blank input is allowed
+    """
+    answer = select_answer(question=">> Do you have an associate ID? ")
+
+    if answer == "Y":
+        associate = get_associate_by_id(env, orgId, acceptBlank)
+    else:
+        associate = get_associate_by_name_or_email(env, orgId, acceptBlank)
+
+    return associate
+
+
+def get_associate_by_id(env, orgId, acceptBlank):
+    """
+    Retrieves associate data based on the associate's ID.
 
     Parameters:
     - env (str): The environment in which the associate data is stored.
     - orgId (str): The organization ID associated with the associate.
+    - acceptBlank (bool): Whether to accept blank input from the user.
 
     Returns:
-    - associate (dict): The associate's data.
+    - associate (dict): an associate LMX data.
+    - None: if an associate wasn't found or if blank input is allowed
     """
-    associate = None
-    answer = select_answer(question=">> Do you have an associate ID? ")
-
-    if answer == "Y":
+    while True:
         print(f">> Insert the Associate ID ", "(leave blank and hit enter if done)" if acceptBlank else "(or hit Ctrl + C to quit program)")
         associateId = input("> ")
 
@@ -26,24 +46,27 @@ def get_associate(env, orgId, acceptBlank):
                 return None
             else:
                 print(">> Can't accept blank. Try again (or hit Ctrl + C to quit program)")
-                associate = get_associate(env, orgId, acceptBlank)
         else:
-            associate = associates.get_associate_data(env, orgId, associateId)
-    else:
-        associate = search_associate_name_or_mail(env, orgId, acceptBlank)
-
-        if associate == None and acceptBlank:
-            return None
-
-    return associate["associateId"]
+            return associates.get_associate_data(env, orgId, associateId)
 
 
-def search_associate_name_or_mail(env, orgId, acceptBlank):
-    associate = None
+def get_associate_by_name_or_email(env, orgId, acceptBlank):
+    """
+    Retrieves associate data based on the associate's name or email.
 
-    while associate is None:
+    Parameters:
+    - env (str): The environment in which the associate data is stored.
+    - orgId (str): The organization ID associated with the associate.
+    - acceptBlank (bool): Whether to accept blank input from the user.
+
+    Returns:
+    - associate (dict): an associate LMX data.
+    - None: if an associate wasn't found or if blank input is allowed
+    """
+    while True:
         print(">> Type the associate's e-mail or name ", "(leave blank and hit enter if done)" if acceptBlank else "(or hit Ctrl + C to quit program)")
         search_key = input("> ")
+        print()
 
         if search_key != "":
             search_key_index = 3 if "@" in search_key else 2
@@ -51,16 +74,12 @@ def search_associate_name_or_mail(env, orgId, acceptBlank):
 
             associate = associates.search_associate(env, orgId, search_key_index, search_key)
 
-            if associate == None:
-                if not acceptBlank:
-                    print(">> Associate wasn't found and blank is not allowed. Try again or hit CTRL + C to quit")
-                    associate = search_associate_name_or_mail(env, orgId, acceptBlank)
-                else:
-                    return None    
+            if associate:
+                return associate[0]
+            elif not acceptBlank:
+                print(">> Associate wasn't found and blank is not allowed. Try again or hit CTRL + C to quit")
         elif acceptBlank:
             return None
-
-    return associate[0]
 
 
 def get_new_hubs(hubsNames, allHubs):
@@ -81,7 +100,11 @@ def get_new_hubs(hubsNames, allHubs):
     newHubs = []
     updated = False
 
+    print(f">> Old HUBs: {' '.join(hubsNames)}")
     while hubName != "" and not updated:
+        if newHubs:
+            print(f"\n>> New HUBs: {' '.join([h['name'] for h in newHubs])}")
+
         print(">> Type the new HUB's name (leave blank and hit enter if done)")
 
         newHub = get_new_hub(allHubs, hubsNames, True, None)
@@ -90,7 +113,6 @@ def get_new_hubs(hubsNames, allHubs):
             break
 
         hubsNames.append(newHub.get('name'))
-
         newHubs.append(newHub)
     
     return newHubs
@@ -125,9 +147,9 @@ def get_new_hub(allHubs, hubsNames, acceptBlank, hubName=None):
         if hubsNames != None and newHub["name"] not in hubsNames: # and if it is not on the associate's hub list already
             return newHub
         else:
-            print(f">> Associate already have access to {hubName}")
+            print(f"\n>> Associate already have access to {hubName}")
     else:
-        print(f">> {hubName} does not exist.")
+        print(f"\n>> {hubName} does not exist.")
 
     print(">> Try again", " (leave blank and hit enter if done)" if acceptBlank else "") # this can't be prompted always
     return get_new_hub(allHubs, hubsNames, acceptBlank, None)
@@ -150,7 +172,7 @@ def select_answer(question=None, answers=None):
         answers = ["Y", "N"]
 
     if question == None:
-        question = f">> Does the associate need to maintain access to all previous hubs? "
+        question = f"\n>> Does the associate need to maintain access to all previous hubs? "
 
     question = question + f"({'/'.join(answers)})"
 
@@ -184,17 +206,16 @@ def associate_has_fleet(associate):
     return fleetId != ""
 
 
-def get_associate_hubs_from_fleet(associate, allFleets, allHubs):
+def get_hubs_from_associate_fleet(associate, allFleets, allHubs):
     """
     Retrieves the hub IDs associated with an associate's fleet.
 
     This function retrieves the hub IDs associated with an associate's fleet. It collects the hub IDs from the fleet and includes the associate's current hub ID if applicable.
 
     Parameters:
-    - env (str): The environment in which the fleet data is stored.
-    - orgId (str): The organization ID associated with the fleet.
     - associate (dict): The associate's data.
-    - allHubs (list[dict]): A list with every hub on the associate's organization
+    - allFleets (list[dict]): A list with every hub on the organization
+    - allHubs (list[dict]): A list with every hub on the organization
 
     Returns:
     - hubsList (list[dict]): The list of hubs associated with the associate's fleet.
@@ -266,11 +287,12 @@ def search_fleet_with_hubs(allFleets, hubIdsList):
             fleetHubIdsSet = set(fleet['hubIds'])
 
             if fleetHubIdsSet == hubIdsSet:
+                print(f">>>> Fleet not found: {fleet['fleetId']}\n")
                 return fleet['fleetId']
         except Exception:
             pass
 
-    print(">>>> Fleet not found!")
+    print(">>>> Fleet not found!\n")
     return None
 
 
@@ -290,8 +312,9 @@ def create_new_fleet(env, orgId, hubsList, fleetName=None, fleetLogo=None):
     Returns:
     - fleetId (str): The ID of the newly created fleet.
     """
+    print(f">> Creating fleet")
     fleetId = fleets.create_fleet(env, orgId, hubsList, fleetName, fleetLogo)
-    print(f">> {fleetId}")
+    print(f">>>> {fleetId}")
 
     return fleetId
 
@@ -314,7 +337,7 @@ def update_associate(env, associate, userName):
     response = associates.update_associate_data(env, associate, userName)
 
     print(f">> Update Status: {'OK' if response.status_code < 400 else 'FAILED'}")
-    print(f"{response.text if response.status_code >= 400 else ''}")
+    print(f">>" + response.text if response.status_code >= 400 else "")
 
 
 def update_fleet(env, orgId, fleetId, hubsList):
@@ -322,7 +345,7 @@ def update_fleet(env, orgId, fleetId, hubsList):
     response = fleets.update_fleet_hubs(env, orgId, fleetId, hubsList)
 
     print(f">> Update Status: {'OK' if response.status_code < 400 else 'FAILED'}")
-    print(f"{response.text if response.status_code >= 400 else ''}")
+    print(">> " + response.text if response.status_code >= 400 else "")
 
 
 def get_company_name(name):
@@ -348,6 +371,29 @@ def get_company_name(name):
     return companyName
 
 
+def create_new_fleet(env, orgId, hubsList, fleetName=None, fleetLogo=None):
+    """
+    Creates a new fleet using the provided information.
+
+    This function creates a new fleet using the provided hub list, fleet name, and fleet logo. It returns the newly created fleet ID.
+
+    Parameters:
+    - env (str): The environment in which the fleet will be created.
+    - orgId (str): The organization ID associated with the fleet.
+    - hubsList (list): The list of hubs to be included in the fleet.
+    - fleetName (str, optional): The name of the new fleet. If not provided, the org name will be used.
+    - fleetLogo (str, optional): The logo for the new fleet. If not provided, the org logo will be used.
+
+    Returns:
+    - fleetId (str): The ID of the newly created fleet.
+    """
+    print(f">> Creating fleet")
+    fleetId = fleets.create_fleet(env, orgId, hubsList, fleetName, fleetLogo)
+    print(f">>>> {fleetId}")
+
+    return fleetId
+
+
 def apply_changes(env, orgId, hubsList, allFleets, associate, userName):
     """
     Applies changes to the associate's fleet based on the provided information.
@@ -366,15 +412,15 @@ def apply_changes(env, orgId, hubsList, allFleets, associate, userName):
     hubsNames = [h.get('name') for h in hubsList]
     hubsIds = [h.get('id') for h in hubsList]
 
-    print(f">> Searching for a fleet with {' '.join(hubsNames)}")
-    fleet = search_fleet_with_hubs(  # searching for a fleet with same hubs
+    print(f"\n>> Searching for a fleet with {' '.join(hubsNames)}")
+    fleetId = search_fleet_with_hubs(  # searching for a fleet with same hubs
         allFleets=allFleets,
         hubIdsList=hubsIds
     )
     
-    if fleet is not None:  # if a fleet with the correct hubs already exists
-        print(f">>>> Fleet found: {fleet}")
-        associate["fleetId"] = fleet
+    if fleetId is not None:  # if a fleet with the correct hubs already exists
+        print(f">>>> Fleet found: {fleetId}")
+        associate["fleetId"] = fleetId
         
         update_associate(env, associate, userName)
     else:
@@ -395,7 +441,6 @@ def apply_changes(env, orgId, hubsList, allFleets, associate, userName):
                 print(">> No other associate use this fleetId")
 
                 update_fleet(env, orgId, fleetId, hubsList)
-                print(f">> Updating Fleet: {fleets.update_fleet_hubs(env, orgId, fleetId, hubsList)}")
             else:
                 # In this case we need to create a new fleet
                 print(">> Someone else uses this fleetId as well")
@@ -446,9 +491,9 @@ def move_to_new_hub(env, associate, userName, newHub):
     update_associate(env, newAssociateData, userName)
 
 
-def main (env, orgId, associate, userName, allHubs, allFleets):
+def process_associate (env, orgId, associate, userName, allHubs, allFleets):
     """
-    The main function that performs necessary actions based on the associate's type and input.
+    The function that performs necessary actions based on the associate's type and input.
 
     Executes the corresponding function based on the associate's type and action.
 
@@ -457,22 +502,23 @@ def main (env, orgId, associate, userName, allHubs, allFleets):
         orgId (str): the ID of the associate's org
         associate (dict): the associate data
         userName (str): who is operating the script
+        allHubs (list[dict]): all hubs from org to avoid multiple API calls
+        allFleets (list[dict]): all fleets from org to avoid multiple API calls
 
     Returns:
     None
     """
-    hubsList = get_associate_hubs_from_fleet(associate, allFleets, allHubs)
+    name = associate.get('contact').get('name')
+    print(f"============ PROCESSING {str(name).upper()} ============")
+
+    hubsList = get_hubs_from_associate_fleet(associate, allFleets, allHubs)
     hubsNames = [h.get('name') for h in hubsList]
 
-    name = associate.get('contact').get('name')
-    print(f"============ STARTING {str(name).upper} ============")
-
     if associate["associateType"] not in ["DRIVER", "SORTER"]:
-        
-        print(f">> HUBs: {' '.join(hubsNames)}\n")
 
         newHubs = get_new_hubs(hubsNames, allHubs)
         answer = select_answer()
+        print()
 
         if answer == "Y":
             # associate needs to maintain his previous hubs + the new one(s)
@@ -497,7 +543,7 @@ def main (env, orgId, associate, userName, allHubs, allFleets):
                     newHubs[0]
                 )
     else:
-        print(f">> {name} is a driver/sorter. We can't give drivers access to other hubs!")
+        print(f"\n>> {name} is a driver/sorter. We can't give drivers access to other hubs!")
         answer = select_answer(question="Do you want to move this associate to a new HUB? ")
 
         if answer == "Y":
@@ -513,9 +559,9 @@ def main (env, orgId, associate, userName, allHubs, allFleets):
     print(f"============ FINISHED {str(name).upper} ============\n\n")
 
 
-def __init():
+def main():
     """
-    The initialization function that interacts with the user, retrieves associate information, and calls main logic. performs necessary actions based on the associate's type and input.
+    The initialization function that interacts with the user, retrieves associate information, and calls process_associate logic. performs necessary actions based on the associate's type and input.
 
     This function prompts the user to enter the associate's ID, name, fleet information, and the desired action to be performed. It then validates the input, retrieves additional information if needed, and executes the corresponding function based on the associate's type and action.
 
@@ -530,15 +576,13 @@ def __init():
     orgId = utils.select_org(env)
 
     associate = get_associate(env, orgId, False)
+    print(">> Associate Found")
 
-    print("Associate Found")
-    print()
     allFleets = fleets.search_fleet(env, orgId)
-    print()
     allHubs = hubs.get_all_hubs(env, orgId)
-    print()
 
-    main(env, orgId, associate, userName, allHubs, allFleets)
+    process_associate(env, orgId, associate, userName, allHubs, allFleets)
 
 
-__init()
+if __name__ == "__main__":
+    main()

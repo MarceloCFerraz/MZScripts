@@ -254,3 +254,32 @@ def divide_into_batches(lst, batch_size=100):
         batch = lst[i:i+batch_size]
         batches.append(batch)
     return batches
+
+
+def select_answer(question=None, answers=None):
+    """
+    Presents a question to the user and expects a specific answer.
+
+    This function presents a question to the user and expects a specific answer. It ensures that the user's input matches the available answer options.
+
+    Parameters:
+    - question (str, optional): The question to be presented. If not provided, a default question will be used.
+    - answers (list, optional): The available answer options. If not provided, "Y" or "N" will be used.
+
+    Returns:
+    - answer (str): The user's selected answer.
+    """
+    if answers is None:
+        answers = ["Y", "N"]
+
+    if question == None:
+        question = f">> Does the associate need to maintain access to all previous hubs? "
+
+    question = question + f"({'/'.join(answers)})"
+
+    answer = ""
+    print(question)
+    while answer not in answers:
+        answer = str(input("> ")).upper().strip()
+
+    return answer
