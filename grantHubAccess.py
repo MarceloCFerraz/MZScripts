@@ -401,6 +401,7 @@ def apply_changes(env, orgId, hubsList, allFleets, associate, userName):
         
         update_associate(env, associate, userName)
     else:
+        answer = select_answer(question=">> Do you want to continue? ")
         if associate_has_fleet(associate):  # if associate already have a fleetId
             fleetId = associate["fleetId"]
             
