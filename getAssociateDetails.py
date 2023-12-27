@@ -49,13 +49,14 @@ def main():
                 print(f"         E-Mail: {associate['contact']['email']}")
                 print(f"          Phone: {associate['contact']['phone']}")
                 print(f"    Location ID: {associate['location']['locationId']}")
-                print(f"   WorldView ID: {associate['worldViewId']}\n")
+                print(f"   WorldView ID: {associate['worldViewId']}")
                 try:
                     print(f"       Fleet ID: {associate['fleetId']}")
                 except Exception:
                     pass
                 print(f"         HUB ID: {associate['hubId']}")
                 print(f"       HUB Name: {hub.get('name')}")
+                print("========================================")
         else:
             print("Too many associates, check 'RESULTS' folder to see the full response!")
             files.save_json_to_file(filePrefix="ASSOCIATES", jsonData=files.format_json(associatesArray))

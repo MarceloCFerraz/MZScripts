@@ -1,8 +1,12 @@
 venv
+logs
 results
 history
 responses
 aikey.py
+*.pyc
+*.log
+*.db
 *.txt
 *.csv
 *.xlsx

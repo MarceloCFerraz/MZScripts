@@ -31,6 +31,7 @@ def get_package_hub(package):
                 hubName = package["packageDetails"]["destination"]["name"]
             except Exception as e:
                 print(e)
+                hubName = ""
                 # sys.exit()
     
     return hubName

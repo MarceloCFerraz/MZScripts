@@ -296,10 +296,13 @@ def print_package_histories(package):
         if associate != None:
             associate_id = associate.get("id")
             associate_type = associate.get("type")
+            print(f"\Associate: {associate_id} ({associate_type})")
         
-        routeId = histories[index].get("optionalValues").get("ROUTE_ID")
-        if routeId != None:
-            print(f"\tRoute ID: '{routeId}'")
+        optional_values = histories[index].get("optionalValues")
+        if optional_values != None:
+            routeId = optional_values.get("ROUTE_ID")
+            if routeId != None:
+                print(f"\tRoute ID: '{routeId}'")
     
         notes = histories[index].get("notes")
         print(f"\tNotes: '{notes}'\n")

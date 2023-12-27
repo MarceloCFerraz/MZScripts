@@ -333,7 +333,7 @@ def update_associate(env, associate, userName):
     Returns:
     None
     """
-    print(f">> Updating associate {associate["associateId"]}")
+    print(f">> Updating associate {associate['associateId']}")
     response = associates.update_associate_data(env, associate, userName)
 
     print(f">> Update Status: {'OK' if response.status_code < 400 else 'FAILED'}")

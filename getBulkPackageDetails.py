@@ -1,6 +1,30 @@
-import sys
+import sys, concurrent.futures
 from utils import files, packages, utils
 import getPackageDetails
+
+
+PACKAGES = []
+
+
+def fill_packages_list (env, orgId, key_type, key):
+    """
+    Fill the PACKAGES list with package details.
+
+    Parameters:
+    - env: The environment.
+    - orgId: The organization ID.
+    - keyType: The type of key.
+    - key: The key.
+
+    Returns:
+    None
+    """
+    pkgs = packages.get_packages_details(env, orgId, key_type, key)["packageRecords"]
+
+    if (len(pkgs) == 0):
+        print("> NO PACKAGES FOUND <\n")
+    for pkg in pkgs:
+        PACKAGES.append(pkg)
 
 
 def main(file_name, key_type, statuses):
@@ -27,28 +51,34 @@ def main(file_name, key_type, statuses):
     env = utils.select_env()
     orgId = utils.select_org(env)
 
-    status_list = []
+    valid_statuses = []
     
     if statuses != "":
-        status_list = getPackageDetails.get_status_list(statuses)
+        valid_statuses = getPackageDetails.get_status_list(statuses)
     
     keys = files.get_data_from_file(file_name)
     response = {}
     valid_packages = []
     invalid_packages = 0
 
-    for key in keys:
-        pkgs = packages.get_packages_details(env, orgId, key_type, key)["packageRecords"]
-        for package in pkgs:
-            status = package["packageStatuses"]["status"]
+    # Using multithreading to fetch multiple packages simultaneosly
+    with concurrent.futures.ThreadPoolExecutor() as pool:
+        for key in keys:
+            # getting packages from key (ori, bc, etc) present in file line
+            pool.submit(fill_packages_list, env, orgId, key_type, key)
 
-            if status_list != [] and status not in status_list:
-                print(f"Package ignored (not marked as {', '.join(status_list)})")
-                invalid_packages += 1
-            else:
-                packages.print_minimal_package_details(package)
-                print(f"\nPackage added to final response ({status})\n\n")
-                valid_packages.append(package)
+    pool.shutdown(wait=True)
+
+    for package in PACKAGES:
+        status = package["packageStatuses"]["status"]
+
+        if valid_statuses != [] and status not in valid_statuses:
+            print(f"Package ignored (not marked as {', '.join(valid_statuses)})")
+            invalid_packages += 1
+        else:
+            packages.print_minimal_package_details(package)
+            print(f"\nPackage added to final response ({status})\n\n")
+            valid_packages.append(package)
     
     response["packageRecords"] = valid_packages
     response["count"] = len(valid_packages)
@@ -56,7 +86,7 @@ def main(file_name, key_type, statuses):
     print(f"\nValid Packages: {len(valid_packages)}")
     print(f"Invalid Packages: {invalid_packages}\n")
 
-    if valid_packages != []:
+    if valid_packages != [] and len(valid_packages) > 20:
         formatted_response = files.format_json(response)
         files.save_json_to_file(formatted_response, "PKGS_DETAILS")
 
