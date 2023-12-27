@@ -110,12 +110,13 @@ def print_array_items(array):
         None
     """
     divisor = find_biggest_divisor(len(array))
+    items_per_line = divisor
 
-    for i in range(0, len(array)):
-        item = array[i] + "   "
-        if 0 < i < len(array) and (i + 1) % divisor == 0:
-            item += "\n"
-        print(f"{item}", end="")
+    for i, item in enumerate(array):
+        print(f"{item:<10}", end="")
+        if (i + 1) % items_per_line == 0:
+            print()
+
     print()
 
 
@@ -128,7 +129,7 @@ def select_env():
     """
     envs = ORGS.keys()
     env = ""
-    print("SELECT THE ENV")
+    print(">> SELECT THE ENV")
     print(f"Options: {'   '.join(envs)}")
     while env not in envs:
         env = str(input("> ")).upper().strip()
@@ -149,8 +150,8 @@ def select_org(env):
     orgs = list(ORGS[env].keys())
     org = ""
 
-    print(f"SELECT THE ORG ({env})")
-    print("Options: ")
+    print(f">> SELECT THE ORG ({env})")
+    print(">> Options: ")
     print_array_items(orgs)
 
     while org not in orgs:

@@ -78,3 +78,8 @@ def route_found(desired_route_name, route):
 
     return desired_route_name in route_name or desired_route_name in route_id
 
+
+def get_route_events(env, routeId):
+    url = f"http://alamo.{env}.milezero.com/alamo-war/api/plannedroutes/{routeId}/events"
+
+    return requests.get(url=url, timeout=15).json().get("events")
