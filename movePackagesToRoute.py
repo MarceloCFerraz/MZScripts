@@ -3,6 +3,23 @@ from datetime import datetime
 from utils import utils, packages, files, routes
 
 
+def route_found(desired_route_name, route):
+    """
+    Compares the route names (1st param) with the route id and route name.
+
+    Parameters:
+        desired_route_name (str): the route name from the user input
+        route (dict): the route metadata from alamo's GET /routes/search/orgId/{orgId}
+    Returns:
+        True: if desired_route_name is present either in the route's name or id
+        False: otherwise
+    """
+    route_name = str(route)['routeName'].strip().lower()
+    route_id = str(route)['routeId'].strip().lower()
+
+    return desired_route_name in route_name or desired_route_name in route_id
+
+
 def main():
     """
     The main function that retrieves package IDs from a file, prompts for user input, searches for a route, and moves the packages to the specified route.
@@ -27,16 +44,14 @@ def main():
         input("Type in the route date (yyyy-mm-dd)\n> ").strip(),
         "%Y-%m-%d"
     )
-    cpt = cpt.strftime("%Y-%m-%d") + "T16:00:00Z"
+    cpt = cpt.strftime("%Y-%m-%d")
 
-    allRoutes = routes.get_all_routes_from_hub(env, orgId, hubName, cpt)
-    
-    route = [r for r in allRoutes if newRoute in r['routeName'] or newRoute in r['routeId']]
+    route = routes.find_route(env, orgId, newRoute, hubName, cpt)
 
-    if len(route) == 0:
+    if route == None:
         print("No Route Found")
     else:
-        routeId = route[0]['routeId']
+        routeId = route['routeId']
         print(f"Route Found: {routeId}")
 
         packages.move_packages_to_route(env, orgId, routeId, packageIdsList)

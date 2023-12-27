@@ -22,18 +22,16 @@ def main():
         input("Type in the desired date (yyyy-mm-dd)\n> ").strip(),
         "%Y-%m-%d"
     )
-    cpt = cpt.strftime("%Y-%m-%d") + "T16:00:00Z"
-    routeName = input("Type the desired route name\n> ").strip().upper()
+    cpt = cpt.strftime("%Y-%m-%d")
+    routeName = input("Type the desired route name\n> ").strip().lower()
 
-    allRoutes = routes.get_all_routes_from_hub(env, orgId, hubName, cpt)
-    
-    route = [r for r in allRoutes if routeName in r['routeName'] or routeName in r['routeId']]
-    pids = []
+    route = routes.find_route(env, orgId, routeName, hubName, cpt)
 
-    if len(route) == 0:
+    if not route:
         print("No Route Found")
     else:
-        pkgs = packages.get_all_packages_on_route(env, orgId, route[0]['routeId'])
+        pids = []
+        pkgs = packages.get_all_packages_on_route(env, orgId, route['routeId'])
         
         for package in pkgs:
             pids.append(package['packageID'])

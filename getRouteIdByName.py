@@ -2,6 +2,24 @@ import requests
 from utils import files, utils, packages, routes
 from datetime import datetime
 
+
+def route_found(desired_route_name, route):
+    """
+    Compares the route names (1st param) with the route id and route name.
+
+    Parameters:
+        desired_route_name (str): the route name from the user input
+        route (dict): the route metadata from alamo's GET /routes/search/orgId/{orgId}
+    Returns:
+        True: if desired_route_name is present either in the route's name or id
+        False: otherwise
+    """
+    route_name = str(route)['routeName'].strip().lower()
+    route_id = str(route)['routeId'].strip().lower()
+
+    return desired_route_name in route_name or desired_route_name in route_id
+
+
 def main():
     """
     The main function for route search.
@@ -21,17 +39,15 @@ def main():
         input("Type in the desired date (yyyy-mm-dd)\n> ").strip(),
         "%Y-%m-%d"
     )
-    cpt = cpt.strftime("%Y-%m-%d") + "T16:00:00Z"
-    routeName = input("Type the desired route name\n> ").strip().upper()
+    cpt = cpt.strftime("%Y-%m-%d")
+    routeName = input("Type the desired route name\n> ").strip()
 
-    allroutes = routes.get_all_routes_from_hub(env, orgId, hubName, cpt)
-    
-    route = [r for r in allroutes if routeName in r['routeName'] or routeName in r['routeId']]
-
-    if len(route) == 0:
+    route = routes.find_route(env, orgId, routeName, hubName, cpt)
+  
+    if route == None:
         print("No Route Found")
     else:
-        print(f"Route Found: {route[0]['routeId']}")
+        print(f"Route Found: {route['routeId']}")
 
 
 main()

@@ -30,12 +30,11 @@ def main():
     
     
     route = routes.find_route(env, orgId, routeName, oldHub, cpt)
-    pids = []
 
-    if len(route) == 0:
+    if route == None:
         print("Route Not Found!")
     else:
-        pkgs = packages.get_all_packages_on_route(env, orgId, route[0]['routeId'])
+        pkgs = packages.get_all_packages_on_route(env, orgId, route['routeId'])
 
         if len(pkgs) > 0:
             newHub = input("Type the NEW hub name\n> ").strip()
