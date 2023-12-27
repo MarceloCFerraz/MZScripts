@@ -1,5 +1,6 @@
 from datetime import datetime
 
+DEFAULT_SPACING = 12
 ORGS = {
     "PROD": {
         "CLM": "8a9e84be-9874-4346-baab-26053d35871e",
@@ -93,10 +94,12 @@ def find_biggest_divisor(number):
         int: The biggest divisor of the number.
     """
     for i in range(number - 1, 1, -1):
-        if number % i == 0 and i != number / 2:
+        if number % i == 0:
+            # prime numbers won't get into here
             return i
-    return 4
-    # default items per line is 4
+    # so we need to return a default value of items per line
+    return 3
+
 
 
 def print_array_items(array):
@@ -113,11 +116,15 @@ def print_array_items(array):
     items_per_line = divisor
 
     for i, item in enumerate(array):
-        print(f"{item:<10}", end="")
+        print(f"{item:^{DEFAULT_SPACING}}", end="")
         if (i + 1) % items_per_line == 0:
             print()
 
     print()
+    
+
+def print_formatted_message(message, items_count, separator="*"):
+    print(f"{' {} '.format(message):{separator}^{DEFAULT_SPACING * find_biggest_divisor(items_count)}}")
 
 
 def select_env():
@@ -129,8 +136,9 @@ def select_env():
     """
     envs = ORGS.keys()
     env = ""
-    print(">> SELECT THE ENV")
-    print(f"Options: {'   '.join(envs)}")
+    print_formatted_message("SELECT THE ENV", len(envs), " ")
+    print_formatted_message("Options", len(envs))
+    print_array_items(envs)
     while env not in envs:
         env = str(input("> ")).upper().strip()
 
@@ -150,8 +158,9 @@ def select_org(env):
     orgs = list(ORGS[env].keys())
     org = ""
 
-    print(f">> SELECT THE ORG ({env})")
-    print(">> Options: ")
+    print()
+    print_formatted_message(f"SELECT THE ORG ({env})", len(orgs), " ")
+    print_formatted_message("Options", len(orgs))
     print_array_items(orgs)
 
     while org not in orgs:
