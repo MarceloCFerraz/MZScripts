@@ -1,5 +1,7 @@
 import requests
 
+from utils import utils
+
 
 def get_all_routes_from_hub_sortation(env, orgId, hubName, cpt):
     """
@@ -14,7 +16,7 @@ def get_all_routes_from_hub_sortation(env, orgId, hubName, cpt):
     Returns:
         list: The list of routes from the hub.
     """
-    url = f"http://sortationservices.{env}.milezero.com/SortationServices-war/api/route/list/routes/{orgId}/{hubName}/{str(cpt).replace(':', '%3A')}"
+    url = f"http://sortationservices.{utils.convert_env(env)}.milezero.com/SortationServices-war/api/route/list/routes/{orgId}/{hubName}/{str(cpt).replace(':', '%3A')}"
 
     print(f">> Gathering all routes from {hubName} ({cpt}) using Sortation Services")
 
@@ -34,7 +36,7 @@ def get_all_routes_from_hub_alamo(env, orgId, hubName, cpt):
     Returns:
         list: The list of routes from the hub.
     """
-    url = f"http://alamo.{env}.milezero.com/alamo-war/api/routes/search/orgId/{orgId}?key={hubName}&keyType=HUB_NAME&localDate={cpt}"
+    url = f"http://alamo.{utils.convert_env(env)}.milezero.com/alamo-war/api/routes/search/orgId/{orgId}?key={hubName}&keyType=HUB_NAME&localDate={cpt}"
 
     print(f">> Gathering all routes from {hubName} ({cpt}) using Alamo")
 
@@ -56,7 +58,9 @@ def find_route(env, orgId, routeName, hubName, cpt):
         list: The list of routes matching the name or ID.
     """
     allRoutes = get_all_routes_from_hub_alamo(env, orgId, hubName, cpt)
-    allRoutes = [r for r in allRoutes["routes"] if route_found(routeName, r['metadata'])]
+    allRoutes = [
+        r for r in allRoutes["routes"] if route_found(routeName, r["metadata"])
+    ]
 
     return allRoutes[0]["metadata"] if len(allRoutes) > 0 else None
 
@@ -73,13 +77,13 @@ def route_found(desired_route_name, route):
         False: otherwise
     """
     desired_route_name = str(desired_route_name).strip().lower()
-    route_name = str(route['routeName']).strip().lower()
-    route_id = str(route['routeId']).strip().lower()
+    route_name = str(route["routeName"]).strip().lower()
+    route_id = str(route["routeId"]).strip().lower()
 
     return desired_route_name in route_name or desired_route_name in route_id
 
 
 def get_route_events(env, routeId):
-    url = f"http://alamo.{env}.milezero.com/alamo-war/api/plannedroutes/{routeId}/events"
+    url = f"http://alamo.{utils.convert_env(env)}.milezero.com/alamo-war/api/plannedroutes/{routeId}/events"
 
     return requests.get(url=url, timeout=15).json().get("events")

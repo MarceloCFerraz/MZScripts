@@ -1,5 +1,7 @@
 import requests
 
+from utils import utils
+
 
 def get_org_by_id(env, orgId):
     """
@@ -12,6 +14,6 @@ def get_org_by_id(env, orgId):
     Returns:
         dict: The organization information.
     """
-    url = f"http://cromag.{env}.milezero.com/retail/api/organization/{orgId}"
+    url = f"http://cromag.{utils.convert_env(env)}.milezero.com/retail/api/organization/{orgId}"
 
     return requests.get(url=url, timeout=5).json()

@@ -3,5 +3,7 @@
     "files.autoSave": "onFocusChange",
     "files.watcherExclude": {
         "**/target": true
-    }
+    },
+    "python.analysis.autoImportCompletions": true,
+    "python.analysis.typeCheckingMode": "basic"
 }

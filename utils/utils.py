@@ -31,7 +31,7 @@ ORGS = {
         "SHOPRITE": "397190aa-18ab-4bef-a8aa-d5875d738911",
         "EMPIRE": "09de776e-10cc-437d-9abc-ee5103d3b974",
         "ESSENDANT": "af0db6df-c6fd-4ad3-919c-350501c25bae",
-        "DELIVERY SOLUTIONS": "cc2a4805-5b7e-49e1-80a1-a62cf906214d"
+        "DELIVERY SOLUTIONS": "cc2a4805-5b7e-49e1-80a1-a62cf906214d",
     },
     "INTEG": {
         "HN": "1aaae948-7cbc-4fc2-9cbf-8e17fe8c1457",
@@ -46,7 +46,7 @@ ORGS = {
         "ESSENDANT": "0ed1589a-30f8-4b87-b458-120149bcd89e",
         "DELIVERY SOLUTIONS": "1bced832-4e3b-4f21-b803-477869cf02af",
         "EMPIRE": "de03ba9f-7baa-4f64-9628-5eb75b970af1",
-    }
+    },
 }
 ASSOCIATE_KEY_TYPES = [
     "ORG ID",
@@ -78,9 +78,11 @@ def get_formated_now():
     Returns:
         str: The formatted current date and time.
     """
-    return str(
-        datetime.now().replace(second=0, microsecond=0)
-    ).replace(':', '-').replace(' ', 'T')
+    return (
+        str(datetime.now().replace(second=0, microsecond=0))
+        .replace(":", "-")
+        .replace(" ", "T")
+    )
 
 
 def find_biggest_divisor(number):
@@ -99,7 +101,6 @@ def find_biggest_divisor(number):
             return i
     # so we need to return a default value of items per line
     return 3
-
 
 
 def print_array_items(array):
@@ -121,10 +122,12 @@ def print_array_items(array):
             print()
 
     print()
-    
+
 
 def print_formatted_message(message, items_count, separator="*"):
-    print(f"{' {} '.format(message):{separator}^{DEFAULT_SPACING * find_biggest_divisor(items_count)}}")
+    print(
+        f"{' {} '.format(message):{separator}^{DEFAULT_SPACING * find_biggest_divisor(items_count)}}"
+    )
 
 
 def select_env():
@@ -159,13 +162,13 @@ def select_org(env):
     org = ""
 
     print()
-    print_formatted_message(f"SELECT THE ORG ({env})", len(orgs), " ")
+    print_formatted_message(f"SELECT THE ORG ({convert_env(env)})", len(orgs), " ")
     print_formatted_message("Options", len(orgs))
     print_array_items(orgs)
 
     while org not in orgs:
         org = str(input("> ")).upper().strip()
-    return ORGS[env][org] # returns orgId
+    return ORGS[env][org]  # returns orgId
 
 
 def get_associate_key_type_index():
@@ -219,13 +222,17 @@ def calculate_elapsed_time(start, finish):
 
     elapsed_hours = elapsed_seconds // 3600
     if elapsed_hours >= 1:
-        elapsed_seconds -= (elapsed_hours * 3600)
+        elapsed_seconds -= elapsed_hours * 3600
 
     elapsed_minutes = elapsed_seconds // 60
     if elapsed_minutes >= 1:
-        elapsed_seconds -= (elapsed_minutes * 60)
+        elapsed_seconds -= elapsed_minutes * 60
 
-    return {"hours": elapsed_hours, "minutes": elapsed_minutes, "seconds": elapsed_seconds}
+    return {
+        "hours": elapsed_hours,
+        "minutes": elapsed_minutes,
+        "seconds": elapsed_seconds,
+    }
 
 
 def print_elapsed_time(start, finish):
@@ -261,7 +268,7 @@ def divide_into_batches(lst, batch_size=100):
     """
     batches = []
     for i in range(0, len(lst), batch_size):
-        batch = lst[i:i+batch_size]
+        batch = lst[i : i + batch_size]
         batches.append(batch)
     return batches
 
@@ -283,7 +290,9 @@ def select_answer(question=None, answers=None):
         answers = ["Y", "N"]
 
     if question == None:
-        question = f">> Does the associate need to maintain access to all previous hubs? "
+        question = (
+            f">> Does the associate need to maintain access to all previous hubs? "
+        )
 
     question = question + f"({'/'.join(answers)})"
 
@@ -293,3 +302,21 @@ def select_answer(question=None, answers=None):
         answer = str(input("> ")).upper().strip()
 
     return answer
+
+
+def extract_property(obj, keys):
+    """Helper function to extract a property from a dictionary."""
+    try:
+        prop = obj
+        for key in keys:
+            prop = prop[key]
+        return prop
+    except KeyError:
+        return None
+
+
+def convert_env(env):
+    if env == "INTEG":
+        env = "PROD"
+
+    return env.lower()

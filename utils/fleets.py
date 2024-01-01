@@ -1,5 +1,6 @@
 import requests
 
+from utils import utils
 from utils.organizations import get_org_by_id
 
 
@@ -16,7 +17,7 @@ def search_fleet(env, orgId, fleetId=None):
         dict: Matching fleet
         list: All org fleets if no fleet ID is provided.
     """
-    url = f"http://qilin.{env}.milezero.com/qilin-war/api/fleets/{orgId}"
+    url = f"http://qilin.{utils.convert_env(env)}.milezero.com/qilin-war/api/fleets/{orgId}"
     if fleetId is not None:
         url += f"?fleetId={fleetId}"
 
@@ -91,15 +92,14 @@ def create_fleet(env, orgId, hubsList, fleetName=None, fleetLogo=None):
 
     customer = get_org_by_id(env, orgId)
 
-    url = f"http://qilin.{env}.milezero.com/qilin-war/api/fleets/{orgId}"
-
+    url = f"http://qilin.{utils.convert_env(env)}.milezero.com/qilin-war/api/fleets/{orgId}"
 
     requestData = {
-      "fleetName": fleetName if fleetName != None else f"{customer['name'].upper()}",
-      "description": f"{customer['name'].upper()} {' '.join(hubNames)} Fleet",
-      "hubIds": hubIds,
-      "logoUrl": fleetLogo if fleetLogo != None else f"{customer['logo']}",
-      "active": True
+        "fleetName": fleetName if fleetName != None else f"{customer['name'].upper()}",
+        "description": f"{customer['name'].upper()} {' '.join(hubNames)} Fleet",
+        "hubIds": hubIds,
+        "logoUrl": fleetLogo if fleetLogo != None else f"{customer['logo']}",
+        "active": True,
     }
 
     return requests.post(url=url, json=requestData, timeout=5).json()["fleetId"]
@@ -117,7 +117,7 @@ def update_fleet(env, orgId, fleet):
     Returns:
         Response: The response object from the update request.
     """
-    url = f"http://qilin.{env}.milezero.com/qilin-war/api/fleets/{orgId}/{fleet['fleetId']}"
+    url = f"http://qilin.{utils.convert_env(env)}.milezero.com/qilin-war/api/fleets/{orgId}/{fleet['fleetId']}"
     return requests.post(url=url, json=fleet, timeout=5)
 
 
@@ -185,6 +185,6 @@ def delete_fleet(env, orgId, fleetId):
     Returns:
         Response: The response object from the delete request.
     """
-    url = f"http://qilin.{env}.milezero.com/qilin-war/api/fleets/{orgId}/{fleetId}"
+    url = f"http://qilin.{utils.convert_env(env)}.milezero.com/qilin-war/api/fleets/{orgId}/{fleetId}"
 
     return requests.delete(url=url, timeout=5)

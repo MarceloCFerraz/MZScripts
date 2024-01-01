@@ -1,5 +1,7 @@
 import requests
 
+from utils import utils
+
 
 def get_hub_config(env, orgId, hubId):
     """
@@ -13,13 +15,15 @@ def get_hub_config(env, orgId, hubId):
     Returns:
         dict: The configuration for the hub.
     """
-    url = f"http://alamo.{env}.milezero.com/alamo-war/api/hubconfig/key/orgId/{orgId}?key={hubId}&keyType=HUB_ID"
+    url = f"http://alamo.{utils.convert_env(env)}.milezero.com/alamo-war/api/hubconfig/key/orgId/{orgId}?key={hubId}&keyType=HUB_ID"
+    response = requests.Response()
+
     try:
         response = requests.get(url=url, timeout=30)
-    except ConnectionError as e: 
+    except ConnectionError as e:
         print(f"Connection Error. Please connect to the VPN!\n {e}")
 
-    return response.json().get('config')
+    return response.json().get("config")
 
 
 def get_all_hubs(env, orgId):
@@ -33,11 +37,12 @@ def get_all_hubs(env, orgId):
     Returns:
         list: A list of all hubs within the organization.
     """
-    endpoint = f"http://cromag.{env}.milezero.com/retail/api/hubs/org/{orgId}?hubType=HUB"
+    endpoint = f"http://cromag.{utils.convert_env(env)}.milezero.com/retail/api/hubs/org/{orgId}?hubType=HUB"
+    response = requests.Response()
 
     try:
         response = requests.get(url=endpoint, timeout=10).json()["hubs"]
-    except ConnectionError as e: 
+    except ConnectionError as e:
         print(f"Connection Error. Please connect to the VPN!\n {e}")
 
     return response
@@ -55,11 +60,12 @@ def search_hub_by_name(env, orgId, hubName):
     Returns:
         list: A list of hubs matching the search criteria.
     """
-    url = f"http://cromag.{env}.milezero.com/retail/api/hubs/org/{orgId}?hubType=HUB&keyType=name&key={hubName}"
+    url = f"http://cromag.{utils.convert_env(env)}.milezero.com/retail/api/hubs/org/{orgId}?hubType=HUB&keyType=name&key={hubName}"
+    response = requests.Response()
 
     try:
         response = requests.get(url=url, timeout=5).json()["hubs"]
-    except ConnectionError as e: 
+    except ConnectionError as e:
         print(f"Connection Error. Please connect to the VPN!\n {e}")
     # print(response)
 
@@ -78,12 +84,12 @@ def search_hub_by_id(env, orgId, hubId):
     Returns:
         list: A list of hubs matching the search criteria.
     """
-    url = f"http://cromag.{env}.milezero.com/retail/api/hubs/org/{orgId}?hubType=HUB&keyType=id&key={hubId}"
+    url = f"http://cromag.{utils.convert_env(env)}.milezero.com/retail/api/hubs/org/{orgId}?hubType=HUB&keyType=id&key={hubId}"
     response = None
 
     try:
         response = requests.get(url=url, timeout=5).json()["hubs"]
-    except ConnectionError as e: 
+    except ConnectionError as e:
         print(f"Connection Error. Please connect to the VPN!\n {e}")
 
     return response

@@ -1,5 +1,7 @@
 import requests
 
+from utils import utils
+
 
 def get_associate_data(env, orgId, associateId):
     """
@@ -13,9 +15,9 @@ def get_associate_data(env, orgId, associateId):
     Returns:
         dict or None: The associate data if found, or None if not found.
     """
-    url = f"http://lmx.{env}.milezero.com/lmx-war/api/associate/org/{orgId}/{associateId}"
+    url = f"http://lmx.{utils.convert_env(env)}.milezero.com/lmx-war/api/associate/org/{orgId}/{associateId}"
 
-    # print(f"\nSearching for ({env})\n" +
+    # print(f"\nSearching for ({utils.convert_env(env)})\n" +
     #       f"> OrgId {orgId}\n" +
     #       f"> AssociateId {associateId}")
     response = requests.get(url=url, timeout=10).json()
@@ -61,13 +63,27 @@ def search_associate(env, org_id, key_type_index, search_key):
         list or None: The list of associates if found, or None if not found.
     """
     time = 30
-    url = f"http://lmx.{env}.milezero.com/lmx-war/api/associate/all"
+    url = f"http://lmx.{utils.convert_env(env)}.milezero.com/lmx-war/api/associate/all"
 
     key_types = [
-        "orgId", "referenceId", "name", "email", "userName", "state", 
-        "type", "associateType", "skill", "skillRatingValue", "rating",
-        "fleetId", "clusterId", "hubId", "locationId", "worldViewId", 
-        "availabilityFleetId", "availabilityClusterId"
+        "orgId",
+        "referenceId",
+        "name",
+        "email",
+        "userName",
+        "state",
+        "type",
+        "associateType",
+        "skill",
+        "skillRatingValue",
+        "rating",
+        "fleetId",
+        "clusterId",
+        "hubId",
+        "locationId",
+        "worldViewId",
+        "availabilityFleetId",
+        "availabilityClusterId",
     ]
 
     requestData = {}
@@ -75,9 +91,9 @@ def search_associate(env, org_id, key_type_index, search_key):
     if key_type_index > 0:
         requestData["orgId"] = org_id
         time = 30
-    
+
     key_type = str(key_types[key_type_index])
-    
+
     requestData[key_type] = search_key
 
     p = "Searching for associates with\n"
@@ -85,7 +101,7 @@ def search_associate(env, org_id, key_type_index, search_key):
         p += f"> {key} {requestData[key]}\n"
 
     print(p)
-    
+
     response = requests.post(url=url, json=requestData, timeout=time).json()
 
     try:
@@ -134,7 +150,7 @@ def update_associate_data(env, associateData, userName):
     Returns:
         Response: The response object from the update request.
     """
-    url = f"http://lmx.{env}.milezero.com/lmx-war/api/associate?requestor={str(userName).replace(' ', '%20')}&requestorIdType=NAME"
+    url = f"http://lmx.{utils.convert_env(env)}.milezero.com/lmx-war/api/associate?requestor={str(userName).replace(' ', '%20')}&requestorIdType=NAME"
     return requests.put(url=url, json=associateData, timeout=5)
 
 
@@ -152,9 +168,9 @@ def get_telemetries(env, orgId, associateId, startTime, endTime):
     Returns:
     - events: A list of telemetry events.
     """
-    formattedStart = str(startTime).replace(':', '%3A')
-    formattedEnd = str(endTime).replace(':', '%3A')
+    formattedStart = str(startTime).replace(":", "%3A")
+    formattedEnd = str(endTime).replace(":", "%3A")
 
-    endpoint = f"http://lmx.{env}.milezero.com/lmx-war/api/lmxtelemetry/org/{orgId}/owner/{associateId}?startTime={formattedStart}&endTime={formattedEnd}"
+    endpoint = f"http://lmx.{utils.convert_env(env)}.milezero.com/lmx-war/api/lmxtelemetry/org/{orgId}/owner/{associateId}?startTime={formattedStart}&endTime={formattedEnd}"
 
     return requests.get(url=endpoint, timeout=10).json()["events"]

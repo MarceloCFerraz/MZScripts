@@ -1,5 +1,6 @@
 import requests
 
+from utils import utils
 
 VALID_STATUSES = [
     "CREATED",
@@ -19,7 +20,7 @@ VALID_KEY_TYPES = [
     "bc (Shipment Barcode)",
     "oi (Order Id)",
     "ori (Order Reference Id)",
-    "ji (Job Id)"
+    "ji (Job Id)",
 ]
 
 
@@ -38,11 +39,11 @@ def move_package_to_hub(env, orgId, newHub, packageId, dispatcher, userName):
     Returns:
         None
     """
-    url = f"https://switchboard.{env}.milezero.com/switchboard-war/api/package/update/{orgId}/{packageId}/hub"
-    
+    url = f"https://switchboard.{utils.convert_env(env)}.milezero.com/switchboard-war/api/package/update/{orgId}/{packageId}/hub"
+
     payload = {
         "hubName": newHub,
-        "notes": f"Requested by {dispatcher}. Executed by {userName}"
+        "notes": f"Requested by {dispatcher}. Executed by {userName}",
     }
     response = requests.post(url=url, json=payload, timeout=15)
     print(f"{response} {response.text if response.status_code >= 400 else ''}")
@@ -61,20 +62,20 @@ def move_packages_to_route(env, orgId, newRouteId, packageIdsList):
     Returns:
         response (object): The response object from the API call.
     """
-    url = f"http://alamo.{env}.milezero.com/alamo-war/api/constraints/{orgId}/packages/move"
+    url = f"http://alamo.{utils.convert_env(env)}.milezero.com/alamo-war/api/constraints/{orgId}/packages/move"
 
     payload = {
-    "packageIds": packageIdsList,
-    "newRouteId": newRouteId,
+        "packageIds": packageIdsList,
+        "newRouteId": newRouteId,
         "associate": {
             # "associateId": "0ebaddf3-83ea-4713-97da-66552323fc0c",
             # "associateName": "Marcelo Superuser",
             "associateId": "MZSupport",
             "associateName": "MZSupport",
-            "associateType": "ORG_SUPERUSER"
-        }
+            "associateType": "ORG_SUPERUSER",
+        },
     }
-    
+
     response = requests.post(url=url, json=payload, timeout=60)
     print(f"{response} {response.text if response.status_code >= 400 else ''}")
 
@@ -95,8 +96,8 @@ def bulk_cancel_packages(env, orgId, packageIds):
     """
     # newStatus = "CANCELLED"
 
-    API = f"https://switchboard.{env}.milezero.com/switchboard-war/api/package/cancel"
-    
+    API = f"https://switchboard.{utils.convert_env(env)}.milezero.com/switchboard-war/api/package/cancel"
+
     requestData = {
         "orgId": orgId,
         "packageIds": packageIds,
@@ -105,9 +106,9 @@ def bulk_cancel_packages(env, orgId, packageIds):
         #     # "id": "string",
         #     # "type": "string"
         # },
-        "notes": "Requested by dispatcher"
+        "notes": "Requested by dispatcher",
     }
-    
+
     try:
         response = requests.post(url=API, json=requestData, timeout=10)
         print(f"> Result: ({response.status_code})\n")
@@ -130,9 +131,7 @@ def mark_package_as_delivered(orgId, packageId):
     """
     API = "http://switchboard.prod.milezero.com/switchboard-war/api/"
     url = f"{API}package/update/{orgId}/{packageId}/DELIVERED/status"
-    body = {
-        "notes": "Requested by dispatcher"
-    }
+    body = {"notes": "Requested by dispatcher"}
     print(f">>>>> Marking {packageId} as DELIVERED <<<<<")
 
     result = requests.post(url=url, json=body)
@@ -153,13 +152,14 @@ def get_packages_details(env, orgId, KEY_TYPE, key):
     Returns:
         response (object): The response object from the API call.
     """
-    API = f"http://switchboard.{env}.milezero.com/switchboard-war/api/"
+    API = (
+        f"http://switchboard.{utils.convert_env(env)}.milezero.com/switchboard-war/api/"
+    )
     endpoint = f"{API}package?keyType={KEY_TYPE}&keyValue={key}&orgId={orgId}&includeCancelledPackage=true"
 
     print(f">>>>> Retrieving Packages From {KEY_TYPE.upper()} {key} <<<<<")
 
     return requests.get(endpoint, timeout=5).json()
-
 
 
 def get_packages_histories(env, orgId, keyType, key):
@@ -173,7 +173,7 @@ def get_packages_histories(env, orgId, keyType, key):
     Returns:
         response (object): The response object from the API call.
     """
-    endpoint = f"https://switchboard.{env}.milezero.com/switchboard-war/api/package/histories?keyValue={key}&keyType={keyType}&orgId={orgId}&orderBy=timestamp"
+    endpoint = f"https://switchboard.{utils.convert_env(env)}.milezero.com/switchboard-war/api/package/histories?keyValue={key}&keyType={keyType}&orgId={orgId}&orderBy=timestamp"
 
     print(">>>>> Retrieving Packages From {} {} <<<<<".format(keyType.upper(), key))
 
@@ -191,7 +191,7 @@ def print_minimal_package_details(package):
         None
     """
     packageID = package.get("packageId")
-    ori = package.get("orderDetails").get("orderReferenceId")            
+    ori = package.get("orderDetails").get("orderReferenceId")
     hubName = package.get("packageDetails").get("sourceLocation").get("name")
     barcode = package.get("packageDetails").get("shipmentBarcode")
     status = package.get("packageStatuses").get("status")
@@ -216,16 +216,23 @@ def print_package_details(package):
     packageID = package.get("packageId")
     orgId = package.get("orgId")
     hubId = package.get("hubId")
-    ori = package.get("orderDetails").get("orderReferenceId")            
+    ori = package.get("orderDetails").get("orderReferenceId")
     hubName = package.get("packageDetails").get("sourceLocation").get("name")
     barcode = package.get("packageDetails").get("shipmentBarcode")
+
+    routeId = ""
     try:
         routeId = package.get("planningDetails").get("plannerRouteId")
     except Exception as e:
-        print("This package/route was probably not executed (not ROUTE_ID found)")
+        print("This package/route was probably not executed (no ROUTE_ID found)")
+
     previousRouteId = package.get("planningDetails").get("originalRouteId")
     routeName = package.get("planningDetails").get("plannerRouteName")
-    deliveryWindow = package.get("planningDetails").get("requestedTimeWindow").get("start") + " - " + package.get("planningDetails").get("requestedTimeWindow").get("end")
+    deliveryWindow = (
+        package.get("planningDetails").get("requestedTimeWindow").get("start")
+        + " - "
+        + package.get("planningDetails").get("requestedTimeWindow").get("end")
+    )
     status = package.get("packageStatuses").get("status")
 
     half_divisor = "==================="
@@ -259,7 +266,7 @@ def print_package_histories(package):
         None
     """
     orgId = package.get("orgId")
-    ori = package.get("orderReferenceId")            
+    ori = package.get("orderReferenceId")
     packageID = package.get("packageId")
     hubName = package.get("hubName")
     barcode = package.get("barcode")
@@ -282,13 +289,13 @@ def print_package_histories(package):
 
         when = histories[index].get("timestamp")
         print(f"\tTime Stamp: {when}")
-        
+
         action = histories[index].get("action")
         print(f"\tAction: {action}")
-        
+
         status = histories[index].get("neoStatus")
         print(f"\tStatus: {status}")
-        
+
         associate_name = histories[index].get("associateName")
         print(f"\tResponsible: {associate_name}")
 
@@ -296,17 +303,17 @@ def print_package_histories(package):
         if associate != None:
             associate_id = associate.get("id")
             associate_type = associate.get("type")
-            print(f"\Associate: {associate_id} ({associate_type})")
-        
+            print(f"\tAssociate: {associate_id} ({associate_type})")
+
         optional_values = histories[index].get("optionalValues")
         if optional_values != None:
             routeId = optional_values.get("ROUTE_ID")
             if routeId != None:
                 print(f"\tRoute ID: '{routeId}'")
-    
+
         notes = histories[index].get("notes")
         print(f"\tNotes: '{notes}'\n")
-        
+
 
 def revive_package(env, package):
     """
@@ -319,19 +326,21 @@ def revive_package(env, package):
     Returns:
         None
     """
-    API = f"http://switchboard.{env}.milezero.com/switchboard-war/api/"
+    API = (
+        f"http://switchboard.{utils.convert_env(env)}.milezero.com/switchboard-war/api/"
+    )
     orgId = package["orgId"]
     packageId = package["packageId"]
-    requestData = {
-        "notes": "Requested by dispatcher"
-    }
+    requestData = {"notes": "Requested by dispatcher"}
 
     endpoint = "{}package/revive/{}/{}".format(API, orgId, packageId)
 
     print(">>>>> Reviving package <<<<<")
 
     response = requests.post(endpoint, json=requestData, timeout=15)
-    print(f"{response.status_code} {response.text if response.status_code > 400 else ''}")
+    print(
+        f"{response.status_code} {response.text if response.status_code > 400 else ''}"
+    )
 
 
 def mark_package_as_delivery_failed(env, package):
@@ -345,18 +354,20 @@ def mark_package_as_delivery_failed(env, package):
     Returns:
         None
     """
-    API = f"http://switchboard.{env}.milezero.com/switchboard-war/api/"
+    API = (
+        f"http://switchboard.{utils.convert_env(env)}.milezero.com/switchboard-war/api/"
+    )
     orgId = package["orgId"]
     packageId = package["packageId"]
 
-    requestData = {
-        "notes": "Requested By Dispatcher"
-    }
+    requestData = {"notes": "Requested By Dispatcher"}
 
-    endpoint = "{}package/update/{}/{}/DELIVERY_FAILED/status".format(API, orgId, packageId)
+    endpoint = "{}package/update/{}/{}/DELIVERY_FAILED/status".format(
+        API, orgId, packageId
+    )
 
     print(">>>>> Marking package as DELIVERY_FAILED <<<<<")
-    
+
     try:
         response = requests.post(endpoint, json=requestData, timeout=15)
         print("> Package Marked as DELIVERY_FAILED Sucessfuly ({})\n".format(response))
@@ -378,28 +389,27 @@ def resubmit_package(env, orgId, packageId, next_delivery_date):
     Returns:
         dict: The response containing the success and error information.
     """
-    response = {
-        "SUCCESS": None,
-        "ERROR": None
-    }
-    API = f"http://switchboard.{env}.milezero.com/switchboard-war/api/"
+    response = {"SUCCESS": "", "ERROR": ""}
+    API = (
+        f"http://switchboard.{utils.convert_env(env)}.milezero.com/switchboard-war/api/"
+    )
 
     requestData = {
         "adjustTimeWindow": True,
         "treatEverydayAsProcessingDay": False,
         "targetLocalDate": next_delivery_date,
-        "notes": "Requested by dispatcher"
+        "notes": "Requested by dispatcher",
     }
 
     endpoint = "{}fulfillment/resubmit/{}/{}".format(API, orgId, packageId)
 
     print(">>>>> Resubmitting {} for {} <<<<<".format(packageId, next_delivery_date))
 
-    try: 
+    try:
         response = requests.post(endpoint, json=requestData, timeout=15).json()
-        response['SUCCESS'] = packageId
-    except Exception as e: 
-        response['ERROR'] = f"{packageId} → {e.__reduce__().__repr__()}"
+        response["SUCCESS"] = packageId
+    except Exception as e:
+        response["ERROR"] = f"{packageId} → {e.__reduce__().__repr__()}"
 
     return response
 
@@ -417,31 +427,30 @@ def bulk_resubmit_packages(env, orgId, packageIDs, next_delivery_date):
     Returns:
         dict: The response containing the success and error information.
     """
-    res = {
-        "SUCCESS": [],
-        "ERROR": []
-    }
-    API = f"https://switchboard.{env}.milezero.com/switchboard-war/api/"
+    res = {"SUCCESS": [], "ERROR": []}
+    API = f"https://switchboard.{utils.convert_env(env)}.milezero.com/switchboard-war/api/"
 
     requestData = {
         "packageIds": packageIDs,
         "adjustTimeWindow": True,
         "treatEverydayAsProcessingDay": False,
         "targetLocalDate": next_delivery_date,
-        "notes": "Requested by dispatcher"
+        "notes": "Requested by dispatcher",
     }
 
     endpoint = f"{API}fulfillment/resubmit/bulk/{orgId}"
 
     response = requests.post(endpoint, json=requestData, timeout=15).json()
 
-    for success in response.get('succeededResubmits'):
-        res['SUCCESS'].append(success.get('packageId'))
-    
-    for error in response.get('failedResubmits'):
-        res['ERROR'].append(error.get('packageId'))
+    for success in response.get("succeededResubmits"):
+        res["SUCCESS"].append(success.get("packageId"))
 
-    print(f">>>>> Batch Resubmit to {next_delivery_date} <<<<<\n> {len(res['SUCCESS'])} OK\n> {len(res['ERROR'])} FAILED")
+    for error in response.get("failedResubmits"):
+        res["ERROR"].append(error.get("packageId"))
+
+    print(
+        f">>>>> Batch Resubmit to {next_delivery_date} <<<<<\n> {len(res['SUCCESS'])} OK\n> {len(res['ERROR'])} FAILED"
+    )
 
     return response
 
@@ -458,7 +467,7 @@ def get_all_packages_on_route(env, orgId, routeId):
     Returns:
         list: The list of packages on the route.
     """
-    url = f"http://sortationservices.{env}.milezero.com/SortationServices-war/api/monitor/packages/{orgId}/{routeId}"
+    url = f"http://sortationservices.{utils.convert_env(env)}.milezero.com/SortationServices-war/api/monitor/packages/{orgId}/{routeId}"
 
     print(f">> Searching for packages in {routeId}")
 
@@ -467,6 +476,7 @@ def get_all_packages_on_route(env, orgId, routeId):
     print(f"Found {len(response)} packages in {routeId}")
 
     return response
+
 
 def get_all_packages_for_hub(env, orgId, hubName, date):
     """
@@ -481,14 +491,14 @@ def get_all_packages_for_hub(env, orgId, hubName, date):
     Returns:
         list: The list of package IDs for the hub and date.
     """
-    endpoint = f"http://sortationservices.{env}.milezero.com/SortationServices-war/api/monitor/getPackagesInWave/{orgId}/{hubName}/{date}/true"
+    endpoint = f"http://sortationservices.{utils.convert_env(env)}.milezero.com/SortationServices-war/api/monitor/getPackagesInWave/{orgId}/{hubName}/{date}/true"
 
     packageCount = 0
     packageIDs = []
 
     try:
-        packages = requests.get(url=endpoint, timeout=10).json()["packagesMap"]        
-        
+        packages = requests.get(url=endpoint, timeout=10).json()["packagesMap"]
+
         for statusGroup in packages.keys():
             for package in packages[statusGroup]:
                 packageId = package["externalPackageId"]
@@ -496,8 +506,8 @@ def get_all_packages_for_hub(env, orgId, hubName, date):
 
     except Exception as e:
         pass
-    
-    if packageCount > 0: 
+
+    if packageCount > 0:
         print(f"{len(packageIDs)} packages")
-    
+
     return packageIDs

@@ -1,5 +1,9 @@
 import json
+
 import requests
+
+from utils import utils
+
 
 def get_location(env, locationId):
     """
@@ -12,7 +16,7 @@ def get_location(env, locationId):
     Returns:
         dict: The lockbox location data.
     """
-    url = f"http://lockbox.{env}.milezero.com/lockbox-war/api/location/{locationId}"
+    url = f"http://lockbox.{utils.convert_env(env)}.milezero.com/lockbox-war/api/location/{locationId}"
 
     return requests.get(url=url, timeout=5).json()
 
@@ -45,23 +49,16 @@ def get_all_addresses_from_hub(env, orgId, hubName, index):
             error (str): Error message if something went wrong, else, doesn't come on the response
         }.
     """
-    url = f"https://gazetteer.{env}.milezero.com/gazetteer-war/api/location/matching/org/{orgId}"
+    url = f"https://gazetteer.{utils.convert_env(env)}.milezero.com/gazetteer-war/api/location/matching/org/{orgId}"
 
-    headers = {'content-type': 'application/json'}
+    headers = {"content-type": "application/json"}
 
     payload = {
         "hubName": f"{hubName}",
         "queryMode": "MATCH_ALL_IN_ORDER",
-        "pagination": {
-            "from": index,
-            "size": 500
-        }
+        "pagination": {"from": index, "size": 500},
     }
 
-    response = requests.post(
-        url=url,
-        data=json.dumps(payload), 
-        headers=headers
-    )
+    response = requests.post(url=url, data=json.dumps(payload), headers=headers)
 
     return response
