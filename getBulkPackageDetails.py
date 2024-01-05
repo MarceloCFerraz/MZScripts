@@ -1,12 +1,13 @@
-import sys, concurrent.futures
-from utils import files, packages, utils
-import getPackageDetails
+import concurrent.futures
+import sys
 
+import getPackageDetails
+from utils import files, packages, utils
 
 PACKAGES = []
 
 
-def fill_packages_list (env, orgId, key_type, key):
+def fill_packages_list(env, orgId, key_type, key):
     """
     Fill the PACKAGES list with package details.
 
@@ -21,7 +22,7 @@ def fill_packages_list (env, orgId, key_type, key):
     """
     pkgs = packages.get_packages_details(env, orgId, key_type, key)["packageRecords"]
 
-    if (len(pkgs) == 0):
+    if len(pkgs) == 0:
         print("> NO PACKAGES FOUND <\n")
     for pkg in pkgs:
         PACKAGES.append(pkg)
@@ -52,10 +53,10 @@ def main(file_name, key_type, statuses):
     orgId = utils.select_org(env)
 
     valid_statuses = []
-    
+
     if statuses != "":
         valid_statuses = getPackageDetails.get_status_list(statuses)
-    
+
     keys = files.get_data_from_file(file_name)
     response = {}
     valid_packages = []
@@ -79,7 +80,7 @@ def main(file_name, key_type, statuses):
             packages.print_minimal_package_details(package)
             print(f"\nPackage added to final response ({status})\n\n")
             valid_packages.append(package)
-    
+
     response["packageRecords"] = valid_packages
     response["count"] = len(valid_packages)
 
@@ -95,33 +96,26 @@ if __name__ == "__main__":
     # get command line argument
     if len(sys.argv) < 3:
         print(
-            "\nNO ARGS PROVIDED!\n"+
-            "Please, check the correct script usage bellow:\n\n"+
-
-            "PRE REQUISITES:\n"+
-            "> A file <hubName>.txt should be created in this same directory.\n"+
-            "You should paste the barcodes/ORIs to be replanned there\n"+
-            "--> hubName: the hub that requested support\n\n"+
-
-            "SCRIPT USAGE:\n"+
-            "--> python getBulkPackageDetails.py <HUB_NAME> <key_type> (OPTIONAL) <statuses>\n\n"+
-
-            "-> Accepted key_types:\n"+
-            "\n".join(map(str, packages.VALID_key_typeS))+
-
-            "\n\n--> Valid Statuses:\n"+
-            "\n".join(map(str, packages.VALID_statuses))+
-
-            "\n\nSCRIPT EXAMPLE:\n"+
-            "--> python getBulkPackageDetails.py 8506 bc 'cancelled delivered'\n"+
-            "> This will load all the barcodes on 8506.txt, print the HTTP request for "+
-            "each of them on a json file and console IF their status corresponds to"+
-            " 'CANCELLED' or 'DELIVERED'.\n\n"+
-            
-            " If no filter status is informed, all statuses will be displayed\n\n"+
-
-            "NOTES:\n"+
-            "> Check comments on code to update relevant data such as key_type (bc, ori, etc)\n"
+            "\nNO ARGS PROVIDED!\n"
+            + "Please, check the correct script usage bellow:\n\n"
+            + "PRE REQUISITES:\n"
+            + "> A file <hubName>.txt should be created in this same directory.\n"
+            + "You should paste the barcodes/ORIs to be replanned there\n"
+            + "--> hubName: the hub that requested support\n\n"
+            + "SCRIPT USAGE:\n"
+            + "--> python getBulkPackageDetails.py <HUB_NAME> <key_type> (OPTIONAL) <statuses>\n\n"
+            + "-> Accepted key_types:\n"
+            + "\n".join(map(str, packages.VALID_KEY_TYPES))
+            + "\n\n--> Valid Statuses:\n"
+            + "\n".join(map(str, packages.VALID_STATUSES))
+            + "\n\nSCRIPT EXAMPLE:\n"
+            + "--> python getBulkPackageDetails.py 8506 bc 'cancelled delivered'\n"
+            + "> This will load all the barcodes on 8506.txt, print the HTTP request for "
+            + "each of them on a json file and console IF their status corresponds to"
+            + " 'CANCELLED' or 'DELIVERED'.\n\n"
+            + " If no filter status is informed, all statuses will be displayed\n\n"
+            + "NOTES:\n"
+            + "> Check comments on code to update relevant data such as key_type (bc, ori, etc)\n"
         )
         sys.exit(1)
 
@@ -131,6 +125,6 @@ if __name__ == "__main__":
     statuses = ""
     try:
         statuses = sys.argv[3]
-    except Exception as e:
+    except Exception:
         pass
     main(file_name, key_type, statuses)
