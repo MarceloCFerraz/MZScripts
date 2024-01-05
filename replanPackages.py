@@ -23,17 +23,17 @@ def get_package_hub(package):
         package, ["packageDetails", "sourceLocation", "name"]
     )
 
-    if hubName:
+    if hubName is not None:
         return hubName
 
     hubName = utils.extract_property(package, ["packageDetails", "clientHub"])
 
-    if hubName:
+    if hubName is not None:
         return hubName
 
     hubName = utils.extract_property(package, ["packageDetails", "destination", "name"])
 
-    if hubName:
+    if hubName is not None:
         return hubName
 
     return ""
