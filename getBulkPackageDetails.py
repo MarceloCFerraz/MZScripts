@@ -60,7 +60,6 @@ def main(file_name, key_type, statuses):
     keys = files.get_data_from_file(file_name)
     response = {}
     valid_packages = []
-    invalid_packages = 0
 
     # Using multithreading to fetch multiple packages simultaneosly
     with concurrent.futures.ThreadPoolExecutor() as pool:
@@ -74,18 +73,20 @@ def main(file_name, key_type, statuses):
         status = package["packageStatuses"]["status"]
 
         if valid_statuses != [] and status not in valid_statuses:
-            print(f"Package ignored (not marked as {', '.join(valid_statuses)})")
-            invalid_packages += 1
+            print(f"> Package is invalid ({status})")
         else:
-            packages.print_minimal_package_details(package)
-            print(f"\nPackage added to final response ({status})\n\n")
-            valid_packages.append(package)
+            if len(PACKAGES) > 10:
+                packages.print_minimal_package_details(package)
+                print(f"\nPackage added to final response ({status})\n\n")
+                valid_packages.append(package)
+            else:
+                packages.print_package_details(package)
 
     response["packageRecords"] = valid_packages
     response["count"] = len(valid_packages)
 
     print(f"\nValid Packages: {len(valid_packages)}")
-    print(f"Invalid Packages: {invalid_packages}\n")
+    print(f"Invalid Packages: {len(PACKAGES) - len(valid_packages)}\n")
 
     if valid_packages != [] and len(valid_packages) > 20:
         formatted_response = files.format_json(response)
