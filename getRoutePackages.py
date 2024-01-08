@@ -44,7 +44,7 @@ if __name__ == "__main__":
     if answer == "Y":
         routeId = input("> Input the route ID: ")
     else:
-        while routeId == None:
+        while routeId is None:
             hubName = input("Type the hub (only numbers)\n> ").strip()
             cpt = datetime.strptime(
                 input("Type in the date (yyyy-mm-dd)\n> ").strip(), "%Y-%m-%d"
@@ -54,7 +54,7 @@ if __name__ == "__main__":
 
             route = routes.find_route(env, orgId, routeName, hubName, cpt)
 
-            if route == None:
+            if route is None:
                 print("Route not Found, please try again\n")
                 print("--------------------------------")
             else:
@@ -62,12 +62,12 @@ if __name__ == "__main__":
 
     events = routes.get_route_events(env, routeId)
 
-    if events != None:
+    if events is not None:
         itinerary_ids = fetch_itineraries(events)
 
         if no_itinerary_generated(itinerary_ids):
             print(
-                f">> Found {len(itinerary_ids)} 'done' events found, but OEGR have generated 0 itineraries"
+                f">> Found {len(itinerary_ids)} 'done' events, but OEGR have generated 0 itineraries"
                 + f"\n>> {' '.join([f'[{iti}]' for iti in itinerary_ids])}"
             )
         else:
