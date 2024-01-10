@@ -1,6 +1,6 @@
-import requests
-from utils import files, utils, packages, routes
 from datetime import datetime
+
+from utils import routes, utils
 
 
 def route_found(desired_route_name, route):
@@ -14,8 +14,8 @@ def route_found(desired_route_name, route):
         True: if desired_route_name is present either in the route's name or id
         False: otherwise
     """
-    route_name = str(route)['routeName'].strip().lower()
-    route_id = str(route)['routeId'].strip().lower()
+    route_name = str(route)["routeName"].strip().lower()
+    route_id = str(route)["routeId"].strip().lower()
 
     return desired_route_name in route_name or desired_route_name in route_id
 
@@ -36,15 +36,14 @@ def main():
     orgId = utils.select_org(env)
     hubName = input("Type the hub (only numbers)\n> ").strip()
     cpt = datetime.strptime(
-        input("Type in the desired date (yyyy-mm-dd)\n> ").strip(),
-        "%Y-%m-%d"
+        input("Type in the desired date (yyyy-mm-dd)\n> ").strip(), "%Y-%m-%d"
     )
     cpt = cpt.strftime("%Y-%m-%d")
     routeName = input("Type the desired route name\n> ").strip()
 
     route = routes.find_route(env, orgId, routeName, hubName, cpt)
-  
-    if route == None:
+
+    if route is None:
         print("No Route Found")
     else:
         print(f"Route Found: {route['routeId']}")

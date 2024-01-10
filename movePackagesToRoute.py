@@ -1,6 +1,6 @@
-import sys
 from datetime import datetime
-from utils import utils, packages, files, routes
+
+from utils import files, packages, routes, utils
 
 
 def route_found(desired_route_name, route):
@@ -14,8 +14,8 @@ def route_found(desired_route_name, route):
         True: if desired_route_name is present either in the route's name or id
         False: otherwise
     """
-    route_name = str(route)['routeName'].strip().lower()
-    route_id = str(route)['routeId'].strip().lower()
+    route_name = str(route["routeName"]).strip().lower()
+    route_id = str(route["routeId"]).strip().lower()
 
     return desired_route_name in route_name or desired_route_name in route_id
 
@@ -27,31 +27,28 @@ def main():
     Returns:
     None
     """
-    SUCCESSES = []
-    ERRORS = []
 
-    fileName = "pids" 
+    fileName = "pids"
     packageIdsList = files.get_data_from_file(fileName)
 
     # supportMember = input("What is your name?\n> ").strip()
 
     env = utils.select_env()
     orgId = utils.select_org(env)
-    
+
     hubName = input("Type in the route's hub name\n> ")
     newRoute = input("Type in the new route name\n> ").strip().upper()
     cpt = datetime.strptime(
-        input("Type in the route date (yyyy-mm-dd)\n> ").strip(),
-        "%Y-%m-%d"
+        input("Type in the route date (yyyy-mm-dd)\n> ").strip(), "%Y-%m-%d"
     )
     cpt = cpt.strftime("%Y-%m-%d")
 
     route = routes.find_route(env, orgId, newRoute, hubName, cpt)
 
-    if route == None:
+    if route is None:
         print("No Route Found")
     else:
-        routeId = route['routeId']
+        routeId = route["routeId"]
         print(f"Route Found: {routeId}")
 
         packages.move_packages_to_route(env, orgId, routeId, packageIdsList)

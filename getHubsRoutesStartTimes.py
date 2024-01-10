@@ -1,7 +1,6 @@
 import csv
 import datetime
 import time
-import requests
 from utils import hubs, utils
 import concurrent.futures
 
@@ -26,22 +25,17 @@ def main(env, orgId, hubId):
     hubConfig = hubs.get_hub_config(env, orgId, hubId)
 
     hubName = f"'{hubConfig.get('hubName')} - {hubConfig.get('hubDescription')}'"
-    hubRoutes = hubConfig.get('routeStartTimes')
+    hubRoutes = hubConfig.get("routeStartTimes")
     print(f"Filling data for {hubName}")
 
     for route in hubRoutes:
-        routeName = route.get('jurisdiction')
-        startTime = str(route.get('routeStartTime'))#.replace(":", "_")
-        
+        routeName = route.get("jurisdiction")
+        startTime = str(route.get("routeStartTime"))  # .replace(":", "_")
 
-        payload = {
-            "HUB": hubName,
-            "ROUTE": routeName,
-            "START_TIME": startTime
-        }
+        payload = {"HUB": hubName, "ROUTE": routeName, "START_TIME": startTime}
 
         FULL_RESPONSE.append(payload)
-    
+
     print(f"{hubName} Done")
 
 
@@ -63,11 +57,11 @@ def save_csv_file(fileName, data):
     if len(data) < 1:
         print(f"Nothing to save on '{fileName}'")
     else:
-        with open(fileName, 'w', newline='') as file:
+        with open(fileName, "w", newline="") as file:
             writer = csv.writer(file)
             headers = data[0].keys()
             writer.writerow(headers)
-            
+
             for payload in data:
                 row = []
 
@@ -77,13 +71,15 @@ def save_csv_file(fileName, data):
                 if "Fail" in fileName:
                     row.append(payload.get("ERROR"))
                 writer.writerow(row)
-                
+
         finish = time.time_ns()
         elapsed_time = utils.calculate_elapsed_time(start, finish)
-        
+
         print("File '{}' saved successfully".format(fileName))
-        print(f"Took {elapsed_time.get('hours')}h, {elapsed_time.get('minutes')}m and {elapsed_time.get('seconds')}s to complete")
-        
+        print(
+            f"Took {elapsed_time.get('hours')}h, {elapsed_time.get('minutes')}m and {elapsed_time.get('seconds')}s to complete"
+        )
+
 
 if __name__ == "__main__":
     hubIds = [
@@ -148,9 +144,9 @@ if __name__ == "__main__":
         "029d9e7b-c150-435d-b7ba-8e3d279b9621",
         "bbda7f09-0d20-4c14-9a02-f1e1b89c2a52",
         "7748a4c5-0704-420f-ad9a-7c225a0451cc",
-        "f09cb270-758f-470c-8b2a-2995484cbc0b"
+        "f09cb270-758f-470c-8b2a-2995484cbc0b",
     ]
-    
+
     env = utils.select_env()
     orgId = utils.select_org(env)
 
@@ -160,8 +156,10 @@ if __name__ == "__main__":
 
     pool.shutdown(wait=True)
 
-    now = str(
-        datetime.datetime.now().replace(microsecond=0)
-    ).replace(':', '_').replace('/', '-')
+    now = (
+        str(datetime.datetime.now().replace(microsecond=0))
+        .replace(":", "_")
+        .replace("/", "-")
+    )
 
     save_csv_file(f"Hubs Start Times {now}.csv", FULL_RESPONSE)

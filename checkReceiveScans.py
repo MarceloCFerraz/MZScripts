@@ -33,9 +33,9 @@ ORGS = {
         "SHOPRITE": "397190aa-18ab-4bef-a8aa-d5875d738911",
         "EMPIRE": "09de776e-10cc-437d-9abc-ee5103d3b974",
         "ESSENDANT": "af0db6df-c6fd-4ad3-919c-350501c25bae",
-        "DELIVERY SOLUTIONS": "cc2a4805-5b7e-49e1-80a1-a62cf906214d" #,
+        "DELIVERY SOLUTIONS": "cc2a4805-5b7e-49e1-80a1-a62cf906214d",  # ,
         # "LOWES": "",  # doesn't have a stage org so far
-    }
+    },
 }
 
 
@@ -68,10 +68,10 @@ def select_env():
     """
     envs = ["PROD", "STAGE"]
     env = ""
-    
+
     print("SELECT THE ENV")
     print(f"Options: {'   '.join(envs)}")
-    
+
     while env not in envs:
         env = str(input("> ")).upper().strip()
 
@@ -97,7 +97,7 @@ def select_org(env):
 
     while org not in orgs:
         org = str(input("> ")).upper().strip()
-    
+
     return ORGS[env][org]  # returns orgId
 
 
@@ -129,7 +129,7 @@ def get_packages_details(env, org_id, key_type, key):
     dict: The package details.
     """
     endpoint = f"http://switchboard.{env}.milezero.com/switchboard-war/api/package?keyType={key_type}&keyValue={key}&orgId={org_id}&includeCancelledPackage=true"
-    
+
     print(f"Retrieving Packages From {key_type.upper()} {key}")
 
     return requests.get(endpoint, timeout=15).json()
@@ -149,9 +149,9 @@ def get_packages_histories(env, org_id, key_type, key):
     dict: The package histories.
     """
     endpoint = f"https://switchboard.{env}.milezero.com/switchboard-war/api/package/histories?keyValue={key}&keyType={key_type}&orgId={org_id}&orderBy=timestamp"
-    
+
     print(f"Retrieving Histories From {key_type.upper()} {key}")
-    
+
     return requests.get(endpoint, timeout=15).json()
 
 
@@ -166,7 +166,9 @@ def get_timestamp_as_string(timestamp):
     str: The converted timestamp as a string.
     """
     try:
-        return datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%S.%fZ").strftime("%H:%M:%S")
+        return datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%S.%fZ").strftime(
+            "%H:%M:%S"
+        )
     except Exception:
         return datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%SZ").strftime("%H:%M:%S")
 
@@ -193,37 +195,45 @@ def main():
     receive_scan_values = []
 
     for i, row in data.iterrows():
-        barcode = row['Barcode']
+        barcode = row["Barcode"]
         # print(f"{row['Post Date']} {type(row['Post Date'])}")
-        post_date = row['Post Date']
+        post_date = row["Post Date"]
         if pandas.isnull(post_date) or post_date == pandas.NaT:
             print(f"{post_date} not valid (NaT or null)")
             receive_scan = "N/A"
         else:
-            post_date = datetime.strptime(
-                str(post_date), 
-                "%Y-%m-%d %H:%M:%S"
-            ).date().strftime("%Y-%m-%d")
+            post_date = (
+                datetime.strptime(str(post_date), "%Y-%m-%d %H:%M:%S")
+                .date()
+                .strftime("%Y-%m-%d")
+            )
 
-            package_data = get_packages_details(env, org_id, "bc", barcode)["packageRecords"]
+            package_data = get_packages_details(env, org_id, "bc", barcode)[
+                "packageRecords"
+            ]
             print(f"{len(package_data)} packages found")
 
             if len(package_data) > 1:
                 package = [
-                    p for p in package_data 
-                    if post_date in p['planningDetails']['plannerRouteId'] or
-                    post_date in p['planningDetails']['originalRouteId']
+                    p
+                    for p in package_data
+                    if post_date in p["planningDetails"]["plannerRouteId"]
+                    or post_date in p["planningDetails"]["originalRouteId"]
                 ][0]
             elif len(package_data) == 1:
                 package = package_data[0]
 
-                package_history = get_packages_histories(env, org_id, "pi", package["packageId"])['histories'][0]
+                package_history = get_packages_histories(
+                    env, org_id, "pi", package["packageId"]
+                )["histories"][0]
 
                 events = package_history["histories"]
-                
+
                 print(f"{len(events)} history events")
 
-                receive_event = [event for event in events if event["action"] == "RECEIVED"]
+                receive_event = [
+                    event for event in events if event["action"] == "RECEIVED"
+                ]
 
                 print(f"{len(receive_event)} RECEIVED events found", end=" ")
 

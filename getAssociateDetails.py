@@ -16,7 +16,7 @@ def main():
     env = utils.select_env()
     orgId = utils.select_org(env)
     allHubs = hubs.get_all_hubs(env, orgId)
-    
+
     key_type_index = utils.get_associate_key_type_index()
 
     if key_type_index > 0:
@@ -26,13 +26,15 @@ def main():
         search_key = orgId
 
     if key_type_index == 1:
-        associatesArray = [associates.get_associate_data(env, orgId, associateId=search_key)]
+        associatesArray = [
+            associates.get_associate_data(env, orgId, associateId=search_key)
+        ]
     else:
         associatesArray = associates.search_associate(
             env=env,
             org_id=orgId,
             key_type_index=key_type_index - 1,
-            search_key=search_key
+            search_key=search_key,
         )
     associates_count = len(associatesArray)
     print(f"Found {associates_count} associates")
@@ -58,8 +60,12 @@ def main():
                 print(f"       HUB Name: {hub.get('name')}")
                 print("========================================")
         else:
-            print("Too many associates, check 'RESULTS' folder to see the full response!")
-            files.save_json_to_file(filePrefix="ASSOCIATES", jsonData=files.format_json(associatesArray))
+            print(
+                "Too many associates, check 'RESULTS' folder to see the full response!"
+            )
+            files.save_json_to_file(
+                filePrefix="ASSOCIATES", jsonData=files.format_json(associatesArray)
+            )
 
 
 main()

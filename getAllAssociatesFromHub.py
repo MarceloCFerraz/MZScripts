@@ -33,10 +33,7 @@ def main():
     hub = get_hub_id(env, orgId)
 
     associatesArray = associates.search_associate(
-        env=env,
-        org_id=orgId,
-        key_type_index=14,
-        search_key=hub["id"]
+        env=env, org_id=orgId, key_type_index=14, search_key=hub["id"]
     )
 
     associates_count = len(associatesArray)
@@ -44,8 +41,10 @@ def main():
 
     if associates is not None:
         files.save_txt_file(
-            filePrefix=f"ASSOCIATES_FROM_{hub['name']}", 
-            data=[associate['associateId'] for associate in associatesArray ]#if associate["associateType"] not in ["DRIVER", "SORTER"]]
+            filePrefix=f"ASSOCIATES_FROM_{hub['name']}",
+            data=[
+                associate["associateId"] for associate in associatesArray
+            ],  # if associate["associateType"] not in ["DRIVER", "SORTER"]]
         )
 
 

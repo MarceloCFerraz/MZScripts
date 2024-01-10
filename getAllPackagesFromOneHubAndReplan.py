@@ -1,30 +1,10 @@
+import concurrent.futures
 import os
 from datetime import datetime
 
 import requests
 
-ORGS = {
-    "PROD": {
-        "STAPLES": "3c897e84-3957-4958-b54d-d02c01b14f15",
-        "HN": "c88987f9-91e8-4561-9f07-df795ef9b8f0",
-        "EDG": "ca3ffc06-b583-409f-a249-bdd014e21e31",
-        "CUB": "6591e63e-6065-442d-87c3-20a5cd98cdba",
-        "CUBPHARMA": "706660ca-71f6-4c01-a9ff-3a480acebaf4",
-        "SHOPRITE": "3f7539c3-ebbb-4d97-ac9f-bc66862c6ab8",
-        "LOWES": "8c381810-baf7-4ebe-a5f2-13c28b1ec7a4",
-    },
-    "STAGE": {
-        "STAPLES": "3e59b207-cea5-4b00-8035-eed1ae26e566",
-        "HN": "c88987f9-91e8-4561-9f07-df795ef9b8f0",
-        "EDG": "4a00ea0a-ebe2-4a77-8631-800e0daa50c5",
-        "CUB": "12d035f7-16c7-4c02-9b38-f1212b6f92f3",
-        "CUBPHARMA": "6591e63e-6065-442d-87c3-20a5cd98cdba",
-        "SHOPRITE": "397190aa-18ab-4bef-a8aa-d5875d738911",
-        "LOWES": "",
-    },
-}
-ENV = "stage"
-ORGID = ORGS[ENV.upper()]["STAPLES"]
+from utils import hubs, utils
 
 STATUSES = [
     "CANCELLED",
@@ -50,7 +30,7 @@ SUCCESSES = []
 FAILS = []
 
 
-def get_all_hubs():
+def get_all_hubs(env, orgId):
     """
     Retrieves all hubs for the specified organization.
 
@@ -62,12 +42,12 @@ def get_all_hubs():
     Returns:
     - List of hubs
     """
-    endpoint = f"http://cromag.{ENV}.milezero.com/retail/api/hubs/org/{ORGID}"
+    endpoint = f"http://cromag.{env}.milezero.com/retail/api/hubs/org/{orgId}"
 
     return requests.get(url=endpoint, timeout=10).json()["hubs"]
 
 
-def get_all_packages_for_hub(hubName, oldDate, status):
+def get_all_packages_for_hub(env, orgId, hubName, oldDate, status):
     """
     Retrieves all packages for a specific hub, date, and status.
 
@@ -81,12 +61,13 @@ def get_all_packages_for_hub(hubName, oldDate, status):
     Returns:
     - List of valid package IDs
     """
-    endpoint = f"http://sortationservices.{ENV}.milezero.com/SortationServices-war/api/monitor/getPackagesInWave/{ORGID}/{hubName}/{oldDate}/true"
+    endpoint = f"http://sortationservices.{env}.milezero.com/SortationServices-war/api/monitor/getPackagesInWave/{orgId}/{hubName}/{oldDate}/true"
 
     packageCount = 0
     validPackages = []
 
     try:
+        print(f"calling {endpoint}")
         packages = requests.get(url=endpoint, timeout=10).json()["packagesMap"]
 
         for statusGroup in packages.keys():
@@ -106,7 +87,7 @@ def get_all_packages_for_hub(hubName, oldDate, status):
     return validPackages
 
 
-def resubmit_packages(packageId, newDate, notes):
+def resubmit_package(env, orgId, packageId, newDate, notes):
     """
     Resubmits packages with a new date and notes.
 
@@ -120,7 +101,7 @@ def resubmit_packages(packageId, newDate, notes):
     Returns:
     - None
     """
-    endpoint = f"https://switchboard.{ENV}.milezero.com/switchboard-war/api/fulfillment/resubmit/{ORGID}/{packageId}"
+    endpoint = f"https://switchboard.{env}.milezero.com/switchboard-war/api/fulfillment/resubmit/{orgId}/{packageId}"
 
     payload = {
         "adjustTimeWindow": True,
@@ -136,7 +117,7 @@ def resubmit_packages(packageId, newDate, notes):
         print(f"(FAIL): \n{message}")
         FAILS.append(packageId + f" ({message})")
     except Exception:
-        print(f"(OK {response['timeWindow']['start']})")
+        print(f"({packageId} OK {response['timeWindow']['start']})")
         SUCCESSES.append(packageId)
 
 
@@ -327,9 +308,7 @@ def main():
     oldDate = datetime.strptime(
         input("Input the Original Date (yyyy-mm-dd): ").strip(), "%Y-%m-%d"
     )
-    oldDate = oldDate.strftime("%Y-%m-%d")
-    oldDate = str(oldDate + "T16:00:00Z")
-    oldDate = oldDate.replace(":", "%3A")
+    oldDateCpt = (oldDate.strftime("%Y-%m-%d") + "T16:00:00Z").replace(":", "%3A")
 
     status = "a"
     print("Valid Statuses:")
@@ -337,65 +316,60 @@ def main():
     while status not in STATUSES:
         status = str(input("Input the Package Status (optional): ")).upper().strip()
 
-    hubs = get_all_hubs()
+    env = utils.select_env()
+    orgId = utils.select_org(env)
 
-    hubsCount = len(hubs)
-    invalidHubsCount = get_invalid_hubs_count(hubs)
-    validHubsCount = hubsCount - invalidHubsCount
+    hub = hubs.search_hub_by_name(env, orgId, input(">> Type the Hub Name: "))
 
-    print(
-        f"{len(hubs)} hubs found ({validHubsCount} valid and {invalidHubsCount} invalid)"
-    )
-    print("Searching for packages...")
+    if hub:
+        hub = hub[0]
 
-    packages = []
+        print("Searching for packages...")
 
-    validHubs = get_valid_hubs(hubs)
-
-    for hub in validHubs:
         hubName = hub["name"]
-        print(f"> {hubName}")
+        pkgs = get_all_packages_for_hub(env, orgId, hubName, oldDateCpt, status)
 
-        hubPackages = get_all_packages_for_hub(hubName, oldDate, status)
+        if len(pkgs) > 0:
+            print(f"Total Valid Packages to be Replanned: {len(pkgs)}\n")
 
-        # this needs to be done in order to add all packages from all hubs to the array
-        for package in hubPackages:
-            packages.append(package)
+            while newDate < today or newDate < oldDate:
+                newDate = datetime.strptime(
+                    input(
+                        f"Input the New Date (yyyy-mm-dd. Later than {today.date()} and {oldDate.date()}): "
+                    ).strip(),
+                    "%Y-%m-%d",
+                )
+            newDate = newDate.strftime("%Y-%m-%d")
 
-    if len(packages) > 0:
-        print(f"Total Valid Packages to be Replanned: {len(packages)}\n")
+            notes = input("Type in the resubmit notes (optional): ").strip()
 
-        while newDate < today:
-            newDate = datetime.strptime(
-                input("Input the New Date (yyyy-mm-dd. Later than today): ").strip(),
-                "%Y-%m-%d",
-            )
-        newDate = newDate.strftime("%Y-%m-%d")
+            print("\nResubmitting...")
+            with concurrent.futures.ThreadPoolExecutor(8) as pool:
+                for packageId in pkgs:
+                    print(f"> {packageId}", end=" ")
+                    pool.submit(resubmit_package, env, orgId, packageId, newDate, notes)
+            pool.shutdown(True)
 
-        notes = input("Type in the resubmit notes (optional): ").strip()
+            succeededResubmits = len(SUCCESSES)
+            failedResubmits = len(FAILS)
+            totalResubmits = succeededResubmits + failedResubmits
 
-        print("\nResubmitting...")
-        for packageId in packages:
-            print(f"> {packageId}", end=" ")
-            resubmit_packages(packageId, newDate, notes)
+            if totalResubmits > 100:
+                print("\nCreating files with resubmit results")
+                save_file(oldDate=oldDate, newDate=newDate)
+            else:
+                print(
+                    f"\n({succeededResubmits}/{totalResubmits}) SUCCESSFUL resubmits:"
+                )
+                for resubmit in SUCCESSES:
+                    print(f"> {resubmit}")
 
-        succeededResubmits = len(SUCCESSES)
-        failedResubmits = len(FAILS)
-        totalResubmits = succeededResubmits + failedResubmits
-
-        if totalResubmits > 100:
-            print("\nCreating files with resubmit results")
-            save_file(oldDate=oldDate, newDate=newDate)
-        else:
-            print(f"\n({succeededResubmits}/{totalResubmits}) SUCCESSFUL resubmits:")
-            for resubmit in SUCCESSES:
-                print(f"> {resubmit}")
-
-            print(f"({failedResubmits}/{totalResubmits}) FAILED resubmits:")
-            for resubmit in FAILS:
-                print(f"> {resubmit}")
+                print(f"({failedResubmits}/{totalResubmits}) FAILED resubmits:")
+                for resubmit in FAILS:
+                    print(f"> {resubmit}")
     else:
         print("0 Packages found. Finishing script")
 
 
-main()
+if __name__ == "__main__":
+    main()

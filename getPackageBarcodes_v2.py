@@ -1,7 +1,6 @@
 from datetime import datetime
 import os
 import sys
-import json
 import requests
 
 
@@ -15,9 +14,11 @@ def get_formated_now():
     Returns:
     str: The formatted current date and time.
     """
-    return str(
-        datetime.now().replace(second=0, microsecond=0)
-    ).replace(':', '-').replace(' ', 'T')
+    return (
+        str(datetime.now().replace(second=0, microsecond=0))
+        .replace(":", "-")
+        .replace(" ", "T")
+    )
 
 
 def create_file_name():
@@ -94,13 +95,15 @@ def getPackages(KEY_TYPE, key):
     dict: The JSON response containing the package details.
     """
     # f"{API}package/histories?keyValue={key}&keyType={keyType}"
-    endpoint = f"{API}package?keyType={KEY_TYPE}&keyValue={key}&includeCancelledPackage=true"
+    endpoint = (
+        f"{API}package?keyType={KEY_TYPE}&keyValue={key}&includeCancelledPackage=true"
+    )
 
     # print(
     #     f">>>>> Retrieving Packages From {KEY_TYPE.upper()} {key} <<<<<"+
     #     f"\n> {endpoint}"
     # )
-    
+
     return requests.get(endpoint, timeout=5).json()
 
 
@@ -114,12 +117,12 @@ def get_data_from_file(fileName):
     Returns:
     list: The list of retrieved data.
     """
-    file = open(fileName+".txt", "r")
+    file = open(fileName + ".txt", "r")
     lines = file.readlines()
     file.close()
 
     results = []
-    
+
     for line in lines:
         results.append(line.strip())
 
@@ -127,7 +130,7 @@ def get_data_from_file(fileName):
     # this make the list unordered. Comment this line if
     # this impact your workflow somehow
     results = list(set(results))
-    
+
     print("{} unique lines in file {}\n".format(len(results), fileName))
     return results
 
@@ -143,9 +146,8 @@ def printPackageDetails(package):
     None
     """
     packageID = package["packageId"]
-    ori = package["orderDetails"]["orderReferenceId"]            
+    ori = package["orderDetails"]["orderReferenceId"]
     barcode = package["packageDetails"]["shipmentBarcode"]
-    
 
     half_divisor = "==================="
 
@@ -169,16 +171,15 @@ def main(FILENAME, KEY_TYPE):
     lines = get_data_from_file(FILENAME)
 
     print("Script is generating your file with the full response... ")
-    
+
     logFile = create_logs_file()
     start_logging(logFile)
-    
+
     for line in lines:
         pkgs = getPackages(KEY_TYPE=KEY_TYPE, key=line)["packageRecords"]
         for pkg in pkgs:
             packages = getPackages(
-                KEY_TYPE="ori", 
-                key=pkg["orderDetails"]["orderReferenceId"]
+                KEY_TYPE="ori", key=pkg["orderDetails"]["orderReferenceId"]
             )["packageRecords"]
             for package in packages:
                 printPackageDetails(package)
@@ -196,26 +197,22 @@ valid_key_types = [
     "bc (Shipment Barcode)",
     "oi (Order Id)",
     "ori (Order Reference Id)",
-    "ji (Job Id)"
+    "ji (Job Id)",
 ]
 # get command line argument
 if len(sys.argv) < 2:
     print(
-        "\nNO ARGS PROVIDED!\n"+
-        "Please, check the correct script usage bellow:\n\n"+
-
-        "SCRIPT USAGE:\n"+
-        "--> python getPackageBarcodes.py <FILE>\n\n"+
-
-        "-> Accepted KEY_TYPEs:\n"+
-        "\n".join(map(str, valid_key_types))+
-
-        "\n\nSCRIPT EXAMPLE:\n"+
-        "--> python getPackageBarcodes.py 'barcodes'\n"+
-        "> This will load all the barcodes on barcodes.txt and print out their barcodes\n\n"+
-
-        "NOTES:\n"+
-        "> Check comments on code to update relevant data such as KEY_TYPE (bc, ori, etc)\n"
+        "\nNO ARGS PROVIDED!\n"
+        + "Please, check the correct script usage bellow:\n\n"
+        + "SCRIPT USAGE:\n"
+        + "--> python getPackageBarcodes.py <FILE>\n\n"
+        + "-> Accepted KEY_TYPEs:\n"
+        + "\n".join(map(str, valid_key_types))
+        + "\n\nSCRIPT EXAMPLE:\n"
+        + "--> python getPackageBarcodes.py 'barcodes'\n"
+        + "> This will load all the barcodes on barcodes.txt and print out their barcodes\n\n"
+        + "NOTES:\n"
+        + "> Check comments on code to update relevant data such as KEY_TYPE (bc, ori, etc)\n"
     )
     sys.exit(1)
 

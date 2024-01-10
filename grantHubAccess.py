@@ -1,4 +1,6 @@
-from utils import utils, associates, hubs, fleets
+import sys
+
+from utils import associates, fleets, hubs, utils
 
 
 def get_associate(env, orgId, acceptBlank):
@@ -38,14 +40,21 @@ def get_associate_by_id(env, orgId, acceptBlank):
     - None: if an associate wasn't found or if blank input is allowed
     """
     while True:
-        print(f">> Insert the Associate ID ", "(leave blank and hit enter if done)" if acceptBlank else "(or hit Ctrl + C to quit program)")
+        print(
+            ">> Insert the Associate ID ",
+            "(leave blank and hit enter if done)"
+            if acceptBlank
+            else "(or hit Ctrl + C to quit program)",
+        )
         associateId = input("> ")
 
         if associateId == "":
             if acceptBlank:
                 return None
             else:
-                print(">> Can't accept blank. Try again (or hit Ctrl + C to quit program)")
+                print(
+                    ">> Can't accept blank. Try again (or hit Ctrl + C to quit program)"
+                )
         else:
             return associates.get_associate_data(env, orgId, associateId)
 
@@ -64,7 +73,12 @@ def get_associate_by_name_or_email(env, orgId, acceptBlank):
     - None: if an associate wasn't found or if blank input is allowed
     """
     while True:
-        print(">> Type the associate's e-mail or name ", "(leave blank and hit enter if done)" if acceptBlank else "(or hit Ctrl + C to quit program)")
+        print(
+            ">> Type the associate's e-mail or name ",
+            "(leave blank and hit enter if done)"
+            if acceptBlank
+            else "(or hit Ctrl + C to quit program)",
+        )
         search_key = input("> ")
         print()
 
@@ -72,12 +86,16 @@ def get_associate_by_name_or_email(env, orgId, acceptBlank):
             search_key_index = 3 if "@" in search_key else 2
             # based on key_types list in associates.search_associate()
 
-            associate = associates.search_associate(env, orgId, search_key_index, search_key)
+            associate = associates.search_associate(
+                env, orgId, search_key_index, search_key
+            )
 
             if associate:
                 return associate[0]
             elif not acceptBlank:
-                print(">> Associate wasn't found and blank is not allowed. Try again or hit CTRL + C to quit")
+                print(
+                    ">> Associate wasn't found and blank is not allowed. Try again or hit CTRL + C to quit"
+                )
         elif acceptBlank:
             return None
 
@@ -109,12 +127,12 @@ def get_new_hubs(hubsNames, allHubs):
 
         newHub = get_new_hub(allHubs, hubsNames, True, None)
 
-        if newHub == None: # means the user entered a blank line
+        if newHub is None:  # means the user entered a blank line
             break
 
-        hubsNames.append(newHub.get('name'))
+        hubsNames.append(newHub.get("name"))
         newHubs.append(newHub)
-    
+
     return newHubs
 
 
@@ -133,7 +151,7 @@ def get_new_hub(allHubs, hubsNames, acceptBlank, hubName=None):
     Returns:
     - hub (dict): The information of the new hub.
     """
-    if hubName == None:
+    if hubName is None:
         hubName = input("> ").strip().upper()
 
         if hubName == "" and acceptBlank:
@@ -141,17 +159,21 @@ def get_new_hub(allHubs, hubsNames, acceptBlank, hubName=None):
 
     newHub = list(filter(lambda h: h["name"] == hubName, allHubs))
 
-    if newHub != []: # if hubName is valid and exists
+    if newHub != []:  # if hubName is valid and exists
         newHub = newHub[0]
 
-        if hubsNames != None and newHub["name"] not in hubsNames: # and if it is not on the associate's hub list already
+        if (
+            hubsNames is not None and newHub["name"] not in hubsNames
+        ):  # and if it is not on the associate's hub list already
             return newHub
         else:
             print(f"\n>> Associate already have access to {hubName}")
     else:
         print(f"\n>> {hubName} does not exist.")
 
-    print(">> Try again", " (leave blank and hit enter if done)" if acceptBlank else "") # this can't be prompted always
+    print(
+        ">> Try again", " (leave blank and hit enter if done)" if acceptBlank else ""
+    )  # this can't be prompted always
     return get_new_hub(allHubs, hubsNames, acceptBlank, None)
 
 
@@ -171,8 +193,10 @@ def select_answer(question=None, answers=None):
     if answers is None:
         answers = ["Y", "N"]
 
-    if question == None:
-        question = f"\n>> Does the associate need to maintain access to all previous hubs? "
+    if question is None:
+        question = (
+            "\n>> Does the associate need to maintain access to all previous hubs? "
+        )
 
     question = question + f"({'/'.join(answers)})"
 
@@ -202,7 +226,7 @@ def associate_has_fleet(associate):
         fleetId = associate["fleetId"]
     except Exception:
         pass
-    
+
     return fleetId != ""
 
 
@@ -234,9 +258,9 @@ def get_hubs_from_associate_fleet(associate, allFleets, allHubs):
             for hubId in fleetHubs:
                 idsList.append(hubId)
 
-    if associate.get('hubId') not in idsList:
-        idsList.append(associate.get('hubId'))
-    
+    if associate.get("hubId") not in idsList:
+        idsList.append(associate.get("hubId"))
+
     hubsList = fill_hubs_list(idsList, allHubs)
 
     return hubsList
@@ -258,11 +282,13 @@ def fill_hubs_list(idsList, allHubs):
     hubsList = []
 
     for hubId in idsList:
-        h = list(filter(lambda h: h["id"] == hubId, allHubs)) # a list with every match of the hubID
+        h = list(
+            filter(lambda h: h["id"] == hubId, allHubs)
+        )  # a list with every match of the hubID
 
-        if h != []: # if hubName is valid and exists
+        if h != []:  # if hubName is valid and exists
             h = h[0]
-            hubsList.append(h) # Add found hub to the hubsList        
+            hubsList.append(h)  # Add found hub to the hubsList
 
     return hubsList
 
@@ -284,11 +310,11 @@ def search_fleet_with_hubs(allFleets, hubIdsList):
 
     for fleet in allFleets:
         try:
-            fleetHubIdsSet = set(fleet['hubIds'])
+            fleetHubIdsSet = set(fleet["hubIds"])
 
             if fleetHubIdsSet == hubIdsSet:
                 print(f">>>> Fleet not found: {fleet['fleetId']}\n")
-                return fleet['fleetId']
+                return fleet["fleetId"]
         except Exception:
             pass
 
@@ -312,7 +338,7 @@ def create_new_fleet(env, orgId, hubsList, fleetName=None, fleetLogo=None):
     Returns:
     - fleetId (str): The ID of the newly created fleet.
     """
-    print(f">> Creating fleet")
+    print(">> Creating fleet")
     fleetId = fleets.create_fleet(env, orgId, hubsList, fleetName, fleetLogo)
     print(f">>>> {fleetId}")
 
@@ -337,7 +363,7 @@ def update_associate(env, associate, userName):
     response = associates.update_associate_data(env, associate, userName)
 
     print(f">> Update Status: {'OK' if response.status_code < 400 else 'FAILED'}")
-    print(f">>" + response.text if response.status_code >= 400 else "")
+    print(">>" + response.text if response.status_code >= 400 else "")
 
 
 def update_fleet(env, orgId, fleetId, hubsList):
@@ -367,7 +393,7 @@ def get_company_name(name):
             companyName += char
         else:
             return companyName
-    
+
     return companyName
 
 
@@ -386,34 +412,39 @@ def apply_changes(env, orgId, hubsList, allFleets, associate, userName):
     Returns:
     None
     """
-    hubsNames = [h.get('name') for h in hubsList]
-    hubsIds = [h.get('id') for h in hubsList]
+    hubsNames = [h.get("name") for h in hubsList]
+    hubsIds = [h.get("id") for h in hubsList]
 
     print(f"\n>> Searching for a fleet with {' '.join(hubsNames)}")
     fleetId = search_fleet_with_hubs(  # searching for a fleet with same hubs
-        allFleets=allFleets,
-        hubIdsList=hubsIds
+        allFleets=allFleets, hubIdsList=hubsIds
     )
-    
+
     if fleetId is not None:  # if a fleet with the correct hubs already exists
         print(f">>>> Fleet found: {fleetId}")
         associate["fleetId"] = fleetId
-        
+
         update_associate(env, associate, userName)
     else:
-        answer = select_answer(question=">> Do you want to continue? ")
+        print(">> Fleet not found")
+        if select_answer(question=">> Do you want to continue? ") == "N":
+            sys.exit(1)
+
         if associate_has_fleet(associate):  # if associate already have a fleetId
             fleetId = associate["fleetId"]
-            
-            print(f">> Checking if other associates use the same fleet")
+
+            print(">> Checking if other associates use the same fleet")
             associatesWithSameFleet = associates.search_associate(
                 env=env,
                 org_id=orgId,
                 key_type_index=11,  # fleetId (11)
-                search_key=fleetId
+                search_key=fleetId,
             )
-            
-            if len(associatesWithSameFleet) == 1 and associatesWithSameFleet is not None:
+
+            if (
+                len(associatesWithSameFleet) == 1
+                and associatesWithSameFleet is not None
+            ):
                 # if only this associate has this fleet id
                 # means we can just update his fleet instead of creating another one
                 print(">> No other associate use this fleetId")
@@ -424,9 +455,13 @@ def apply_changes(env, orgId, hubsList, allFleets, associate, userName):
                 print(">> Someone else uses this fleetId as well")
                 print(f">> Creating new fleet with {' '.join(hubsNames)}")
 
-                fleet = [f for f in allFleets if f["fleetId"] == associate["fleetId"]][0]
-                companyName = get_company_name(associate.get('companyId'))
-                fleetId = create_new_fleet(env, orgId, hubsList, companyName, fleet.get('logoUrl'))
+                fleet = [f for f in allFleets if f["fleetId"] == associate["fleetId"]][
+                    0
+                ]
+                companyName = get_company_name(associate.get("companyId"))
+                fleetId = create_new_fleet(
+                    env, orgId, hubsList, companyName, fleet.get("logoUrl")
+                )
 
                 associate["fleetId"] = fleetId
 
@@ -434,7 +469,7 @@ def apply_changes(env, orgId, hubsList, allFleets, associate, userName):
         else:
             print(">> Associate doesn't have a fleet")
             print(f">> Creating new fleet with {' '.join(hubsNames)}")
-            fleetId = create_new_fleet(env, orgId, hubsList, associate.get('companyId'))
+            fleetId = create_new_fleet(env, orgId, hubsList, associate.get("companyId"))
 
             associate["fleetId"] = fleetId
 
@@ -457,19 +492,19 @@ def move_to_new_hub(env, associate, userName, newHub):
     """
     print(">> Moving associate, removing fleet, vehicle and pref. route")
 
-    associate["hubId"] = newHub['id']
+    associate["hubId"] = newHub["id"]
     associate["location"]["locationId"] = newHub["location"]["locationId"]
 
     newAssociateData = {}
 
     for header in associate.keys():
-        if header not in ['fleetId', 'preferredVehicle', 'preferredRoute']:
+        if header not in ["fleetId", "preferredVehicle", "preferredRoute"]:
             newAssociateData[header] = associate[header]
 
     update_associate(env, newAssociateData, userName)
 
 
-def process_associate (env, orgId, associate, userName, allHubs, allFleets):
+def process_associate(env, orgId, associate, userName, allHubs, allFleets):
     """
     The function that performs necessary actions based on the associate's type and input.
 
@@ -486,14 +521,13 @@ def process_associate (env, orgId, associate, userName, allHubs, allFleets):
     Returns:
     None
     """
-    name = associate.get('contact').get('name')
+    name = associate.get("contact").get("name")
     print(f"============ PROCESSING {str(name).upper()} ============")
 
     hubsList = get_hubs_from_associate_fleet(associate, allFleets, allHubs)
-    hubsNames = [h.get('name') for h in hubsList]
+    hubsNames = [h.get("name") for h in hubsList]
 
     if associate["associateType"] not in ["DRIVER", "SORTER"]:
-
         newHubs = get_new_hubs(hubsNames, allHubs)
         answer = select_answer()
         print()
@@ -503,36 +537,30 @@ def process_associate (env, orgId, associate, userName, allHubs, allFleets):
             for newHub in newHubs:
                 hubsList.append(newHub)
 
-            print(f">> Adding access to new hubs...")
+            print(">> Adding access to new hubs...")
             apply_changes(env, orgId, hubsList, allFleets, associate, userName)
         else:
             # associate doesn't need the previous hubs,
             if len(newHubs) > 1:
                 # only the new ones
-                print(f">> Granting access to new hubs only...")
+                print(">> Granting access to new hubs only...")
                 apply_changes(env, orgId, newHubs, allFleets, associate, userName)
             else:
                 # only the new one, so move him to the new hub
                 print(">> Moving associate to new hub...")
-                move_to_new_hub(
-                    env,
-                    associate,
-                    userName,
-                    newHubs[0]
-                )
+                move_to_new_hub(env, associate, userName, newHubs[0])
     else:
-        print(f"\n>> {name} is a driver/sorter. We can't give drivers access to other hubs!")
-        answer = select_answer(question="Do you want to move this associate to a new HUB? ")
+        print(
+            f"\n>> {name} is a driver/sorter. We can't give drivers access to other hubs!"
+        )
+        answer = select_answer(
+            question="Do you want to move this associate to a new HUB? "
+        )
 
         if answer == "Y":
             print(">> Moving associate to new hub...")
             newHub = get_new_hub(allHubs, hubsNames, False, None)
-            move_to_new_hub(
-                env,
-                associate,
-                userName,
-                newHub
-            )
+            move_to_new_hub(env, associate, userName, newHub)
 
     print(f"============ FINISHED {str(name).upper()} ============\n\n")
 

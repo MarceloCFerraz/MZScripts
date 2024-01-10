@@ -1,4 +1,3 @@
-from datetime import datetime
 from utils import utils
 import json
 import os
@@ -15,11 +14,11 @@ def get_data_from_file(fileName):
     Returns:
         list: The unique lines of data from the file.
     """
-    with open(fileName+".txt", "r") as file:
+    with open(fileName + ".txt", "r") as file:
         lines = file.readlines()
-    
+
     results = []
-    
+
     for line in lines:
         if line != "":
             results.append(line.strip())
@@ -28,7 +27,7 @@ def get_data_from_file(fileName):
     # this make the list unordered. Comment this line if
     # this impact your workflow somehow
     results = list(set(results))
-    
+
     print("{} unique lines in file {}\n".format(len(results), fileName))
     return results
 
@@ -62,12 +61,12 @@ def save_txt_file(data, filePrefix):
     current_dir = os.path.realpath(os.path.dirname(__name__)).replace("\\", "/")
 
     # creates "RESULTS" folder directory
-    response_dir = current_dir #+ "/RESULTS"
+    response_dir = current_dir  # + "/RESULTS"
 
     os.makedirs(response_dir, exist_ok=True)
 
     # names the file
-    key = f"{filePrefix}.txt"#_{utils.get_formated_now()}.txt"
+    key = f"{filePrefix}.txt"  # _{utils.get_formated_now()}.txt"
 
     # this is the complete directory and where the file will be saved
     final_dir = os.path.join(response_dir, key)
@@ -112,7 +111,7 @@ def save_json_to_file(jsonData, filePrefix):
     with open(final_dir, "w") as json_file:
         try:
             json_file.write(jsonData)
-            result += f"created SUCCESSFULLY!"
+            result += "created SUCCESSFULLY!"
         except Exception as e:
             result += f"COULD NOT be created. See exception bellow:\n\n{e}"
 
@@ -147,7 +146,7 @@ def create_logs_file(prefix=None, suffix=None):
         file: The log file object.
     """
     dir = create_dir("logs")
-    
+
     # Get the name of the current script file
     script_file = os.path.basename(sys.argv[0])
 

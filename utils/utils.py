@@ -23,7 +23,6 @@ ORGS = {
         "EDG": "4a00ea0a-ebe2-4a77-8631-800e0daa50c5",
         "M3": "28d04fba-012b-46ee-ab9a-d2909672e70e",
         "CFM": "58953b8f-f14e-4998-ba5b-19e00d3f2221",
-        "CLM": "76c23687-43c4-4fe3-b5f0-4cdd386e7895",
         "WALT'S": "f7c63075-2eb4-4056-9fe7-f403278f253b",
         # "CUB": "12d035f7-16c7-4c02-9b38-f1212b6f92f3",
         "CUBPHARMA": "6591e63e-6065-442d-87c3-20a5cd98cdba",
@@ -289,9 +288,9 @@ def select_answer(question=None, answers=None):
     if answers is None:
         answers = ["Y", "N"]
 
-    if question == None:
+    if question is None:
         question = (
-            f">> Does the associate need to maintain access to all previous hubs? "
+            ">> Does the associate need to maintain access to all previous hubs? "
         )
 
     question = question + f"({'/'.join(answers)})"

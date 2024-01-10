@@ -3,6 +3,7 @@ import openpyxl
 
 CHANNELS_LIST_DEFAULT_NAME = "accounts.xlsx"
 
+
 def exists():
     current_dir = os.listdir()
     if CHANNELS_LIST_DEFAULT_NAME in current_dir:

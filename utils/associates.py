@@ -22,12 +22,10 @@ def get_associate_data(env, orgId, associateId):
     #       f"> AssociateId {associateId}")
     response = requests.get(url=url, timeout=10).json()
 
-    try:
-        test = response["organizationId"]
+    if response.get("organizationId") is not None:
         return response
-    except Exception as e:
+    else:
         print("An error has occurred")
-        print(e)
         return None
 
 

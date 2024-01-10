@@ -20,14 +20,18 @@ def main():
 
     search_keys = files.get_data_from_file("associates")
     associatesArray = []
-    
+
     allOrgAssociates = list(associates.search_associate(env, orgId, 0, orgId))
 
     for search_key in search_keys:
         if key_type_index == 0:
             search_key = orgId
 
-        search_results = [a for a in allOrgAssociates if a[utils.ASSOCIATE_KEY_TYPES[key_type_index]] == search_key]
+        search_results = [
+            a
+            for a in allOrgAssociates
+            if a[utils.ASSOCIATE_KEY_TYPES[key_type_index]] == search_key
+        ]
         for associate in search_results:
             associatesArray.append(associate)
 
@@ -52,8 +56,12 @@ def main():
                     pass
                 print(f"WorldView ID: {associate['worldViewId']}\n")
         else:
-            print("Too many associates, check 'RESULTS' folder to see the full response!")
-            files.save_json_to_file(filePrefix="ASSOCIATES", jsonData=files.format_json(associatesArray))
+            print(
+                "Too many associates, check 'RESULTS' folder to see the full response!"
+            )
+            files.save_json_to_file(
+                filePrefix="ASSOCIATES", jsonData=files.format_json(associatesArray)
+            )
 
 
 main()

@@ -1,9 +1,6 @@
 # https://stackoverflow.com/questions/127803/how-do-i-parse-an-iso-8601-formatted-date
 # https://stackoverflow.com/questions/1345827/how-do-i-find-the-time-difference-between-two-datetime-objects-in-python
-import sys
-import requests
 from utils import associates, utils
-from datetime import datetime, timezone
 from dateutil import parser
 
 
@@ -19,25 +16,31 @@ def calculate_telemetries_interval(telemetries):
     """
     count = 0
 
-    previous_stamp = parser.isoparse( # python 3.6
+    previous_stamp = parser.isoparse(  # python 3.6
         str(telemetries[0]["timestamp"])
     )
 
     for telemetry in telemetries:
-        timestamp = parser.isoparse( # python 3.6
+        timestamp = parser.isoparse(  # python 3.6
             str(telemetry["timestamp"])
         )
 
         dif = timestamp - previous_stamp
         total_seconds = dif.total_seconds()
 
-        if total_seconds > 300: # get only stamps with difference greater than 5 minutes
+        if (
+            total_seconds > 300
+        ):  # get only stamps with difference greater than 5 minutes
             count += 1
-            print(f">> {previous_stamp.date()} {previous_stamp.time()} - {timestamp.date()} {timestamp.time()} ({dif})")
-        
+            print(
+                f">> {previous_stamp.date()} {previous_stamp.time()} - {timestamp.date()} {timestamp.time()} ({dif})"
+            )
+
         previous_stamp = timestamp
     if count == 0:
-        print("\nNo difference greater than 5 minutes was found in the reported interval!")
+        print(
+            "\nNo difference greater than 5 minutes was found in the reported interval!"
+        )
 
 
 def main(env, orgId, associateId, startTime, endTime):
@@ -54,7 +57,9 @@ def main(env, orgId, associateId, startTime, endTime):
     Returns:
     None
     """
-    telemetries = associates.get_telemetries(env, orgId, associateId, startTime, endTime)
+    telemetries = associates.get_telemetries(
+        env, orgId, associateId, startTime, endTime
+    )
 
     print("> Calculating telemetries interval")
 

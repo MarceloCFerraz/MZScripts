@@ -1,4 +1,3 @@
-import requests
 from utils import files, utils, packages, routes
 from datetime import datetime
 
@@ -19,8 +18,7 @@ def main():
     orgId = utils.select_org(env)
     hubName = input("Type the hub (only numbers)\n> ").strip()
     cpt = datetime.strptime(
-        input("Type in the desired date (yyyy-mm-dd)\n> ").strip(),
-        "%Y-%m-%d"
+        input("Type in the desired date (yyyy-mm-dd)\n> ").strip(), "%Y-%m-%d"
     )
     cpt = cpt.strftime("%Y-%m-%d")
     routeName = input("Type the desired route name\n> ").strip().lower()
@@ -31,13 +29,13 @@ def main():
         print("No Route Found")
     else:
         pids = []
-        pkgs = packages.get_all_packages_on_route(env, orgId, route['routeId'])
-        
-        for package in pkgs:
-            pids.append(package['packageID'])
+        pkgs = packages.get_all_packages_on_route(env, orgId, route["routeId"])
 
-        print(f"Saving packageIDs to file 'pids.txt'")
-        
+        for package in pkgs:
+            pids.append(package["packageID"])
+
+        print("Saving packageIDs to file 'pids.txt'")
+
         files.save_package_ids_to_file(pids, "pids.txt")
 
 

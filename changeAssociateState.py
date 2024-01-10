@@ -9,12 +9,16 @@ def main():
     print("TYPE THE ASSOCIATE ID")
     associateId = input("> ")
 
-    associate = associates.get_associate_data(env=env, orgId=orgId, associateId=associateId)
+    associate = associates.get_associate_data(
+        env=env, orgId=orgId, associateId=associateId
+    )
 
     if associate is not None:
         print("Associate Found!")
         print("Inverting State...")
-        print(f"{associates.change_associate_state(env=env, associateData=associate, userName=userName)}")
+        print(
+            f"{associates.change_associate_state(env=env, associateData=associate, userName=userName)}"
+        )
 
 
 main()

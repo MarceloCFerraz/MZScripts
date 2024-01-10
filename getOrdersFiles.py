@@ -5,6 +5,7 @@ from utils import utils
 
 # fileName: Staples_8764_ORDERDET_20230902_PROD_US0436373.csv
 
+
 def get_original_data(env, requestId, token):
     """
     Retrieves the original data on the file from staples SFTP/EDI, using the provided request ID and authentication token.
@@ -19,7 +20,7 @@ def get_original_data(env, requestId, token):
     """
     # requestId: ad2a170b-d98e-46f7-8eda-486a2970a507 (arquivo original)
     # https://milevision.milezero.com/mv/uploads/requestfile?requestId=ad2a170b-d98e-46f7-8eda-486a2970a507
-    
+
     print("Getting original Data...")
 
     url = "https://milevision{0}.milezero.com/mv/uploads/requestfile?requestId={1}"
@@ -30,18 +31,15 @@ def get_original_data(env, requestId, token):
         url = url.format("", requestId)
 
     response = requests.get(
-        url=url, 
-        timeout=30, 
-        headers={
-            'Accept': 'application/json',
-            'Authentication': token
-        }
+        url=url,
+        timeout=30,
+        headers={"Accept": "application/json", "Authentication": token},
     )
 
     if response.status_code >= 400:
         print(response.status_code)
         print(response.text)
-        
+
         response.raise_for_status
 
     return response.json()
@@ -61,7 +59,7 @@ def get_mz_data(env, parentId, token):
     """
     # parentId: 8e6eefcf-5f2a-4024-bd77-eb9399a7c5f5 (arquivo gerado)
     # https://milevision.milezero.com/mv/uploads/request?requestId=8e6eefcf-5f2a-4024-bd77-eb9399a7c5f5
-    
+
     print("Getting MZ Data...")
 
     url = "https://milevision{0}.milezero.com/mv/uploads/request?requestId={1}"
@@ -72,18 +70,15 @@ def get_mz_data(env, parentId, token):
         url = url.format("", parentId)
 
     response = requests.get(
-        url=url, 
-        timeout=30, 
-        headers={
-            'Accept': 'application/json',
-            'Authentication': token
-        }
+        url=url,
+        timeout=30,
+        headers={"Accept": "application/json", "Authentication": token},
     )
 
     if response.status_code >= 400:
         print(response.status_code)
         print(response.text)
-        
+
         response.raise_for_status
 
     return response.json()
@@ -131,9 +126,9 @@ def fix_product_description(content, difference):
     """
     print("Fixing difference between columns and items...")
     new_list = []
-    
+
     i = 0
-    
+
     while i in range(0, len(content)):
         if i != 7:
             new_list.append(content[i])
@@ -144,10 +139,10 @@ def fix_product_description(content, difference):
                 i += 1
                 c += " - " + content[i]
                 difference -= 1
-            
+
             i += 1
             new_list.append(c)
-    
+
     # print(new_list)
     return new_list
 
@@ -172,11 +167,11 @@ def get_original_dict(data):
     # #     "content": "Country Code,Company Brand Code,POS Instance Number,Movex Code,Department Code,Sales Order Number,Product Code,Product Description,Quantity Sold,Sales Type,Sales Total,Amount Due,Pickup Location,Scannable ID,Carton Weight,Stock Required,Signature Required,Team Required,Length,Width,Height"
     # # },
     # ]
-    
+
     print("Parsing original data...")
 
     dictionary = {}
-    headers = get_data_in_string(data[0]['content'])
+    headers = get_data_in_string(data[0]["content"])
 
     for header in headers:
         dictionary[header] = []
@@ -184,7 +179,7 @@ def get_original_dict(data):
     dictionary["MESSAGE"] = []
 
     for i in range(1, len(data)):
-        content = get_data_in_string(data[i]['content'])
+        content = get_data_in_string(data[i]["content"])
         # print(content)
 
         difference = len(content) - len(headers)
@@ -197,12 +192,13 @@ def get_original_dict(data):
         for j in range(0, len(content)):
             dictionary[headers[j]].append(content[j])
 
-        dictionary["CODE"].append(data[i]['code'])
-        dictionary["MESSAGE"].append(data[i]['message'])
-    
+        dictionary["CODE"].append(data[i]["code"])
+        dictionary["MESSAGE"].append(data[i]["message"])
+
     # print(dictionary)
-    
+
     return dictionary
+
 
 def save_csv_file(fileName, data):
     """
@@ -219,11 +215,11 @@ def save_csv_file(fileName, data):
     if len(data) < 1:
         print(f"Nothing to save on '{fileName}'")
     else:
-        with open(fileName+".csv", 'w', newline='') as file:
+        with open(fileName + ".csv", "w", newline="") as file:
             writer = csv.writer(file)
-            
-            for i in range (0, len(data)):
-                row = get_data_in_string(data[i].get('content'))
+
+            for i in range(0, len(data)):
+                row = get_data_in_string(data[i].get("content"))
                 writer.writerow(row)
 
         print("File '{}' saved successfully".format(fileName))
@@ -275,13 +271,13 @@ def get_mz_dict(dataset):
     for key in dataset[0].keys():
         dictionary[key] = []
         headers.append(key)
-    
+
     for i in range(0, len(dataset)):
         data = dataset[i]
-        
+
         for header in headers:
             dictionary[header].append(data[header])
-        
+
     # print(dictionary)
 
     return dictionary
@@ -303,14 +299,14 @@ def main():
 
     # env =  "PROD"
     # fileName = "Staples_8109_ORDERDET_20231003_PROD_US0446800"
-    
+
     token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdXRob3JpemF0aW9uIjp7Imdyb3VwcyI6WyJFbmRlYXZvdXIiLCJFbmRlYXZvdXIgTWlsZVZpc2lvbiJdLCJyb2xlcyI6WyJNaWxlVmlzaW9uX1VzZXIiXSwicGVybWlzc2lvbnMiOltdfSwib3JnYW5pemF0aW9uIjp7IkFsYWJvIjp7Im9yZ05hbWUiOiJiMDgyOGU4My1iY2FlLTRkMGEtOTY5YS1lNTA5YjI1MzY3NTAiLCJvcmdJZCI6IjJjMjIxYmZkLTFhNTgtNDQ5NC1iMmI1LTIwZGMyNDA3YWNkOSJ9fSwib2JqZWN0cyI6eyJkcml2ZXJJZCI6ImMxZTQ4MTU5LWEyZTktNDI2Ni05MWRjLTdjNGU4YTI1MmVlMyJ9LCJpc3MiOiJodHRwczovL21pbGV6ZXJvLmF1dGgwLmNvbS8iLCJzdWIiOiJhdXRoMHw1YmUxNTBlNjk0NTc1NzdkNWEwMzNlYjQiLCJhdWQiOiI3dW1VTG1sQ1RKcjNzT256NWl3cG5DWG5YYzVMZTFMQyIsImlhdCI6MTY5OTQwMTIyMiwiZXhwIjoxNjk5NDM3MjIyfQ._UaxAEtBlmXuQ0yFljV4AIQTD4dpa9myEHzPPbTCqBI"
 
     fileName = input("Type in the file name ('file' column in orders page): ")
     # token = input("Paste the Authentication token: ")
     requestId = input("Type in the requestId (requestFile?): ")
     # requestId = "0d194a2e-5bdf-4968-831a-cf9d8a064327"
-    
+
     original_data = get_original_data(env, requestId, token)
 
     print("Saving original file...")

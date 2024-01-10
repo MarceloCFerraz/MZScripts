@@ -1,11 +1,20 @@
-import datetime
-import requests, json, pandas
 import concurrent.futures
+import datetime
+import json
 
-gazetteer_get_url_template = "https://gazetteer.{0}.milezero.com/gazetteer-war/api/location/matching/org/{1}"
-lockbox_get_url_template = "https://lockbox.{0}.milezero.com/lockbox-war/api/location/{1}"
+import pandas
+import requests
+
+gazetteer_get_url_template = (
+    "https://gazetteer.{0}.milezero.com/gazetteer-war/api/location/matching/org/{1}"
+)
+lockbox_get_url_template = (
+    "https://lockbox.{0}.milezero.com/lockbox-war/api/location/{1}"
+)
 geocoder_get_url_template = "http://geocoder.{0}.milezero.com/gc/api/address?street={1}&city={2}&state={3}&zip_code={4}&cc=US{5}"
-lockbox_update_url_template = "https://lockbox.{0}.milezero.com/lockbox-war/api/location/{1}"
+lockbox_update_url_template = (
+    "https://lockbox.{0}.milezero.com/lockbox-war/api/location/{1}"
+)
 ORGS = {
     "PROD": {
         "CLM": "8a9e84be-9874-4346-baab-26053d35871e",
@@ -37,9 +46,9 @@ ORGS = {
         "SHOPRITE": "397190aa-18ab-4bef-a8aa-d5875d738911",
         "EMPIRE": "09de776e-10cc-437d-9abc-ee5103d3b974",
         "ESSENDANT": "af0db6df-c6fd-4ad3-919c-350501c25bae",
-        "DELIVERY SOLUTIONS": "cc2a4805-5b7e-49e1-80a1-a62cf906214d" #,
+        "DELIVERY SOLUTIONS": "cc2a4805-5b7e-49e1-80a1-a62cf906214d",  # ,
         # "LOWES": "",  # doesn't have a stage org so far
-    }
+    },
 }
 CORRECTED_ADDRESSES = []
 
@@ -76,7 +85,7 @@ def select_org(env):
 
     while org not in orgs:
         org = str(input("> ")).upper().strip()
-    return ORGS[env][org] # returns orgId
+    return ORGS[env][org]  # returns orgId
 
 
 def get_all_hubs(env, orgId):
@@ -86,16 +95,14 @@ def get_all_hubs(env, orgId):
 
 
 def update_address(env, location_id, payload):
-    headers = {'content-type': 'application/json'}
-    
+    headers = {"content-type": "application/json"}
+
     lockbox_update_url = lockbox_update_url_template.format(env, location_id)
-    
+
     response = requests.put(
-        url=lockbox_update_url,
-        data=json.dumps(payload), 
-        headers=headers
+        url=lockbox_update_url, data=json.dumps(payload), headers=headers
     )
-    
+
     return response
 
 
@@ -103,13 +110,14 @@ def get_address(domain, street, city, state, zip, provider=None):
     if provider:
         provider = "&provider={}".format(provider)
     else:
-        provider = "&provider=GOOGLE".format(provider)
+        provider = "&provider=GOOGLE".format()
 
-    geocoder_get_url = geocoder_get_url_template.format(domain, street, city, state, zip, provider)
-    
+    geocoder_get_url = geocoder_get_url_template.format(
+        domain, street, city, state, zip, provider
+    )
+
     response = requests.get(
-        url=geocoder_get_url,
-        headers={'Accept': 'application/json'}
+        url=geocoder_get_url, headers={"Accept": "application/json"}
     )
 
     address = response.json()
@@ -135,86 +143,90 @@ def get_location(domain, location_id, package_id, hub):
     This function retrieves the location information for a specific location from Lockbox using the given domain, location ID, and package ID. It then updates the address if necessary by calling the `get_address` function. Finally, it prints the status of the update operation and appends the updated location information to the `CORRECTED_ADDRESSES` list if the update was successful.
     """
     lockbox_get_url = lockbox_get_url_template.format(domain, location_id)
-    
-    response = requests.get(
-        url=lockbox_get_url,
-        headers={'Accept': 'application/json'}
-    )
+
+    response = requests.get(url=lockbox_get_url, headers={"Accept": "application/json"})
 
     location = response.json()
 
     try:
-        precision = location.get('precision').get('precision')
-        
-        if precision != 'EXACT' or precision != 'HIGH':
-            typed_address = location.get('typedAddress')
-            address1 = typed_address.get('address1')
-            address2 = typed_address.get('address2')
-            city = typed_address.get('city')
-            state = typed_address.get('state')
-            zip = typed_address.get('postalCode')
+        precision = location.get("precision").get("precision")
+
+        if precision != "EXACT" or precision != "HIGH":
+            typed_address = location.get("typedAddress")
+            address1 = typed_address.get("address1")
+            address2 = typed_address.get("address2")
+            city = typed_address.get("city")
+            state = typed_address.get("state")
+            zip = typed_address.get("postalCode")
 
             updated_address = get_address(domain, address1, city, state, zip)
 
-            if updated_address.get('geocodeQuality') == 'LOW':
+            if updated_address.get("geocodeQuality") == "LOW":
                 updated_address = get_address(domain, address2, city, state, zip)
 
-                address1 = typed_address.get('address2')
-                address2 = typed_address.get('address1')
+                address1 = typed_address.get("address2")
+                address2 = typed_address.get("address1")
 
-                if updated_address.get('geocodeQuality') == 'LOW':
-                    address1 = typed_address.get('address1')
-                    address2 = typed_address.get('address2')
+                if updated_address.get("geocodeQuality") == "LOW":
+                    address1 = typed_address.get("address1")
+                    address2 = typed_address.get("address2")
 
-                    updated_address = get_address(domain, address1, city, state, zip, "SMARTY")
+                    updated_address = get_address(
+                        domain, address1, city, state, zip, "SMARTY"
+                    )
 
-                    if updated_address.get('geocodeQuality') == 'LOW':
-                        updated_address = get_address(domain, address2, city, state, zip, "SMARTY")
+                    if updated_address.get("geocodeQuality") == "LOW":
+                        updated_address = get_address(
+                            domain, address2, city, state, zip, "SMARTY"
+                        )
 
-                        address1 = typed_address.get('address2')
-                        address2 = typed_address.get('address1')
+                        address1 = typed_address.get("address2")
+                        address2 = typed_address.get("address1")
 
             payload = {
-                "name": location.get('name'),
+                "name": location.get("name"),
                 "geo": {
-                    "latitude": updated_address.get('lat'),
-                    "longitude": updated_address.get('lon')
+                    "latitude": updated_address.get("lat"),
+                    "longitude": updated_address.get("lon"),
                 },
                 "typedAddress": {
-                    "addressType": typed_address.get('addressType'),
-                    "countryCode": typed_address.get('countryCode'),
-                    "name": typed_address.get('name'),
+                    "addressType": typed_address.get("addressType"),
+                    "countryCode": typed_address.get("countryCode"),
+                    "name": typed_address.get("name"),
                     "address1": address1,
                     "address2": address2,
                     "city": city,
                     "state": state,
-                    "briefPostalCode": typed_address.get('briefPostalCode'),
-                    "postalCode": zip
+                    "briefPostalCode": typed_address.get("briefPostalCode"),
+                    "postalCode": zip,
                 },
-                "timezone": updated_address.get('timeZone'),
-                "commercialType": location.get('commercialType'),
-                "attributes": [
-                ],
+                "timezone": updated_address.get("timeZone"),
+                "commercialType": location.get("commercialType"),
+                "attributes": [],
                 "precision": {
-                    "precision": updated_address.get('geocodeQuality'),
-                    "source": updated_address.get('provider'),
+                    "precision": updated_address.get("geocodeQuality"),
+                    "source": updated_address.get("provider"),
                 },
                 "executionScannableIds": {},
-                "executionProperties": {}
+                "executionProperties": {},
             }
-            
+
             response = update_address(domain, location_id, payload)
 
             payload["id"] = location_id
             payload["hub"] = hub
 
             print("      Updating " + location_id + "  (" + package_id + ")")
-            print("      {} - {}, {}: {}".format(location_id, response.status_code, response.reason, response.text))
+            print(
+                "      {} - {}, {}: {}".format(
+                    location_id, response.status_code, response.reason, response.text
+                )
+            )
 
             if response.status_code < 400:
                 CORRECTED_ADDRESSES.append(payload)
         # else:
-            # print("      Skipping {}".format(location_id))
+        # print("      Skipping {}".format(location_id))
 
     except AttributeError as e:
         print("***** " + e + " - loc - " + location_id)
@@ -235,27 +247,22 @@ def get_gazeteer_location_id(env, org_id, index, hubName):
     """
     print(hubName, " - index: ", index)
 
-    headers = {'content-type': 'application/json'}
+    headers = {"content-type": "application/json"}
 
     gazetteer_get_url = gazetteer_get_url_template.format(env, org_id)
 
     payload = {
         "hubName": f"{hubName}",
         "queryMode": "MATCH_ALL_IN_ORDER",
-        "pagination": {
-            "from": index,
-            "size": 500
-        }
+        "pagination": {"from": index, "size": 500},
     }
 
     response = requests.post(
-        url=gazetteer_get_url,
-        data=json.dumps(payload), 
-        headers=headers
+        url=gazetteer_get_url, data=json.dumps(payload), headers=headers
     )
-    
+
     with concurrent.futures.ThreadPoolExecutor() as pool:
-        for location in response.json().get('locations'):
+        for location in response.json().get("locations"):
             pool.submit(get_location, env, location)
 
     pool.shutdown(wait=True)
@@ -275,26 +282,26 @@ def main(env, orgId, hubName):
     Returns:
     - None
     """
-    
-    for index in range (0, 10000, 500):
+
+    for index in range(0, 10000, 500):
         print("==== Index: {}".format(index))
-    
+
         get_gazeteer_location_id(env, orgId, index, hubName)
 
     print("==== Finished {}".format(hubName))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     env = select_env()
     orgId = select_org(env)
 
-    starting_time = str(
-        datetime.datetime.now().time().replace(microsecond=0)
-    ).replace(':', '_')
-    
+    starting_time = str(datetime.datetime.now().time().replace(microsecond=0)).replace(
+        ":", "_"
+    )
+
     # allOrgHubs = get_all_hubs(env, orgId)
     allOrgHubs = [
-        8500 # 8506, 3886,8743,3716,8211,8377,3937,3926,8027,3941,3327,3034
+        8500  # 8506, 3886,8743,3716,8211,8377,3937,3926,8027,3941,3327,3034
     ]
 
     for hub in allOrgHubs:
@@ -329,13 +336,18 @@ if __name__ == '__main__':
             "HUB": addr.get("hub"),
             "Name": addr.get("name"),
             "Location ID": addr.get("id"),
-            "Address": "'{}, {}'".format(addr.get("typedAddress").get("address1"), addr.get("typedAddress").get("address2")),
+            "Address": "'{}, {}'".format(
+                addr.get("typedAddress").get("address1"),
+                addr.get("typedAddress").get("address2"),
+            ),
             "City": addr.get("typedAddress").get("city"),
             "State": addr.get("typedAddress").get("state"),
             "Zip Code": addr.get("typedAddress").get("postalCode"),
-            "Geo Codes": "'{}, {}'".format(addr.get("geo").get("latitude"), addr.get("geo").get("longitude")),
+            "Geo Codes": "'{}, {}'".format(
+                addr.get("geo").get("latitude"), addr.get("geo").get("longitude")
+            ),
             "Provider": addr.get("precision").get("source"),
-            "Precision": addr.get("precision").get("precision")
+            "Precision": addr.get("precision").get("precision"),
         }
 
     df.to_csv("Locations {}.csv".format(starting_time), index=False)

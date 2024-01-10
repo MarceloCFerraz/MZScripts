@@ -1,9 +1,6 @@
 from utils import files, packages, utils
-from datetime import datetime
 import os
 import sys
-import json
-import requests
 
 
 def get_file_name():
@@ -12,8 +9,8 @@ def get_file_name():
 
     Returns:
     str: The unique log file name in the format "<script_name><timestamp>.txt".
-    """  
-    
+    """
+
     # Get the name of the current script file
     script_file = os.path.basename(sys.argv[0])
 
@@ -49,19 +46,23 @@ def main(FILENAME, KEY_TYPE):
 
     logFile = files.create_logs_file()
     files.start_logging(logFile)
-    
+
     for line in lines:
-        pkgs = packages.get_packages_details(env, orgId, KEY_TYPE, line)["packageRecords"]
+        pkgs = packages.get_packages_details(env, orgId, KEY_TYPE, line)[
+            "packageRecords"
+        ]
 
         for package in pkgs:
             packageID = package["packageId"]
             hubName = package["packageDetails"]["sourceLocation"]["name"]
             try:
                 routeId = package["planningDetails"]["plannerRouteId"]
-            except Exception as e:
-                print("This package/route was probably not executed (not ROUTE_ID found)")
+            except Exception:
+                print(
+                    "This package/route was probably not executed (not ROUTE_ID found)"
+                )
                 routeId = package["planningDetails"]["originalRouteId"]
-            
+
             routeName = package["planningDetails"]["plannerRouteName"]
 
             print(f"Package ID: {packageID}")
@@ -82,26 +83,22 @@ valid_key_types = [
     "bc (Shipment Barcode)",
     "oi (Order Id)",
     "ori (Order Reference Id)",
-    "ji (Job Id)"
+    "ji (Job Id)",
 ]
 # get command line argument
 if len(sys.argv) < 3:
     print(
-        "\nNO ARGS PROVIDED!\n"+
-        "Please, check the correct script usage bellow:\n\n"+
-
-        "SCRIPT USAGE:\n"+
-        "--> python getPackageRoute.py <FILE> <KEY_TYPE>\n\n"+
-
-        "-> Accepted KEY_TYPEs:\n"+
-        "\n".join(map(str, valid_key_types))+
-
-        "\n\nSCRIPT EXAMPLE:\n"+
-        "--> python getPackageRoute.py 'barcodes' bc\n"+
-        "> This will load all the barcodes on barcodes.txt and print out their routeIds\n\n"+
-
-        "NOTES:\n"+
-        "> Check comments on code to update relevant data such as KEY_TYPE (bc, ori, etc)\n"
+        "\nNO ARGS PROVIDED!\n"
+        + "Please, check the correct script usage bellow:\n\n"
+        + "SCRIPT USAGE:\n"
+        + "--> python getPackageRoute.py <FILE> <KEY_TYPE>\n\n"
+        + "-> Accepted KEY_TYPEs:\n"
+        + "\n".join(map(str, valid_key_types))
+        + "\n\nSCRIPT EXAMPLE:\n"
+        + "--> python getPackageRoute.py 'barcodes' bc\n"
+        + "> This will load all the barcodes on barcodes.txt and print out their routeIds\n\n"
+        + "NOTES:\n"
+        + "> Check comments on code to update relevant data such as KEY_TYPE (bc, ori, etc)\n"
     )
     sys.exit(1)
 

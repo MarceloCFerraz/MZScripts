@@ -1,12 +1,9 @@
-import sys
-import os
 from datetime import datetime
 
 import xlsxwriter
 import pandas
 
 from utils import utils, fleets, associates, hubs, files
-
 
 
 XLSX_FILE = "Fleets Data.xlsx"
@@ -18,34 +15,44 @@ def fill_file_with_data(logFile):
     # Pandas could also be used to replace XlsxWriter to generate the Excel File but we'd probably lose formatting
 
     HEADERS = [
-        "ORG", 
-        "ENV", 
-        "FleetID", 
-        "State", 
-        "Name", 
-        "Description", 
-        "ParentFleet", 
-        "ParentFleets", 
-        "CreationDate", 
-        "LastUpdated", 
-        "HubsNames", 
-        "HubsIDs", 
+        "ORG",
+        "ENV",
+        "FleetID",
+        "State",
+        "Name",
+        "Description",
+        "ParentFleet",
+        "ParentFleets",
+        "CreationDate",
+        "LastUpdated",
+        "HubsNames",
+        "HubsIDs",
         "AssociatesNames",
-        "AssociatesIDs"
+        "AssociatesIDs",
     ]
 
     for header in HEADERS:
-        data[header] = []  
+        data[header] = []
         # creating keys for each element in HEADERS. They will be the headers in the CSV file
-    
+
     workbook = xlsxwriter.Workbook(f"{XLSX_FILE}")
     worksheet = workbook.add_worksheet("All Data")
 
-
     BOLD = workbook.add_format({"bold": True, "align": "center", "valign": "vcenter"})
-    DATE_FORMAT = workbook.add_format({"num_format": "mmmm d yyyy", "align": "center", "valign": "vcenter"})
-    CONSOLAS_FONT = workbook.add_format({"font_name": "Consolas", "align": "center", "valign": "vcenter"})
-    WRAP_TEXT = workbook.add_format({"text_wrap": True, "font_name": "Consolas", "align": "center", "valign": "vcenter"})
+    DATE_FORMAT = workbook.add_format(
+        {"num_format": "mmmm d yyyy", "align": "center", "valign": "vcenter"}
+    )
+    CONSOLAS_FONT = workbook.add_format(
+        {"font_name": "Consolas", "align": "center", "valign": "vcenter"}
+    )
+    WRAP_TEXT = workbook.add_format(
+        {
+            "text_wrap": True,
+            "font_name": "Consolas",
+            "align": "center",
+            "valign": "vcenter",
+        }
+    )
     SIMPLE_ALIGN = workbook.add_format({"align": "center", "valign": "vcenter"})
 
     for col in range(0, len(HEADERS)):
@@ -62,13 +69,12 @@ def fill_file_with_data(logFile):
 
         orgId = utils.ORGS[env.upper()][orgName]
 
-
         # getting all active org associates (sorted by id)
         orgAssociates = sorted(
             associates.search_associate(env, orgId, 0, orgId),
-            key= lambda ass: ass["associateId"] 
+            key=lambda ass: ass["associateId"],
         )
-        
+
         print(f"> {len(orgAssociates)} active associates found for {orgName}")
 
         # getting all fleets for org
@@ -78,7 +84,7 @@ def fill_file_with_data(logFile):
         # getting all hubs for org (avoids extra api calls)
         orgHubs = hubs.get_all_hubs(env, orgId)
         print(f"> {len(orgHubs)} hubs found for {orgName}")
-        
+
         for fleet in orgFleets:
             data["ORG"].append(orgName)
             data["ENV"].append(env)
@@ -92,25 +98,35 @@ def fill_file_with_data(logFile):
             fleetName = get_attribute(fleet, "fleetName")
             data["Name"].append(fleetName)
 
-            state = "ACTIVE" if get_attribute(fleet, "active") == True else "INACTIVE"
+            state = "ACTIVE" if get_attribute(fleet, "active") else "INACTIVE"
             data["State"].append(state)
-            
+
             description = get_attribute(fleet, "description")
             data["Description"].append(description)
 
             parentFleetId = get_attribute(fleet, "parentFleetId")
             data["ParentFleet"].append(parentFleetId)
-            
-            parentFleets = "\n".join(get_attribute(get_attribute(fleet, "parentFleets"), "fleetIds"))
+
+            parentFleets = "\n".join(
+                get_attribute(get_attribute(fleet, "parentFleets"), "fleetIds")
+            )
             data["ParentFleets"].append(repr(parentFleets))
 
             try:
-                creationDate = datetime.strptime(get_attribute(fleet, "creationDate"), "%Y-%m-%dT%H:%M:%S.%fZ")
-                lastUpdatedDate = datetime.strptime(get_attribute(fleet, "lastUpdatedDate"), "%Y-%m-%dT%H:%M:%S.%fZ")
+                creationDate = datetime.strptime(
+                    get_attribute(fleet, "creationDate"), "%Y-%m-%dT%H:%M:%S.%fZ"
+                )
+                lastUpdatedDate = datetime.strptime(
+                    get_attribute(fleet, "lastUpdatedDate"), "%Y-%m-%dT%H:%M:%S.%fZ"
+                )
             except Exception:
-                creationDate = datetime.strptime(get_attribute(fleet, "creationDate"), "%Y-%m-%dT%H:%M:%SZ")
-                lastUpdatedDate = datetime.strptime(get_attribute(fleet, "lastUpdatedDate"), "%Y-%m-%dT%H:%M:%SZ")
-            
+                creationDate = datetime.strptime(
+                    get_attribute(fleet, "creationDate"), "%Y-%m-%dT%H:%M:%SZ"
+                )
+                lastUpdatedDate = datetime.strptime(
+                    get_attribute(fleet, "lastUpdatedDate"), "%Y-%m-%dT%H:%M:%SZ"
+                )
+
             data["CreationDate"].append(creationDate)
             data["LastUpdated"].append(lastUpdatedDate)
 
@@ -127,17 +143,19 @@ def fill_file_with_data(logFile):
                 for hubId in idsList:
                     hub = [h for h in orgHubs if h["id"] == hubId]
                     if hub != []:
-                        fleetHubsNames += f"{hub[0]['name']}\n" 
+                        fleetHubsNames += f"{hub[0]['name']}\n"
                         fleetHubsIds += f"{hub[0]['id']}\n"
-            
+
             data["HubsNames"].append(repr(fleetHubsNames))
             data["HubsIDs"].append(repr(fleetHubsIds))
-            
+
             fleetAssociatesNames = ""
             fleetAssociatesIds = ""
             for associate in orgAssociates:
                 associateId = get_attribute(associate, "associateId")
-                associateName = get_attribute(get_attribute(associate, "contact"), "name")
+                associateName = get_attribute(
+                    get_attribute(associate, "contact"), "name"
+                )
                 associateFleet = get_attribute(associate, "fleetId")
 
                 if fleetId == associateFleet:
@@ -173,9 +191,9 @@ def fill_file_with_data(logFile):
     dataFrame.to_csv(CSV_FILE, sep=",", index=False)
     ## saving all data into a test .xlsx file to check what it would look like to replace XlsxWriter with Pandas
     # dataFrame.to_excel(
-    #     XLSX_FILE.replace(".xlsx", " - PD.xlsx"), 
-    #     sheet_name="All Data", 
-    #     index=False, 
+    #     XLSX_FILE.replace(".xlsx", " - PD.xlsx"),
+    #     sheet_name="All Data",
+    #     index=False,
     #     engine="xlsxwriter"
     # )
 
@@ -207,12 +225,14 @@ def get_attribute(dict, key):
 
 
 def main():
-    print("Running script...",)
+    print(
+        "Running script...",
+    )
     logFile = files.create_logs_file()
     files.start_logging(logFile)
-    
+
     fill_file_with_data(logFile)
-    
+
     files.stop_logging()
     files.close_logs_file(logFile)
 

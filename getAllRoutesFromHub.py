@@ -1,6 +1,5 @@
 from datetime import datetime
-from utils import utils, packages, routes, files
-import replanPackages
+from utils import utils, routes
 
 
 def main():
@@ -18,12 +17,10 @@ def main():
 
     hub = input("Type the CURRENT hub name\n> ").strip()
     cpt = datetime.strptime(
-        input("Type date to look for the route (yyyy-mm-dd)\n> ").strip(),
-        "%Y-%m-%d"
+        input("Type date to look for the route (yyyy-mm-dd)\n> ").strip(), "%Y-%m-%d"
     )
     cpt = cpt.strftime("%Y-%m-%d")
-    
-    
+
     rts = routes.get_all_routes_from_hub_alamo(env, orgId, hub, cpt)
 
     if len(rts) == 0:

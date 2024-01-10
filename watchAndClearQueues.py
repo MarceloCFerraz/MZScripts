@@ -1,7 +1,10 @@
 # https://stackoverflow.com/questions/21252460/python-how-to-check-if-program-gets-aborted-by-user-while-running
-from time import sleep
+import signal
+import sys
 from datetime import datetime
-import requests, signal, sys
+from time import sleep
+
+import requests
 
 API = "http://alamo.prod.milezero.com/alamo-war/api/"
 GET_QUEUES = f"{API}queues/3c897e84-3957-4958-b54d-d02c01b14f15/overviews"
@@ -61,9 +64,8 @@ def exit(signum, frame):
     None
     """
     print(f"The script cleared {len(QUEUES_CLEARED)} queues")
-    print(f"Cleared Queues: \n"+
-          ", ".join(QUEUES_CLEARED))
-    
+    print("Cleared Queues: \n" + ", ".join(QUEUES_CLEARED))
+
     print("Aborting script...")
     sys.exit()
 
@@ -93,10 +95,12 @@ def main():
                 failed = queue["failed"]
                 sum = pending + planning + failed
 
-                print(f">> Pending: {pending}\n"+
-                      f">> Planning: {planning}\n"+
-                      f">> Failed: {failed}\n")
-                
+                print(
+                    f">> Pending: {pending}\n"
+                    + f">> Planning: {planning}\n"
+                    + f">> Failed: {failed}\n"
+                )
+
                 if sum == 0:
                     print(">> Ignored")
                 else:
@@ -106,6 +110,7 @@ def main():
 
         print("\nWaiting 1 minute before re-searching...\n")
         sleep(60)
+
 
 # Calls my custom method 'exit' when the user hits CTRL/CMD + C to display how many queues were cleared
 signal.signal(signal.SIGINT, exit)

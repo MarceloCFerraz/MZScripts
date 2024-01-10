@@ -5,6 +5,7 @@ from utils import files, itineraries, routes, utils
 
 
 def fetch_itineraries(events):
+    print(">> Fetching itineraries in Route Events")
     itineraries = []
 
     notes = [
@@ -55,10 +56,11 @@ if __name__ == "__main__":
             route = routes.find_route(env, orgId, routeName, hubName, cpt)
 
             if route is None:
-                print("Route not Found, please try again\n")
+                print(">> Route not Found, please try again\n")
                 print("--------------------------------")
             else:
                 routeId = route["routeId"]
+                print(f">> Route found: {routeId}")
 
     events = routes.get_route_events(env, routeId)
 
@@ -69,11 +71,13 @@ if __name__ == "__main__":
             print(
                 f">> Found {len(itinerary_ids)} 'done' events, but OEGR have generated 0 itineraries"
                 + f"\n>> {' '.join([f'[{iti}]' for iti in itinerary_ids])}"
+                # TODO: Standardize itinerary print in a function
             )
         else:
             response = {"routeId": routeId, "itineraries": [], "uniquePackages": set()}
 
             print(
+                # TODO: Standardize itinerary print in a function
                 f">> Found {len(itinerary_ids)} itineraries: {' '.join([f'[{iti}]' for iti in itinerary_ids])}"
             )
 
@@ -88,7 +92,8 @@ if __name__ == "__main__":
 
                     print(
                         f">> {itinerary} have {len(pkgs_and_stops['loadedPackages'])} packages "
-                        + f"({len(pkgs_and_stops['deliveredPackages'])} delivered) and "
+                        # TODO: fetch switchboard to check package status
+                        # + f"({len(pkgs_and_stops['deliveredPackages'])} delivered) and "
                         + f"{len(pkgs_and_stops['deliveryStops'])} stops"
                     )
 
@@ -100,8 +105,9 @@ if __name__ == "__main__":
                 f"\n>> Total unique packages accross valid itineraries: {len(response['uniquePackages'])}"
             )
 
-            if len(response["itineraries"]) >= 2:
+            if len(response["uniquePackages"]) > 20:
                 print("Check the full response in the file below")
                 files.save_json_to_file(json.dumps(response, indent=2), "ITINERARY")
             else:
-                print_data_from_itinerary(response["itineraries"][0])
+                for itinerary in response["itineraries"]:
+                    print_data_from_itinerary(itinerary)

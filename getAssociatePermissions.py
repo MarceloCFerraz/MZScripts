@@ -49,7 +49,9 @@ def main():
     print("TYPE THE ASSOCIATE ID")
     associateId = input("> ")
 
-    associate = associates.get_associate_data(env=env, orgId=orgId, associateId=associateId)
+    associate = associates.get_associate_data(
+        env=env, orgId=orgId, associateId=associateId
+    )
 
     if associate is not None:
         permissions = get_associate_auth_perms(env, orgId, associate["authPerms"])

@@ -1,5 +1,3 @@
-from datetime import datetime
-import os
 import sys
 from utils import files, packages, utils
 
@@ -23,7 +21,7 @@ def get_status_list(statuses):
         else:
             valid_statuses.append(status)
             status = ""
-    
+
     # to get the last status provided, since there aren't any spaces left
     valid_statuses.append(status)
 
@@ -55,10 +53,10 @@ def main(key, key_type, statuses):
     orgId = utils.select_org(env)
 
     valid_statuses = []
-    
+
     if statuses != "":
         valid_statuses = get_status_list(statuses)
-    
+
     response = {}
     valid_packages = []
     invalid_packages = 0
@@ -74,7 +72,7 @@ def main(key, key_type, statuses):
             packages.print_package_details(package)
             print(f"Package added to final response ({status})")
             valid_packages.append(package)
-    
+
     response["packageRecords"] = valid_packages
     response["count"] = len(valid_packages)
 
@@ -90,28 +88,22 @@ if __name__ == "__main__":
     # get command line argument
     if len(sys.argv) < 3:
         print(
-            "\nNO ARGS PROVIDED!\n"+
-            "Please, check the correct script usage bellow:\n\n"+
-
-            "SCRIPT USAGE:\n"+
-            "--> python getPackageDetails.py <key> <key_type> (OPTIONAL) <statuses>\n\n"+
-
-            "-> Accepted KEY_TYPEs:\n"+
-            "\n".join(map(str, packages.VALID_KEY_TYPES))+
-
-            "\n\n--> Valid Statuses:\n"+
-            "\n".join(map(str, packages.VALID_STATUSES))+
-
-            "\n\nSCRIPT EXAMPLE:\n"+
-            "--> python getPackageDetails.py 8506 bc 'cancelled delivered'\n"+
-            "> This will load all the barcodes on 8506.txt, print the HTTP request for "+
-            "each of them on a json file and console IF their status corresponds to"+
-            " 'CANCELLED' or 'DELIVERED'.\n\n"+
-            
-            " If no filter status is informed, all statuses will be displayed\n\n"+
-
-            "NOTES:\n"+
-            "> Check comments on code to update relevant data such as key_type (bc, ori, etc)\n"
+            "\nNO ARGS PROVIDED!\n"
+            + "Please, check the correct script usage bellow:\n\n"
+            + "SCRIPT USAGE:\n"
+            + "--> python getPackageDetails.py <key> <key_type> (OPTIONAL) <statuses>\n\n"
+            + "-> Accepted KEY_TYPEs:\n"
+            + "\n".join(map(str, packages.VALID_KEY_TYPES))
+            + "\n\n--> Valid Statuses:\n"
+            + "\n".join(map(str, packages.VALID_STATUSES))
+            + "\n\nSCRIPT EXAMPLE:\n"
+            + "--> python getPackageDetails.py 8506 bc 'cancelled delivered'\n"
+            + "> This will load all the barcodes on 8506.txt, print the HTTP request for "
+            + "each of them on a json file and console IF their status corresponds to"
+            + " 'CANCELLED' or 'DELIVERED'.\n\n"
+            + " If no filter status is informed, all statuses will be displayed\n\n"
+            + "NOTES:\n"
+            + "> Check comments on code to update relevant data such as key_type (bc, ori, etc)\n"
         )
         sys.exit(1)
 
@@ -121,6 +113,6 @@ if __name__ == "__main__":
     statuses = ""
     try:
         statuses = sys.argv[3]
-    except Exception as e:
+    except Exception:
         pass
     main(key, key_type, statuses)

@@ -95,10 +95,12 @@ def create_fleet(env, orgId, hubsList, fleetName=None, fleetLogo=None):
     url = f"http://qilin.{utils.convert_env(env)}.milezero.com/qilin-war/api/fleets/{orgId}"
 
     requestData = {
-        "fleetName": fleetName if fleetName != None else f"{customer['name'].upper()}",
+        "fleetName": fleetName
+        if fleetName is not None
+        else f"{customer['name'].upper()}",
         "description": f"{customer['name'].upper()} {' '.join(hubNames)} Fleet",
         "hubIds": hubIds,
-        "logoUrl": fleetLogo if fleetLogo != None else f"{customer['logo']}",
+        "logoUrl": fleetLogo if fleetLogo is not None else f"{customer['logo']}",
         "active": True,
     }
 

@@ -1,4 +1,3 @@
-import os
 import sys
 from utils import files, packages, utils
 
@@ -35,23 +34,20 @@ def main(KEY, KEY_TYPE):
 
 
 # get command line argument
-if (len(sys.argv) < 3):
+if len(sys.argv) < 3:
     print(
-        "\nNO ARGS PROVIDED!\n"+
-        "Please, check the correct script usage bellow:\n\n"+
-        
-        "SCRIPT USAGE:\n"+
-        "--> python getPackageHistories.py <KEY> <KEY_TYPE>\n\n"+
-        "-> Accepted keyTypes:\n"+
-        "\n".join(map(str, packages.VALID_KEY_TYPES))+
-        
-        "\n\nSCRIPT EXAMPLE:\n"+
-        "--> python getBulkPackageHistories.py 8506 bc\n"+
-        "> This will load all the barcodes on 8506.txt and print the "+
-        "HTTP response for each of them on a json file\n\n"+
-        
-        "NOTES:\n"+
-        "> Check comments on code to update relevant data such as KEY_TYPE (bc, ori, etc), nextDeliveryDate (if dispatcher wants a specific date that is not the next day) accordingly to your needs\n"
+        "\nNO ARGS PROVIDED!\n"
+        + "Please, check the correct script usage bellow:\n\n"
+        + "SCRIPT USAGE:\n"
+        + "--> python getPackageHistories.py <KEY> <KEY_TYPE>\n\n"
+        + "-> Accepted keyTypes:\n"
+        + "\n".join(map(str, packages.VALID_KEY_TYPES))
+        + "\n\nSCRIPT EXAMPLE:\n"
+        + "--> python getBulkPackageHistories.py 8506 bc\n"
+        + "> This will load all the barcodes on 8506.txt and print the "
+        + "HTTP response for each of them on a json file\n\n"
+        + "NOTES:\n"
+        + "> Check comments on code to update relevant data such as KEY_TYPE (bc, ori, etc), nextDeliveryDate (if dispatcher wants a specific date that is not the next day) accordingly to your needs\n"
     )
     sys.exit(1)
 

@@ -1,8 +1,8 @@
-import os
-import pandas
 from datetime import datetime
-from utils import utils, files, packages, hubs, locations
 
+import pandas
+
+from utils import hubs, locations, packages, utils
 
 SUCCESSES = []
 ERRORS = []
@@ -25,7 +25,7 @@ def get_valid_hubs(hubs):
     for hub in hubs:
         if str(hub["name"]).isnumeric():
             validHubs.append(hub)
-    
+
     return validHubs
 
 
@@ -47,8 +47,7 @@ def main():
     orgId = utils.select_org(env)
 
     oldDate = datetime.strptime(
-        input("Input the Original Date (yyyy-mm-dd): ").strip(), 
-        "%Y-%m-%d"
+        input("Input the Original Date (yyyy-mm-dd): ").strip(), "%Y-%m-%d"
     )
     oldDate = oldDate.strftime("%Y-%m-%d")
     oldDate = str(oldDate + "T16:00:00Z")
@@ -69,7 +68,7 @@ def main():
         print(f"> {hubName}")
 
         hubPackages = packages.get_all_packages_for_hub(env, orgId, hubName, oldDate)
-        
+
         # this needs to be done in order to add all packages from all hubs to the array
         for packageID in hubPackages:
             pkgs.append(packageID)
@@ -79,7 +78,6 @@ def main():
     if len(pkgs) > 0:
         newDate = oldDate
 
-        badCodedPkgs = []
         dt = []
         hb = []
         bc = []
@@ -92,53 +90,56 @@ def main():
 
         print("Searching for badly geo coded packages...")
         for packageID in pkgs:
-            
-            pkg = packages.get_packages_details(env, orgId, "pi", packageID)['packageRecords'][0]
+            pkg = packages.get_packages_details(env, orgId, "pi", packageID)[
+                "packageRecords"
+            ][0]
 
             try:
                 hubName = pkg["packageDetails"]["sourceLocation"]["name"]
-            except:
+            except Exception:
                 try:
                     hubName = pkg["packageDetails"]["clientHub"]
-                except:
+                except Exception:
                     try:
                         hubName = pkg["packageDetails"]["destination"]["name"]
-                    except Exception as e:
+                    except Exception:
                         hubName = "not found"
 
-            locId = pkg['orderDetails']['customerLocationId']
+            locId = pkg["orderDetails"]["customerLocationId"]
 
             location = locations.get_location(env, locId)
 
             try:
-                if location['precision']['precision'] != "EXACT":
+                if location["precision"]["precision"] != "EXACT":
                     dt.append(oldDate)
                     hb.append(hubName)
-                    bc.append(pkg['packageDetails']['shipmentBarcode'])
-                    pi.append(pkg['packageId'])
+                    bc.append(pkg["packageDetails"]["shipmentBarcode"])
+                    pi.append(pkg["packageId"])
                     li.append(li)
-                    cstm.append({location['name']})
+                    cstm.append({location["name"]})
                     addr.append(
                         f"{location['typedAddress']['address1']}, {location['typedAddress']['address2']}, {location['typedAddress']['city']}, {location['typedAddress']['state']}, {location['typedAddress']['postalCode']}"
                     )
-                    geo.append(f"{location['geo']['latitude']}, {location['geo']['longitude']}")
-                    prc.append(location['precision']['precision'])
+                    geo.append(
+                        f"{location['geo']['latitude']}, {location['geo']['longitude']}"
+                    )
+                    prc.append(location["precision"]["precision"])
             except Exception as e:
                 print("Found an error with this location:")
                 print(e)
-        
+
         print(f"Found {len(pi)} packages.")
-        
+
         df = pandas.DataFrame()
-        df['Date'] = dt
-        df['Hub'] = hb
-        df['Barcode'] = bc
-        df['Package ID'] = pi
-        df['Customer'] = cstm
-        df['Address'] = addr
-        df['Location ID'] = li
-        df['Geo Code'] = geo
-        df['Precision'] = prc
+        df["Date"] = dt
+        df["Hub"] = hb
+        df["Barcode"] = bc
+        df["Package ID"] = pi
+        df["Customer"] = cstm
+        df["Address"] = addr
+        df["Location ID"] = li
+        df["Geo Code"] = geo
+        df["Precision"] = prc
 
         print("Saving data into .xlsx file")
 
@@ -147,9 +148,9 @@ def main():
         for packageID in pi:
             response = packages.resubmit_package(env, orgId, packageID, newDate)
 
-            for s in response['SUCCESSES']:
+            for s in response["SUCCESSES"]:
                 SUCCESSES.append(s)
-            for e in response['ERRORS']:
+            for e in response["ERRORS"]:
                 ERRORS.append(e)
 
         succeededResubmits = len(SUCCESSES)

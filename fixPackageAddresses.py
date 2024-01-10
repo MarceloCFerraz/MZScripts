@@ -1,15 +1,20 @@
 import concurrent.futures
-import datetime
-import time
 import csv
+import datetime
 import json
+import time
+
 import requests
 
 switchboard_get_url_template = "http://switchboard.{0}.milezero.com/switchboard-war/api/package?keyType={1}&keyValue={2}&orgId={3}"
 
-lockbox_get_url_template = "https://lockbox.{0}.milezero.com/lockbox-war/api/location/{1}"
+lockbox_get_url_template = (
+    "https://lockbox.{0}.milezero.com/lockbox-war/api/location/{1}"
+)
 geocoder_get_url_template = "http://geocoder.{0}.milezero.com/gc/api/address?street={1}&city={2}&state={3}&zip={4}&cc=US{5}"
-lockbox_update_url_template = "https://lockbox.{0}.milezero.com/lockbox-war/api/location/{1}"
+lockbox_update_url_template = (
+    "https://lockbox.{0}.milezero.com/lockbox-war/api/location/{1}"
+)
 
 alamo_get_url_template = "http://alamo.{0}.milezero.com/alamo-war/api/plannedroutes?orgId={1}&facilityId={2}&startTime={3}&endTime={4}"
 
@@ -44,9 +49,9 @@ ORGS = {
         "SHOPRITE": "397190aa-18ab-4bef-a8aa-d5875d738911",
         "EMPIRE": "09de776e-10cc-437d-9abc-ee5103d3b974",
         "ESSENDANT": "af0db6df-c6fd-4ad3-919c-350501c25bae",
-        "DELIVERY SOLUTIONS": "cc2a4805-5b7e-49e1-80a1-a62cf906214d" #,
+        "DELIVERY SOLUTIONS": "cc2a4805-5b7e-49e1-80a1-a62cf906214d",  # ,
         # "LOWES": "",  # doesn't have a stage org so far
-    }
+    },
 }
 CORRECTED_ADDRESSES = []
 FAILED_ADDRESSES = []
@@ -105,7 +110,7 @@ def select_org(env):
 
     while org not in orgs:
         org = str(input("> ")).upper().strip()
-    return ORGS[env][org] # returns orgId
+    return ORGS[env][org]  # returns orgId
 
 
 def search_hub_by_name(env, orgId, hubName):
@@ -143,16 +148,15 @@ def get_alamo_packages(env, org_id, location_id, start_date, end_date):
     Returns:
     - list: The package IDs retrieved from Alamo.
     """
-    alamo_get_url = alamo_get_url_template.format(env, org_id, location_id, start_date, end_date)
-    response = requests.get(
-        url=alamo_get_url,
-        headers={'Accept': 'application/json'}
+    alamo_get_url = alamo_get_url_template.format(
+        env, org_id, location_id, start_date, end_date
     )
+    response = requests.get(url=alamo_get_url, headers={"Accept": "application/json"})
     package_id = []
     for order in response.json():
-        for pid in order.get('packageConstraints'):
+        for pid in order.get("packageConstraints"):
             if len(pid) != 0:
-                package_id.append(pid.get('packageId'))
+                package_id.append(pid.get("packageId"))
 
     return package_id
 
@@ -170,12 +174,15 @@ def get_switchboard_package_location(env, key_type, key_value, org_id):
     Returns:
     - str: The location ID for the package.
     """
-    switchboard_get_url = switchboard_get_url_template.format(env, key_type, key_value, org_id)
-    response = requests.get(url=switchboard_get_url,
-                            headers={'Accept': 'application/json'})
-    location_id = ''
-    for package_record in response.json().get('packageRecords'):
-        location_id = package_record.get('orderDetails').get('customerLocationId')
+    switchboard_get_url = switchboard_get_url_template.format(
+        env, key_type, key_value, org_id
+    )
+    response = requests.get(
+        url=switchboard_get_url, headers={"Accept": "application/json"}
+    )
+    location_id = ""
+    for package_record in response.json().get("packageRecords"):
+        location_id = package_record.get("orderDetails").get("customerLocationId")
 
     return location_id
 
@@ -192,14 +199,12 @@ def update_address(env, location_id, payload):
     Returns:
     - object: The response object from the address update API.
     """
-    headers = {'content-type': 'application/json'}
-    
+    headers = {"content-type": "application/json"}
+
     lockbox_update_url = lockbox_update_url_template.format(env, location_id)
-    
+
     response = requests.put(
-        url=lockbox_update_url,
-        data=json.dumps(payload), 
-        headers=headers
+        url=lockbox_update_url, data=json.dumps(payload), headers=headers
     )
 
     return response
@@ -223,13 +228,14 @@ def get_address(env, street, city, state, zip, provider=None):
     if provider:
         provider = "&provider={}".format(provider)
     else:
-        provider = "&provider=GOOGLE".format(provider)
+        provider = "&provider=GOOGLE".format()
 
-    geocoder_get_url = geocoder_get_url_template.format(env, street, city, state, zip, provider)
-    
+    geocoder_get_url = geocoder_get_url_template.format(
+        env, street, city, state, zip, provider
+    )
+
     response = requests.get(
-        url=geocoder_get_url,
-        headers={'Accept': 'application/json'}
+        url=geocoder_get_url, headers={"Accept": "application/json"}
     )
 
     address = response.json()
@@ -253,81 +259,85 @@ def get_location(env, location_id, package_id, hub):
     - None
     """
     lockbox_get_url = lockbox_get_url_template.format(env, location_id)
-    
-    response = requests.get(
-        url=lockbox_get_url,
-        headers={'Accept': 'application/json'}
-    )
+
+    response = requests.get(url=lockbox_get_url, headers={"Accept": "application/json"})
 
     location = response.json()
 
     try:
-        precision = location.get('precision').get('precision')
-        
-        if precision != 'EXACT' or precision != 'HIGH':
-            typed_address = location.get('typedAddress')
-            address1 = typed_address.get('address1')
-            address2 = typed_address.get('address2')
-            city = typed_address.get('city')
-            state = typed_address.get('state')
-            zip = typed_address.get('postalCode')
+        precision = location.get("precision").get("precision")
+
+        if precision != "EXACT" or precision != "HIGH":
+            typed_address = location.get("typedAddress")
+            address1 = typed_address.get("address1")
+            address2 = typed_address.get("address2")
+            city = typed_address.get("city")
+            state = typed_address.get("state")
+            zip = typed_address.get("postalCode")
 
             updated_address = get_address(env, address1, city, state, zip)
 
-            if updated_address.get('geocodeQuality') == 'LOW':
+            if updated_address.get("geocodeQuality") == "LOW":
                 updated_address = get_address(env, address2, city, state, zip)
 
-                address1 = typed_address.get('address2')
-                address2 = typed_address.get('address1')
+                address1 = typed_address.get("address2")
+                address2 = typed_address.get("address1")
 
-                if updated_address.get('geocodeQuality') == 'LOW':
-                    address1 = typed_address.get('address1')
-                    address2 = typed_address.get('address2')
+                if updated_address.get("geocodeQuality") == "LOW":
+                    address1 = typed_address.get("address1")
+                    address2 = typed_address.get("address2")
 
-                    updated_address = get_address(env, address1, city, state, zip, "SMARTY")
+                    updated_address = get_address(
+                        env, address1, city, state, zip, "SMARTY"
+                    )
 
-                    if updated_address.get('geocodeQuality') == 'LOW':
-                        updated_address = get_address(env, address2, city, state, zip, "SMARTY")
+                    if updated_address.get("geocodeQuality") == "LOW":
+                        updated_address = get_address(
+                            env, address2, city, state, zip, "SMARTY"
+                        )
 
-                        address1 = typed_address.get('address2')
-                        address2 = typed_address.get('address1')
+                        address1 = typed_address.get("address2")
+                        address2 = typed_address.get("address1")
 
             payload = {
-                "name": location.get('name'),
+                "name": location.get("name"),
                 "geo": {
-                    "latitude": updated_address.get('lat'),
-                    "longitude": updated_address.get('lon')
+                    "latitude": updated_address.get("lat"),
+                    "longitude": updated_address.get("lon"),
                 },
                 "typedAddress": {
-                    "addressType": typed_address.get('addressType'),
-                    "countryCode": typed_address.get('countryCode'),
-                    "name": typed_address.get('name'),
+                    "addressType": typed_address.get("addressType"),
+                    "countryCode": typed_address.get("countryCode"),
+                    "name": typed_address.get("name"),
                     "address1": address1,
                     "address2": address2,
                     "city": city,
                     "state": state,
-                    "briefPostalCode": typed_address.get('briefPostalCode'),
-                    "postalCode": zip
+                    "briefPostalCode": typed_address.get("briefPostalCode"),
+                    "postalCode": zip,
                 },
-                "timezone": updated_address.get('timeZone'),
-                "commercialType": location.get('commercialType'),
-                "attributes": [
-                ],
+                "timezone": updated_address.get("timeZone"),
+                "commercialType": location.get("commercialType"),
+                "attributes": [],
                 "precision": {
-                    "precision": updated_address.get('geocodeQuality'),
-                    "source": updated_address.get('provider'),
+                    "precision": updated_address.get("geocodeQuality"),
+                    "source": updated_address.get("provider"),
                 },
                 "executionScannableIds": {},
-                "executionProperties": {}
+                "executionProperties": {},
             }
-            
+
             response = update_address(env, location_id, payload)
 
             payload["id"] = location_id
             payload["hub"] = hub
 
             print("      Updating " + location_id + "  (" + package_id + ")")
-            print("      {} - {}, {}: {}".format(location_id, response.status_code, response.reason, response.text))
+            print(
+                "      {} - {}, {}: {}".format(
+                    location_id, response.status_code, response.reason, response.text
+                )
+            )
 
             if response.status_code < 400:
                 CORRECTED_ADDRESSES.append(payload)
@@ -335,10 +345,10 @@ def get_location(env, location_id, package_id, hub):
                 payload["ERROR"] = f"'{response.text}'"
                 FAILED_ADDRESSES.append(payload)
         # else:
-            # print("      Skipping {}".format(location_id))
+        # print("      Skipping {}".format(location_id))
 
     except AttributeError as e:
-        print("***** " + e + " - loc - " + location_id)
+        print(f"***** {e} - loc - {location_id}")
 
 
 def main(env, org_id, package_id, hub):
@@ -355,8 +365,8 @@ def main(env, org_id, package_id, hub):
     - None
     """
     print("==== New thread created for {}".format(package_id))
-    
-    location_id = get_switchboard_package_location(env, 'pi', package_id, org_id)
+
+    location_id = get_switchboard_package_location(env, "pi", package_id, org_id)
 
     get_location(env, location_id, package_id, hub)
 
@@ -378,13 +388,15 @@ def elapsed_time(start, finish):
 
     elapsed_hours = elapsed_seconds // 3600
     if elapsed_hours >= 1:
-        elapsed_seconds -= (elapsed_hours * 3600)
+        elapsed_seconds -= elapsed_hours * 3600
 
     elapsed_minutes = elapsed_seconds // 60
     if elapsed_minutes >= 1:
-        elapsed_seconds -= (elapsed_minutes * 60)
+        elapsed_seconds -= elapsed_minutes * 60
 
-    print(f"Took {elapsed_hours}h, {elapsed_minutes}m and {elapsed_seconds}s to complete")
+    print(
+        f"Took {elapsed_hours}h, {elapsed_minutes}m and {elapsed_seconds}s to complete"
+    )
 
 
 def save_csv_file(fileName, data):
@@ -403,49 +415,69 @@ def save_csv_file(fileName, data):
     if len(data) < 1:
         print(f"Nothing to save on '{fileName}'")
     else:
-        with open(fileName, 'w', newline='') as file:
+        with open(fileName, "w", newline="") as file:
             writer = csv.writer(file)
-            headers = ["HUB", "Customer", "Location ID", "Address", "City", "State", "Zip", "Geocode", "Provider", "Precision", "Error"]
+            headers = [
+                "HUB",
+                "Customer",
+                "Location ID",
+                "Address",
+                "City",
+                "State",
+                "Zip",
+                "Geocode",
+                "Provider",
+                "Precision",
+                "Error",
+            ]
             writer.writerow(headers)
-            
+
             for addr in data:
                 row = [
                     addr.get("hub"),
                     addr.get("name"),
                     addr.get("id"),
-                    "'{} - {}'".format(addr.get("typedAddress").get("address1"), addr.get("typedAddress").get("address2")),
+                    "'{} - {}'".format(
+                        addr.get("typedAddress").get("address1"),
+                        addr.get("typedAddress").get("address2"),
+                    ),
                     addr.get("typedAddress").get("city"),
                     addr.get("typedAddress").get("state"),
                     addr.get("typedAddress").get("postalCode"),
-                    "'{} - {}'".format(addr.get("geo").get("latitude"), addr.get("geo").get("longitude")),
+                    "'{} - {}'".format(
+                        addr.get("geo").get("latitude"),
+                        addr.get("geo").get("longitude"),
+                    ),
                     addr.get("precision").get("source"),
-                    addr.get("precision").get("precision")
+                    addr.get("precision").get("precision"),
                 ]
                 if "Fail" in fileName:
                     row.append(addr.get("ERROR"))
                 writer.writerow(row)
-                
+
         finish = time.time_ns()
 
         print("File '{}' saved successfully".format(fileName))
         elapsed_time(start, finish)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     env = select_env()
     org_id = select_org(env)
 
-    starting_time = str(
-        datetime.datetime.now().time().replace(microsecond=0)
-    ).replace(':', '_').replace('/', '-')
-    
+    starting_time = (
+        str(datetime.datetime.now().time().replace(microsecond=0))
+        .replace(":", "_")
+        .replace("/", "-")
+    )
+
     start = time.time_ns()
 
     pending_hubs = [
         3880,
         # remember to DELETE or REPLACE uncommented lines
         # 3453, 8500, 8488, 8792, 8764, 3926, 3034, 8202, 3845, 3808, 8285, 8194, 8883,
-        # 8613, 3882, 3880, 8773, 3716, 8743, 
+        # 8613, 3882, 3880, 8773, 3716, 8743,
         # 8506, 8220, 3964, 8457, 8228, 8606, 8103,
         # 3933, 3738, 3094, 8027, 3886, 3895, 8409, 3998, 8037, 8102, 8740, 8406, 8845,
         # 8203, 98471, 3322, 3012, 8221, 8605, 3920, 8033, 3946, 3099, 8006, 8247, 8069,
@@ -457,8 +489,7 @@ if __name__ == '__main__':
     ]
 
     package_date = datetime.datetime.strptime(
-        input("Input the date (yyyy-mm-dd): "), 
-        "%Y-%m-%d"
+        input("Input the date (yyyy-mm-dd): "), "%Y-%m-%d"
     )
     next_day = package_date + datetime.timedelta(1)
 
@@ -469,15 +500,17 @@ if __name__ == '__main__':
 
     with concurrent.futures.ThreadPoolExecutor() as pool:
         for hub in pending_hubs:
-            hub_location_id = search_hub_by_name(env, org_id, hub)[0]['location']['locationId']
+            hub_location_id = search_hub_by_name(env, org_id, hub)[0]["location"][
+                "locationId"
+            ]
             print("Checking for packages in {}".format(hub))
 
             package_ids = get_alamo_packages(
-                env, 
-                org_id, 
+                env,
+                org_id,
                 hub_location_id,
-                '{}T08:00:00.000Z'.format(package_date), 
-                '{}T08:00:00.000Z'.format(next_day)
+                "{}T08:00:00.000Z".format(package_date),
+                "{}T08:00:00.000Z".format(next_day),
             )
 
             print("Found {} packages for hub {}".format(len(package_ids), hub))
@@ -499,10 +532,8 @@ if __name__ == '__main__':
     print("Saving report file(s)")
 
     save_csv_file(
-        f"Corrected Locations {package_date} ({starting_time}).csv", 
-        CORRECTED_ADDRESSES
+        f"Corrected Locations {package_date} ({starting_time}).csv", CORRECTED_ADDRESSES
     )
     save_csv_file(
-        f"Failed Locations {package_date} ({starting_time}).csv", 
-        FAILED_ADDRESSES
+        f"Failed Locations {package_date} ({starting_time}).csv", FAILED_ADDRESSES
     )

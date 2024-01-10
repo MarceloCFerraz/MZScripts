@@ -1,4 +1,3 @@
-import requests
 from utils import files, utils, packages
 
 
@@ -18,7 +17,9 @@ def main():
     packageIds = files.get_data_from_file("pids")
 
     for packageId in packageIds:
-        packages.move_package_to_hub(env, orgId, newHub, packageId, dispatcher, userName)
+        packages.move_package_to_hub(
+            env, orgId, newHub, packageId, dispatcher, userName
+        )
 
 
 main()

@@ -6,14 +6,12 @@ def rollback_route(env, routeId, userName):
     url = f"http://alamo.{env}.milezero.com/alamo-war/api/plannedroutes/rollback"
 
     payload = {
-        "routeIds": [
-            routeId
-        ],
+        "routeIds": [routeId],
         "requestor": {
             "associateId": userName,
             "associateName": userName,
-            "associateType": "Support"
-        }
+            "associateType": "Support",
+        },
     }
 
     response = requests.post(url=url, json=payload, timeout=15)
@@ -28,7 +26,7 @@ def main():
 
     response = rollback_route(env, routeId, userName)
 
-    print('OK' if response.status_code < 400 else 'FAILED')
+    print("OK" if response.status_code < 400 else "FAILED")
     print(response.text)
 
 

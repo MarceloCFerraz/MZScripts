@@ -1,7 +1,7 @@
 import concurrent.futures
-from grantHubAccess import select_answer, get_associate, process_associate
-from utils import utils, associates, fleets, files, hubs
 
+from grantHubAccess import process_associate, select_answer
+from utils import associates, files, fleets, hubs, utils
 
 ASSOCIATES = []
 
@@ -22,7 +22,7 @@ def get_associate(env, orgId, associateId):
     """
     associate = associates.get_associate_data(env, orgId, associateId)
 
-    if associate != None:
+    if associate is not None:
         ASSOCIATES.append(associate)
     else:
         print(f">> {associateId} not found")
@@ -36,14 +36,18 @@ def get_associates(env, orgId):
 
     if not associateIDs:
         print(">> No associates in 'associates.txt'")
-        if select_answer(question=">> Do you want to search for the associates? ") == "Y":
-
+        if (
+            select_answer(question=">> Do you want to search for the associates? ")
+            == "Y"
+        ):
             while len(ASSOCIATES) == 0:
                 associate = get_associate(env, orgId, True)
                 if associate:
                     ASSOCIATES.append(associate)
                 else:
-                    print(">> The associates list is empty. Please enter at least one associate or hit CTRL + C to quit the program")
+                    print(
+                        ">> The associates list is empty. Please enter at least one associate or hit CTRL + C to quit the program"
+                    )
     else:
         # Using multithreading to get multiple associates simultaneosly
         with concurrent.futures.ThreadPoolExecutor() as pool:
@@ -85,6 +89,7 @@ def main():
         process_associate(env, orgId, associate, userName, allHubs, allFleets)
 
     print(">> Finishing script")
+
 
 if __name__ == "__main__":
     main()

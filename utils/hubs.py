@@ -1,3 +1,5 @@
+import sys
+
 import requests
 
 from utils import utils
@@ -64,12 +66,16 @@ def search_hub_by_name(env, orgId, hubName):
     response = requests.Response()
 
     try:
-        response = requests.get(url=url, timeout=5).json()["hubs"]
+        response = requests.get(url=url, timeout=5)
+        response = response.json()["hubs"]
+        return response
     except ConnectionError as e:
         print(f"Connection Error. Please connect to the VPN!\n {e}")
     # print(response)
+    except Exception as e:
+        print(f"Something Went wrong: {e}")
 
-    return response
+    sys.exit(1)
 
 
 def search_hub_by_id(env, orgId, hubId):
