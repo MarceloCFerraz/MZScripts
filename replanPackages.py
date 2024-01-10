@@ -1,5 +1,4 @@
 import concurrent.futures
-import sys
 from datetime import datetime
 
 from utils import files, packages, utils
@@ -7,36 +6,6 @@ from utils import files, packages, utils
 SUCCESSES = []
 ERRORS = []
 PACKAGES = []
-
-
-def get_package_hub(package):
-    """
-    Get the hub name associated with a package.
-
-    Parameters:
-    - package: A dictionary representing the package details.
-
-    Returns:
-    - hubName: The name of the hub associated with the package.
-    """
-    hubName = utils.extract_property(
-        package, ["packageDetails", "sourceLocation", "name"]
-    )
-
-    if hubName is not None:
-        return hubName
-
-    hubName = utils.extract_property(package, ["packageDetails", "clientHub"])
-
-    if hubName is not None:
-        return hubName
-
-    hubName = utils.extract_property(package, ["packageDetails", "destination", "name"])
-
-    if hubName is not None:
-        return hubName
-
-    return ""
 
 
 def fill_packages_list(env, orgId, keyType, key):
@@ -52,15 +21,39 @@ def fill_packages_list(env, orgId, keyType, key):
     Returns:
     None
     """
-    pkgs = packages.get_packages_details(env, orgId, keyType, key)["packageRecords"]
+    add_to_packages_list(
+        packages.get_packages_details(env, orgId, keyType, key)["packageRecords"]
+    )
 
+
+def fill_packages_list_batch(env, orgId, keyType, batchOfKeys):
+    """
+    Fill the PACKAGES list with package details.
+
+    Parameters:
+    - env: The environment.
+    - orgId: The organization ID.
+    - keyType: The type of key.
+    - key: The key.
+
+    Returns:
+    None
+    """
+    add_to_packages_list(
+        packages.bulk_get_package_details(env, orgId, keyType, batchOfKeys)[
+            "packageRecords"
+        ]
+    )
+
+
+def add_to_packages_list(pkgs):
     if len(pkgs) == 0:
         print("> NO PACKAGES FOUND <\n")
     for pkg in pkgs:
         PACKAGES.append(pkg)
 
 
-def replan_batches(env, orgId, hubRequested, batch, next_delivery_date):
+def replan_batch(env, orgId, batch, next_delivery_date, hubRequested=None):
     """
     Replan packages in batches based on specific criteria.
 
@@ -77,34 +70,29 @@ def replan_batches(env, orgId, hubRequested, batch, next_delivery_date):
     packageIDs = []
 
     for package in batch:
-        status = package["packageStatuses"]["status"]
-        packageID = package["packageId"]
-        hubName = get_package_hub(package)
+        hubName = packages.get_package_hub(package)
 
         # if package is from the correct hub, continues.
-        if hubName == hubRequested:
-            # if package is marked as cancelled or damaged,
-            # revive the package
-            if status == "CANCELLED":
-                packages.revive_package(env, package)
+        if hubName == hubRequested or hubRequested is None:
+            prepare_package_for_replan(env, package)
 
-            # if package is marked as rejected or delivered,
-            # change its status to DELIVERY_FAILED
-            if status == "DELIVERED" or status == "REJECTED":
-                packages.mark_package_as_delivery_failed(env, package)
+            packageIDs.append(package["packageId"])
 
-            packageIDs.append(packageID)
+    if packageIDs:
+        result = packages.bulk_resubmit_packages(
+            env, orgId, packageIDs, next_delivery_date
+        )
 
-    result = packages.bulk_resubmit_packages(env, orgId, packageIDs, next_delivery_date)
+        for success in result["SUCCESS"]:
+            SUCCESSES.append(success)
 
-    for success in result("SUCCESS"):
-        SUCCESSES.append(success)
-
-    for error in result.get("ERROR"):
-        ERRORS.append(error)
+        for error in result["ERROR"]:
+            ERRORS.append(error)
+    else:
+        print(">> Packages not from ")
 
 
-def replan(env, orgId, hubRequested, package, next_delivery_date):
+def replan(env, orgId, package, next_delivery_date, hubRequested=None):
     """
     Replan a single package based on specific criteria.
 
@@ -118,21 +106,12 @@ def replan(env, orgId, hubRequested, package, next_delivery_date):
     Returns:
     None
     """
-    status = package["packageStatuses"]["status"]
     packageID = package["packageId"]
-    hubName = get_package_hub(package)
+    hubName = packages.get_package_hub(package)
 
     # if package is from the correct hub, continues.
-    if hubName == hubRequested:
-        # if package is marked as cancelled or damaged,
-        # revive the package
-        if status == "CANCELLED":
-            packages.revive_package(env, package)
-
-        # if package is marked as rejected or delivered,
-        # change its status to DELIVERY_FAILED
-        if status == "DELIVERED" or status == "REJECTED":
-            packages.mark_package_as_delivery_failed(env, package)
+    if hubName == hubRequested or hubRequested is None:
+        prepare_package_for_replan(env, package)
 
         response = packages.resubmit_package(env, orgId, packageID, next_delivery_date)
 
@@ -142,11 +121,33 @@ def replan(env, orgId, hubRequested, package, next_delivery_date):
             ERRORS.append(response["ERROR"])
     else:
         print(
-            f"---> {packageID} Ignored because it isn't from hub {hubRequested} (it is from {hubName})\n"
+            f">> {packageID} Ignored because it isn't from hub {hubRequested} (it is from {hubName})\n"
         )
 
 
-def main(fileName, keyType, next_delivery_date, env=None, orgId=None):
+def prepare_package_for_replan(env, package):
+    status = package["packageStatuses"]["status"]
+
+    # if package is marked as cancelled or damaged,
+    # revive the package
+    if status == "CANCELLED":
+        packages.revive_package(env, package)
+
+    # if package is marked as rejected or delivered,
+    # change its status to DELIVERY_FAILED
+    if status == "DELIVERED" or status == "REJECTED":
+        packages.mark_package_as_delivery_failed(env, package)
+
+
+def load_inputs(
+    env=None,
+    orgId=None,
+    hubName=None,
+    fileName=None,
+    keyType=None,
+    keys=None,
+    next_delivery_date=None,
+):
     """
     The main function that orchestrates the package resubmission process.
 
@@ -160,107 +161,149 @@ def main(fileName, keyType, next_delivery_date, env=None, orgId=None):
     Returns:
         None
     """
-    if not env:
+    if env is None:
         env = utils.select_env()
-    if not orgId:
+
+    if orgId is None:
         orgId = utils.select_org(env)
 
-    lines = files.get_data_from_file(fileName)
+    if fileName is None:
+        # The file name must be to the requester's hub name (e.g. 8506)
+        if utils.select_answer(">> Do you have a file with the package keys?") == "Y":
+            fileName = (
+                input(">> Type the file name: ")
+                .strip()
+                .replace(".txt", "")
+                .replace("./", "")
+                .replace(".\\", "")
+            )
+            # if user wants to read packages from a file, get them now
+            keys = files.get_data_from_file(fileName)
 
-    print("Key Types: {}\n".format(keyType.upper()) + "Keys: {}\n".format(lines))
+    if keyType is None:
+        keyType = packages.select_key_type()
+
+    if keys is None:
+        keys = packages.get_list_of_keys(keyType)
+
+    if hubName is None:
+        if utils.select_answer(">> Do you wish filter by hub name?") == "Y":
+            hubName = input(">> Type the Hub Name: ").strip().upper()
+
+    if next_delivery_date is None:
+        # A date to do the replan must be provided with the yyyy-mm-dd format
+        # reads a string in a yyyy-mm-dd from user input and creates a datetime object with it
+        next_delivery_date = datetime.strptime(
+            input(">> Type the next delivery date: "), "%Y-%m-%d"
+        )
+
+        # converts the datetime object to a string with the yyyy-mm-dd format
+        next_delivery_date = next_delivery_date.strftime("%Y-%m-%d")
+
+    main(
+        env,
+        orgId,
+        keys,
+        keyType,
+        next_delivery_date,
+        hubName,
+    )
+
+
+def main(
+    env,
+    orgId,
+    keys,
+    keyType,
+    next_delivery_date,
+    hubName=None,
+):
+    if keyType == "pi":
+        process_packages(
+            env=env,
+            orgId=orgId,
+            next_delivery_date=next_delivery_date,
+            hubName=hubName,
+            packages=[
+                {"packageId": key, "packageDetails": {"clientHub": hubName}}
+                for key in keys
+            ],
+        )
+    else:
+        load_packages(env, orgId, keyType, keys)
+        process_packages(env, orgId, next_delivery_date, hubName)
+
+
+def load_packages(env, orgId, keyType, keys):
+    print(f"Key Types: {keyType.upper()}\nKeys: {keys}\n")
 
     # Using multithreading to fetch multiple packages simultaneosly
-    with concurrent.futures.ThreadPoolExecutor() as pool:
-        for key in lines:
-            # getting packages from key (ori, bc, etc) present in file line
-            pool.submit(fill_packages_list, env, orgId, keyType, key)
+    # also split in batches to make less api calls and also accelerate the whole process
+    with concurrent.futures.ThreadPoolExecutor(8) as pool:
+        # getting packages in Switchboard with keys (ori, bc, etc) provided in the file <fileName>.txt
+        if len(keys) > 1:
+            batches = utils.divide_into_batches(keys)
 
+            for batch in batches:
+                pool.submit(fill_packages_list_batch, env, orgId, keyType, batch)
+        else:
+            for key in keys:
+                pool.submit(fill_packages_list, env, orgId, keyType, key)
     pool.shutdown(wait=True)
 
     print()
     print("===============================")
     for pkg in PACKAGES:
-        packages.print_minimal_package_details(pkg)
-        print("===============================")
+        if len(PACKAGES) <= 10:
+            packages.print_package_details(pkg)
+            print("===============================")
+    print(f">> {len(PACKAGES)} packages loaded out of {len(keys)} keys")
     print()
+
+
+def process_packages(env, orgId, next_delivery_date, hubName=None, packages=None):
+    if packages is None:
+        packages = PACKAGES
 
     # If there are a lot of packages to re-submit, we'll split them in batches
     # to reduce the amount of API calls by calling the 'bulk resubmit' endpoint
     # Using multithreading to replan multiple packages simultaneosly
-    with concurrent.futures.ThreadPoolExecutor() as pool:
-        if len(PACKAGES) >= 20:
-            batches = utils.divide_into_batches(PACKAGES)
+    with concurrent.futures.ThreadPoolExecutor(8) as pool:
+        if len(packages) > 1:
+            batches = utils.divide_into_batches(packages)
 
             for batch in batches:
                 pool.submit(
-                    replan_batches, env, orgId, fileName, batch, next_delivery_date
+                    replan_batch, env, orgId, batch, next_delivery_date, hubName
                 )
         else:
-            for package in PACKAGES:
-                pool.submit(replan, env, orgId, fileName, package, next_delivery_date)
+            for package in packages:
+                pool.submit(replan, env, orgId, package, next_delivery_date, hubName)
 
     pool.shutdown(wait=True)
 
+    print_results()
+
+
+def print_results():
     print(
         "Successful Resubmits ({}/{}): ".format(
             len(SUCCESSES), len(SUCCESSES) + len(ERRORS)
         )
     )
-    for success in SUCCESSES:
-        print("> {}".format(success))
+    print(SUCCESSES)
+    # for success in SUCCESSES:
+    #     print(f"> {success}")
 
     print(
         "Unsuccessful Resubmits ({}/{}): ".format(
             len(ERRORS), len(SUCCESSES) + len(ERRORS)
         )
     )
-    for error in ERRORS:
-        print("> {}".format(error))
-        # TODO: add where it failed to the error line and remove logging prints
+    print(ERRORS)
+    # for error in ERRORS:
+    #     print(f"> {error}")
 
 
 if __name__ == "__main__":
-    # get command line argument
-    if len(sys.argv) < 4:
-        print(
-            "\nNO ARGS PROVIDED!\n"
-            + "Please, check the correct script usage bellow:\n\n"
-            + "PRE REQUISITES:\n"
-            + "> A file <hubName>.txt should be created in this same directory. You should paste the barcodes/ORIs to be replanned there\n"
-            + "--> hubName: the hub that requested a replan in number format\n\n"
-            + "SCRIPT USAGE:\n"
-            + "--> python replanPackages.py <hubName> <keyType> <next_delivery_date>\n\n"
-            + "-> Accepted keyTypes:\n"
-            + "> pi (Package Id)\n"
-            + "> tn (Tracking Number)\n"
-            + "> ci (Container Id)\n"
-            + "> bc (Shipment Barcode)\n"
-            + "> oi (Order Id)\n"
-            + "> ori (Order Reference Id)\n"
-            + "> ji (Job Id)\n\n"
-            "SCRIPT EXAMPLE:\n"
-            + "--> python replanPackages.py 8506 bc 2023-04-06\n"
-            + "> This will load all the barcodes on 8506.txt and replan only BARCODES from hub 8506 to 2023, April 6th\n\n"
-            + "NOTES:\n"
-            + "> Check comments on code to update relevant data such as keyType (bc, ori, etc), next_delivery_date (if dispatcher wants a specific date that is not the next day) accordingly to your needs\n"
-        )
-        sys.exit(1)
-
-    # The file name must be to the requester's hub name (e.g. 8506)
-    fileName = sys.argv[1].replace(".txt", "").replace(".\\", "")
-
-    # A KeyType arg must be provided. provide one of the following keyTypes:
-    # -> pi (Package Id)
-    # -> tn (Tracking Number)
-    # -> ci (Container Id)
-    # -> bc (Shipment Barcode)
-    # -> oi (Order Id)
-    # -> ori (Order Reference Id)
-    # -> ji (Job Id)
-    keyType = sys.argv[2].lower()
-
-    # A date to do the replan must be provided with the yyyy-mm-dd format
-    next_delivery_date = datetime.strptime(sys.argv[3], "%Y-%m-%d")
-    next_delivery_date = next_delivery_date.strftime("%Y-%m-%d")
-
-    main(fileName, keyType, next_delivery_date)
+    load_inputs()
