@@ -1,6 +1,7 @@
 from datetime import datetime
-from utils import utils, packages, routes, files
+
 import replanPackages
+from utils import files, packages, routes, utils
 
 
 def main():
@@ -23,52 +24,35 @@ def main():
     routeName = input("Type the desired route name\n> ").strip().upper()
 
     cpt = datetime.strptime(
-        input("Type date to look for the route (yyyy-mm-dd)\n> ").strip(),
-        "%Y-%m-%d"
+        input("Type date to look for the route (yyyy-mm-dd)\n> ").strip(), "%Y-%m-%d"
     )
     cpt = cpt.strftime("%Y-%m-%d") + "T16:00:00Z"
-    
-    
+
     route = routes.find_route(env, orgId, routeName, oldHub, cpt)
 
-    if route == None:
+    if route is None:
         print("Route Not Found!")
     else:
-        pkgs = packages.get_all_packages_on_route(env, orgId, route['routeId'])
+        pkgs = packages.get_all_packages_on_route(env, orgId, route["routeId"])
 
         if len(pkgs) > 0:
             newHub = input("Type the NEW hub name\n> ").strip()
-            
-            files.save_txt_file(
-                [pkg.get('packageID') for pkg in pkgs], 
-                newHub
-            )
+
+            files.save_txt_file([pkg.get("packageID") for pkg in pkgs], newHub)
 
             print("Moving Packages...")
             for package in pkgs:
                 packages.move_package_to_hub(
-                    env, 
-                    orgId, 
-                    newHub, 
-                    package['packageID'], 
-                    dispatcher, 
-                    userName
+                    env, orgId, newHub, package["packageID"], dispatcher, userName
                 )
 
             newDate = datetime.strptime(
-                input("Type date for replan (yyyy-mm-dd)\n> ").strip(),
-                "%Y-%m-%d"
+                input("Type date for replan (yyyy-mm-dd)\n> ").strip(), "%Y-%m-%d"
             )
             newDate = newDate.strftime("%Y-%m-%d")
 
             print("Replanning packages...")
-            replanPackages.main(
-                newHub,
-                "pi",
-                newDate,
-                env,
-                orgId
-            )
+            replanPackages.process_packages(env, orgId, newDate, newHub, pkgs)
 
 
 main()

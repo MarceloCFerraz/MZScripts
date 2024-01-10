@@ -14,13 +14,13 @@ VALID_STATUSES = [
     "RETURN_PICKED_UP",
 ]
 VALID_KEY_TYPES = [
-    "pi (Package Id)",
-    "tn (Tracking Number)",
-    "ci (Container Id)",
-    "bc (Shipment Barcode)",
-    "oi (Order Id)",
-    "ori (Order Reference Id)",
-    "ji (Job Id)",
+    "pi",  # (Package Id)",
+    "tn",  # (Tracking Number)",
+    "ci",  # (Container Id)",
+    "bc",  # (Shipment Barcode)",
+    "oi",  # (Order Id)",
+    "ori",  # (Order Reference Id)",
+    "ji",  # (Job Id)",
 ]
 
 
@@ -137,6 +137,21 @@ def mark_package_as_delivered(org_id, packageId):
     result = requests.post(url=url, json=body)
 
     print(f"{result.status_code} {result.text if result.status_code > 400 else ''}")
+
+
+def bulk_get_package_details(env, org_id, key_type, keys):
+    url = f"https://switchboard.{env}.milezero.com/switchboard-war/api/package/search/bulk"
+
+    payload = {
+        "idType": key_type,
+        "ids": keys,
+        "filters": {
+            "orgId": org_id,
+            "includeCancelledPackage": True,
+        },
+    }
+
+    return requests.post(url=url, json=payload, timeout=30).json()
 
 
 def get_packages_details(env, org_id, key_type, key):
@@ -335,7 +350,7 @@ def revive_package(env, package):
 
     endpoint = "{}package/revive/{}/{}".format(API, org_id, packageId)
 
-    print(">>>>> Reviving package <<<<<")
+    print(f">>>>> Reviving {packageId} <<<<<")
 
     response = requests.post(endpoint, json=requestData, timeout=15)
     print(
@@ -354,22 +369,17 @@ def mark_package_as_delivery_failed(env, package):
     Returns:
         None
     """
-    API = (
-        f"http://switchboard.{utils.convert_env(env)}.milezero.com/switchboard-war/api/"
-    )
     org_id = package["orgId"]
     packageId = package["packageId"]
 
+    url = f"http://switchboard.{utils.convert_env(env)}.milezero.com/switchboard-war/api/package/update/{org_id}/{packageId}/DELIVERY_FAILED/status"
+
     requestData = {"notes": "Requested By Dispatcher"}
 
-    endpoint = "{}package/update/{}/{}/DELIVERY_FAILED/status".format(
-        API, org_id, packageId
-    )
-
-    print(">>>>> Marking package as DELIVERY_FAILED <<<<<")
+    print(f">>>>> Marking {packageId} as DELIVERY_FAILED <<<<<")
 
     try:
-        response = requests.post(endpoint, json=requestData, timeout=15)
+        response = requests.post(url=url, json=requestData, timeout=15)
         print("> Package Marked as DELIVERY_FAILED Sucessfuly ({})\n".format(response))
     except Exception as e:
         print("> Package couldn't be marked as DELIVERY_FAILED. See error bellow")
@@ -389,10 +399,7 @@ def resubmit_package(env, org_id, packageId, next_delivery_date):
     Returns:
         dict: The response containing the success and error information.
     """
-    response = {"SUCCESS": "", "ERROR": ""}
-    API = (
-        f"http://switchboard.{utils.convert_env(env)}.milezero.com/switchboard-war/api/"
-    )
+    url = f"http://switchboard.{utils.convert_env(env)}.milezero.com/switchboard-war/api/fulfillment/resubmit/{org_id}/{packageId}"
 
     requestData = {
         "adjustTimeWindow": True,
@@ -401,17 +408,18 @@ def resubmit_package(env, org_id, packageId, next_delivery_date):
         "notes": "Requested by dispatcher",
     }
 
-    endpoint = "{}fulfillment/resubmit/{}/{}".format(API, org_id, packageId)
-
-    print(">>>>> Resubmitting {} for {} <<<<<".format(packageId, next_delivery_date))
+    print(f">>>>> Resubmitting {packageId} ({next_delivery_date}) <<<<<")
+    res = {"SUCCESS": "", "ERROR": ""}
 
     try:
-        response = requests.post(endpoint, json=requestData, timeout=15).json()
-        response["SUCCESS"] = packageId
-    except Exception as e:
-        response["ERROR"] = f"{packageId} → {e.__reduce__().__repr__()}"
+        response = requests.post(url=url, json=requestData, timeout=15).json()
 
-    return response
+        if response.get("routeId") is not None:
+            res["SUCCESS"] = packageId
+    except Exception as e:
+        res["ERROR"] = f"{packageId} → {e.__reduce__().__repr__()}"
+
+    return res
 
 
 def bulk_resubmit_packages(env, org_id, packageIDs, next_delivery_date):
@@ -427,8 +435,7 @@ def bulk_resubmit_packages(env, org_id, packageIDs, next_delivery_date):
     Returns:
         dict: The response containing the success and error information.
     """
-    res = {"SUCCESS": [], "ERROR": []}
-    API = f"https://switchboard.{utils.convert_env(env)}.milezero.com/switchboard-war/api/"
+    url = f"https://switchboard.{utils.convert_env(env)}.milezero.com/switchboard-war/api/fulfillment/resubmit/bulk/{org_id}"
 
     requestData = {
         "packageIds": packageIDs,
@@ -438,9 +445,8 @@ def bulk_resubmit_packages(env, org_id, packageIDs, next_delivery_date):
         "notes": "Requested by dispatcher",
     }
 
-    endpoint = f"{API}fulfillment/resubmit/bulk/{org_id}"
-
-    response = requests.post(endpoint, json=requestData, timeout=15).json()
+    response = requests.post(url=url, json=requestData, timeout=15).json()
+    res = {"SUCCESS": [], "ERROR": []}
 
     for success in response.get("succeededResubmits"):
         res["SUCCESS"].append(success.get("packageId"))
@@ -449,10 +455,11 @@ def bulk_resubmit_packages(env, org_id, packageIDs, next_delivery_date):
         res["ERROR"].append(error.get("packageId"))
 
     print(
-        f">>>>> Batch Resubmit to {next_delivery_date} <<<<<\n> {len(res['SUCCESS'])} OK\n> {len(res['ERROR'])} FAILED"
+        f">>>>> New Batch ({len(packageIDs)} {next_delivery_date}) <<<<<\n"
+        + f"> {len(res['SUCCESS'])} OK\t {len(res['ERROR'])} FAILED"
     )
 
-    return response
+    return res
 
 
 def get_all_packages_on_route(env, org_id, routeId):
@@ -511,3 +518,71 @@ def get_all_packages_for_hub(env, org_id, hubName, date):
         print(f"{len(packageIDs)} packages")
 
     return packageIDs
+
+
+def select_key_type():
+    """
+    Allows the user to select an environment.
+
+    Returns:
+        str: The selected environment.
+    """
+    key_type_ids = VALID_KEY_TYPES
+    key_type = ""
+    utils.print_formatted_message("SELECT THE KEY TYPE", len(key_type_ids), " ")
+    utils.print_formatted_message("Options", len(key_type_ids))
+    utils.print_array_items(key_type_ids)
+    while key_type not in key_type_ids:
+        key_type = str(input("> ")).lower().strip()
+
+    return key_type
+
+
+def get_list_of_keys(key_type):
+    print(
+        ">> Please, type the keys to search packages one per time.\n"
+        + f">> They should all be of the same type ({str(key_type).upper()}) otherwise, the program will break.\n"
+        + ">> At least one key is needed.\n"
+        + ">> Leave blank and hit Enter once you're done.\n"
+    )
+    keys = set()
+
+    while True:
+        key = input(">> ")
+
+        if key != "":
+            keys.add(key)
+        elif len(keys) > 0:
+            break  # if key is an empty string and user already saved other keys, means he wants to continue
+
+    return list(keys)
+
+
+def get_package_hub(package):
+    """
+    Get the hub name associated with a package.
+
+    Parameters:
+    - package: A dictionary representing the package details.
+
+    Returns:
+    - hubName: The name of the hub associated with the package.
+    """
+    hubName = utils.extract_property(
+        package, ["packageDetails", "sourceLocation", "name"]
+    )
+
+    if hubName is not None:
+        return hubName
+
+    hubName = utils.extract_property(package, ["packageDetails", "clientHub"])
+
+    if hubName is not None:
+        return hubName
+
+    hubName = utils.extract_property(package, ["packageDetails", "destination", "name"])
+
+    if hubName is not None:
+        return hubName
+
+    return None
