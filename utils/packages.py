@@ -134,9 +134,9 @@ def mark_package_as_delivered(org_id, packageId):
     body = {"notes": "Requested by dispatcher"}
     print(f">>>>> Marking {packageId} as DELIVERED <<<<<")
 
-    result = requests.post(url=url, json=body)
+    response = requests.post(url=url, json=body)
 
-    print(f"{result.status_code} {result.text if result.status_code > 400 else ''}")
+    print("> OK" if response.status_code < 400 else f"> FAIL\n{response.text}")
 
 
 def bulk_get_package_details(env, org_id, key_type, keys):
@@ -380,7 +380,7 @@ def mark_package_as_delivery_failed(env, package):
 
     try:
         response = requests.post(url=url, json=requestData, timeout=15)
-        print("> Package Marked as DELIVERY_FAILED Sucessfuly ({})\n".format(response))
+        print("> OK" if response.status_code < 400 else f"> FAIL\n{response.text}")
     except Exception as e:
         print("> Package couldn't be marked as DELIVERY_FAILED. See error bellow")
         print(e)
