@@ -89,7 +89,7 @@ def replan_batch(env, orgId, batch, next_delivery_date, hubRequested=None):
         for error in result["ERROR"]:
             ERRORS.append(error)
     else:
-        print(">> Packages not from ")
+        print(f">> Packages not from {hubRequested} or packages doesn't exist")
 
 
 def replan(env, orgId, package, next_delivery_date, hubRequested=None):
