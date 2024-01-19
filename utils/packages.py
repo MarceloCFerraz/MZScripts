@@ -411,13 +411,14 @@ def resubmit_package(env, org_id, packageId, next_delivery_date):
     print(f">>>>> Resubmitting {packageId} ({next_delivery_date}) <<<<<")
     res = {"SUCCESS": "", "ERROR": ""}
 
-    try:
-        response = requests.post(url=url, json=requestData, timeout=15).json()
+    response = requests.post(url=url, json=requestData, timeout=15).json()
 
-        if response.get("routeId") is not None:
-            res["SUCCESS"] = packageId
-    except Exception as e:
-        res["ERROR"] = f"{packageId} → {e.__reduce__().__repr__()}"
+    if response.get("timeWindow") is not None:
+        res["SUCCESS"] = packageId
+    else:
+        res["ERROR"] = f"{packageId}"
+        print(">> Package couldn't be submitted")
+        print(">> Response: " + response)
 
     return res
 
