@@ -65,22 +65,27 @@ def find_route(env, orgId, routeName, hubName, cpt):
     return allRoutes[0]["metadata"] if len(allRoutes) > 0 else None
 
 
-def route_found(desired_route_name, route):
+def route_found(searched_route_name, route):
     """
     Compares the route names (1st param) with the route id and route name.
 
     Parameters:
-        desired_route_name (str): the route name from the user input
+        searched_route_name (str): the route name from the user input
         route (dict): the route metadata from alamo's GET /routes/search/orgId/{orgId}
     Returns:
-        True: if desired_route_name is present either in the route's name or id
+        True: if searched_route_name is present either in the route's name or id
         False: otherwise
     """
-    desired_route_name = str(desired_route_name).strip().lower()
+    searched_route_name = str(searched_route_name).strip().lower()
     route_name = str(route["routeName"]).strip().lower()
-    route_id = str(route["routeId"]).strip().lower()
+    # route_id = str(route["routeId"]).strip().lower()
 
-    return desired_route_name in route_name or desired_route_name in route_id
+    if searched_route_name == route_name:
+        return True
+    # if searched_route_name in route_id:
+    #     return True
+
+    return False
 
 
 def get_route_events(env, routeId):
