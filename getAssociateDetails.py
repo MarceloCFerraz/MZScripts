@@ -19,6 +19,8 @@ def main():
 
     key_type_index = utils.get_associate_key_type_index()
 
+    # TODO: allow user to search for more than one field
+    associatesArray = []
     if key_type_index > 0:
         print(f"TYPE THE ASSOCIATE'S '{utils.get_associate_key_type(key_type_index)}'")
         search_key = input("> ")
@@ -36,10 +38,11 @@ def main():
             key_type_index=key_type_index - 1,
             search_key=search_key,
         )
-    associates_count = len(associatesArray)
-    print(f"Found {associates_count} associates")
 
-    if associates is not None:
+    if associatesArray is not None:
+        associates_count = len(associatesArray)
+        print(f"Found {associates_count} associates")
+
         if associates_count <= 10:
             for associate in associatesArray:
                 hub = [hub for hub in allHubs if hub["id"] == associate["hubId"]][0]
