@@ -218,20 +218,8 @@ def main(
     next_delivery_date,
     hubName=None,
 ):
-    if keyType == "pi":
-        process_packages(
-            env=env,
-            orgId=orgId,
-            next_delivery_date=next_delivery_date,
-            hubName=hubName,
-            packages=[
-                {"packageId": key, "packageDetails": {"clientHub": hubName}}
-                for key in keys
-            ],
-        )
-    else:
-        load_packages(env, orgId, keyType, keys)
-        process_packages(env, orgId, next_delivery_date, hubName)
+    load_packages(env, orgId, keyType, keys)
+    process_packages(env, orgId, next_delivery_date, hubName)
 
 
 def load_packages(env, orgId, keyType, keys):
