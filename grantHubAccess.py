@@ -293,7 +293,7 @@ def fill_hubs_list(idsList, allHubs):
     return hubsList
 
 
-def search_fleet_with_hubs(allFleets, hubIdsList):
+def search_fleet_with_hubs(allFleets, hubIdsList: list, hubsList: list):
     """
     Searches for a fleet that contains the exact set of hub IDs.
 
@@ -306,20 +306,87 @@ def search_fleet_with_hubs(allFleets, hubIdsList):
     Returns:
     - fleetId (str): The ID of the fleet that matches the provided hub IDs, or None if no match is found.
     """
-    hubIdsSet = set(hubIdsList)  # Convert hubIdsList to a set for efficient comparison
 
+    fleetCandidates = []
     for fleet in allFleets:
         try:
-            fleetHubIdsSet = set(fleet["hubIds"])
+            valid = True
+            index = 0
 
-            if fleetHubIdsSet == hubIdsSet:
-                print(f">>>> Fleet not found: {fleet['fleetId']}\n")
-                return fleet["fleetId"]
+            while index in range(0, len(hubIdsList)) and valid:
+                hubId = hubIdsList[index]
+
+                if hubId not in fleet["hubIds"]:
+                    valid = False
+
+                index += 1
+
+            if valid:
+                difference = len(fleet["hubIds"]) - len(hubIdsList)
+
+                if difference == 0:
+                    # Perfect match
+                    return fleet["fleetId"]
+
+                if difference <= 3:
+                    print(f">> {fleet['fleetId']} is valid ({difference} extra hubs)")
+                    fleetCandidates.append(fleet)
+
         except Exception:
             pass
 
-    print(">>>> Fleet not found!\n")
-    return None
+    if len(fleetCandidates) == 0:
+        # No viable option found
+        return None
+
+    return choose_fleet_candidate(fleetCandidates, hubIdsList, hubsList)
+
+
+def choose_fleet_candidate(fleetCandidates, hubIdsList, hubsList):
+    """
+    Iterates through each fleet in fleet candidates list and gives the user the option to select a fleet that offers a better fit or select none
+
+    Returns:
+        fleetId (str): the fleet id if the user selected a fleet from the options array
+    """
+    print(f">> We found {len(fleetCandidates)} compatible fleets:")
+    print(">> '(+)' is a hub that was not in the original search list")
+
+    desiredHubs = [h["name"] for h in hubsList if h["id"] in hubIdsList]
+    index = 0
+
+    for index in range(0, len(fleetCandidates)):
+        fleetHubIds = fleetCandidates[index]["hubIds"]
+        fleetHubs = [h["name"] for h in hubsList if h["id"] in fleetHubIds]
+        fleetHubs.sort()
+
+        # the section below prints something like this:
+        # >> 0 - HUB1     HUB2     HUB3     HUB4     HUB5     HUB6(+)
+
+        printString = [
+            f"{hub}{'' if hub in desiredHubs else '(+)'}" for hub in fleetHubs
+        ]
+        printString = [f"{string:<9}" for string in printString]
+
+        print(f">> {index:<2} - {''.join(printString)}")
+
+    selection = -1
+    quit = -7
+
+    print(f"\n>> Please type the number of the fleet or '{quit}' to quit")
+    while selection not in range(0, len(fleetCandidates)):
+        try:
+            selection = int(input("> ").strip())
+
+            if selection == quit:
+                return None
+
+        except ValueError:
+            print("\n>> Please type only the number of the desired fleet. For example:")
+            print(">> 0 << - HUB1  HUB2  HUB3  HUB4")
+            print(">> 1 << - HUB1  HUB2  HUB3  HUB4\n")
+
+    return fleetCandidates[selection]["fleetId"]
 
 
 def create_new_fleet(env, orgId, hubsList, fleetName=None, fleetLogo=None):
@@ -417,7 +484,7 @@ def apply_changes(env, orgId, hubsList, allFleets, associate, userName):
 
     print(f"\n>> Searching for a fleet with {' '.join(hubsNames)}")
     fleetId = search_fleet_with_hubs(  # searching for a fleet with same hubs
-        allFleets=allFleets, hubIdsList=hubsIds
+        allFleets=allFleets, hubIdsList=hubsIds, hubsList=hubsList
     )
 
     if fleetId is not None:  # if a fleet with the correct hubs already exists
@@ -442,8 +509,8 @@ def apply_changes(env, orgId, hubsList, allFleets, associate, userName):
             )
 
             if (
-                len(associatesWithSameFleet) == 1
-                and associatesWithSameFleet is not None
+                associatesWithSameFleet is not None
+                and len(associatesWithSameFleet) == 1
             ):
                 # if only this associate has this fleet id
                 # means we can just update his fleet instead of creating another one
@@ -522,7 +589,7 @@ def process_associate(env, orgId, associate, userName, allHubs, allFleets):
     None
     """
     name = associate.get("contact").get("name")
-    print(f"============ PROCESSING {str(name).upper()} ============")
+    print(f"{f' PROCESSING {str(name).upper()} ':#^50}")
 
     hubsList = get_hubs_from_associate_fleet(associate, allFleets, allHubs)
     hubsNames = [h.get("name") for h in hubsList]
@@ -562,7 +629,7 @@ def process_associate(env, orgId, associate, userName, allHubs, allFleets):
             newHub = get_new_hub(allHubs, hubsNames, False, None)
             move_to_new_hub(env, associate, userName, newHub)
 
-    print(f"============ FINISHED {str(name).upper()} ============\n\n")
+    print(f"{f' FINISHED {str(name).upper()} ':#^50}")
 
 
 def main():
@@ -592,3 +659,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+    # TODO: there is something wrong with the `search_fleet_with_hubs` function
+    # TODO: prompt user to select compatible fleet if no exact match was found (must contain all desired hubs + 1 or 2 more)
