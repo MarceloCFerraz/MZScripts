@@ -58,9 +58,17 @@ def find_route(env, orgId, routeName, hubName, cpt):
         list: The list of routes matching the name or ID.
     """
     allRoutes = get_all_routes_from_hub_alamo(env, orgId, hubName, cpt)
-    allRoutes = [
-        r for r in allRoutes["routes"] if route_found(routeName, r["metadata"])
-    ]
+    allRoutes = allRoutes.get("routes")
+
+    if allRoutes is not None:
+        allRoutes = [r for r in allRoutes if route_found(routeName, r["metadata"])]
+    else:
+        print(">> Routes not found. Please review the inputs:")
+        print(f">> Org ID: {orgId}")
+        print(f">> HUB: {hubName}")
+        print(f">> Route Name: {routeName}")
+        print(f">> Date: {cpt}")
+        allRoutes = []
 
     return allRoutes[0]["metadata"] if len(allRoutes) > 0 else None
 
