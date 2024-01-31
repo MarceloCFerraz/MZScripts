@@ -118,7 +118,7 @@ def bulk_cancel_packages(env, org_id, packageIds):
         print(e)
 
 
-def mark_package_as_delivered(org_id, packageId):
+def mark_package_as_delivered(env, org_id, packageId):
     """
     Marks a package as delivered.
 
@@ -129,8 +129,7 @@ def mark_package_as_delivered(org_id, packageId):
     Returns:
         None
     """
-    API = "http://switchboard.prod.milezero.com/switchboard-war/api/"
-    url = f"{API}package/update/{org_id}/{packageId}/DELIVERED/status"
+    url = "http://switchboard.{env}.milezero.com/switchboard-war/api/package/update/{org_id}/{packageId}/DELIVERED/status"
     body = {"notes": "Requested by dispatcher"}
     print(f">>>>> Marking {packageId} as DELIVERED <<<<<")
 
