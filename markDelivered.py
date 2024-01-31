@@ -1,5 +1,6 @@
-from utils import files, packages
 import sys
+
+from utils import files, packages, utils
 
 STANDARD_TIMEOUT = 5  # seconds
 SUCCESSES = []
@@ -18,6 +19,8 @@ def main(fileName, keyType):
     None
     """
     lines = files.get_data_from_file(fileName)
+    env = utils.select_env()
+    orgId = utils.select_org(env)
 
     print(
         "Key Types: {}\n".format(keyType.upper())
@@ -30,7 +33,9 @@ def main(fileName, keyType):
 
     for line in lines:
         # getting packages from barcode present in file line
-        pkgs = packages.get_packages_details(keyType, line)["packageRecords"]
+        pkgs = packages.get_packages_details(env, orgId, keyType, line)[
+            "packageRecords"
+        ]
 
         if len(pkgs) == 0:
             print("> NO PACKAGES FOUND <\n")
@@ -48,7 +53,7 @@ def main(fileName, keyType):
                 print(f"--> STATUS: {status}\n")
                 print(f"--> HUB: {hubName}")
 
-                packages.mark_package_as_delivered(orgId, packageID)
+                packages.mark_package_as_delivered(env, orgId, packageID)
             else:
                 print(f"\n----> PACKAGE ID: {packageID} (already DELIVERED)\n")
 
