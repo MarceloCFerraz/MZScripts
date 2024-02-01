@@ -1,4 +1,4 @@
-from utils import files, utils, associates, hubs
+from utils import associates, files, hubs, utils
 
 
 def main():
@@ -45,6 +45,9 @@ def main():
 
         if associates_count <= 10:
             for associate in associatesArray:
+                extra_details = associates.get_associate_device_and_app(
+                    env, orgId, associate["associateId"]
+                )
                 hub = [hub for hub in allHubs if hub["id"] == associate["hubId"]][0]
                 print(f"Associate State: {associate['state']}")
                 print(f"   Account Type: {associate['associateType']}")
@@ -61,6 +64,16 @@ def main():
                     pass
                 print(f"         HUB ID: {associate['hubId']}")
                 print(f"       HUB Name: {hub.get('name')}")
+
+                if extra_details is not None:
+                    extra_details = extra_details["extraProperties"]
+                    print(
+                        f"          Phone: {str(extra_details['deviceName']).capitalize() + ' ' + str(extra_details['deviceModel'])}"
+                    )
+                    print(
+                        f"     OS Version: {str(extra_details['type']).capitalize() + ' ' + str(extra_details['osVersion'])}"
+                    )
+                    print(f"    App Version: {extra_details['appVersion']}")
                 print("========================================")
         else:
             print(

@@ -29,6 +29,18 @@ def get_associate_data(env, orgId, associateId):
         return None
 
 
+def get_associate_device_and_app(env, org_id, associate_id):
+    url = f"http://wv.{env}.milezero.com/wv/api/search/v3/org/{org_id}/container/id/{associate_id}?containerType=WORKER"
+
+    response = requests.get(url=url, timeout=15).json()
+
+    if response.get("stackTrace") is not None:
+        print(f"{response['status']} > {response['message']}")
+        return None
+
+    return response
+
+
 def search_associate(env, org_id, key_type_index, search_key):
     """
     Searches for associates based on a specific key type and search key.
