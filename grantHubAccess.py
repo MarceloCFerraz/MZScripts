@@ -42,9 +42,11 @@ def get_associate_by_id(env, orgId, acceptBlank):
     while True:
         print(
             ">> Insert the Associate ID ",
-            "(leave blank and hit enter if done)"
-            if acceptBlank
-            else "(or hit Ctrl + C to quit program)",
+            (
+                "(leave blank and hit enter if done)"
+                if acceptBlank
+                else "(or hit Ctrl + C to quit program)"
+            ),
         )
         associateId = input("> ")
 
@@ -72,12 +74,15 @@ def get_associate_by_name_or_email(env, orgId, acceptBlank):
     - associate (dict): an associate LMX data.
     - None: if an associate wasn't found or if blank input is allowed
     """
+    # TODO: list associates found and ask user to select one
     while True:
         print(
             ">> Type the associate's e-mail or name ",
-            "(leave blank and hit enter if done)"
-            if acceptBlank
-            else "(or hit Ctrl + C to quit program)",
+            (
+                "(leave blank and hit enter if done)"
+                if acceptBlank
+                else "(or hit Ctrl + C to quit program)"
+            ),
         )
         search_key = input("> ")
         print()
@@ -557,13 +562,16 @@ def move_to_new_hub(env, associate, userName, newHub):
     Returns:
     None
     """
-    print(">> Moving associate, removing fleet, vehicle and pref. route")
+    print(
+        f">> Changing hub ID and location ID to {newHub['id']} and {newHub['location']['locationId']}"
+    )
 
     associate["hubId"] = newHub["id"]
     associate["location"]["locationId"] = newHub["location"]["locationId"]
 
     newAssociateData = {}
 
+    print(">> Removing fleet, vehicle and route")
     for header in associate.keys():
         if header not in ["fleetId", "preferredVehicle", "preferredRoute"]:
             newAssociateData[header] = associate[header]
@@ -591,10 +599,10 @@ def process_associate(env, orgId, associate, userName, allHubs, allFleets):
     name = associate.get("contact").get("name")
     print(f"{f' PROCESSING {str(name).upper()} ':#^50}")
 
-    hubsList = get_hubs_from_associate_fleet(associate, allFleets, allHubs)
-    hubsNames = [h.get("name") for h in hubsList]
-
     if associate["associateType"] not in ["DRIVER", "SORTER"]:
+        hubsList = get_hubs_from_associate_fleet(associate, allFleets, allHubs)
+        hubsNames = [h.get("name") for h in hubsList]
+
         newHubs = get_new_hubs(hubsNames, allHubs)
         answer = select_answer()
         print()
@@ -625,8 +633,11 @@ def process_associate(env, orgId, associate, userName, allHubs, allFleets):
         )
 
         if answer == "Y":
-            print(">> Moving associate to new hub...")
-            newHub = get_new_hub(allHubs, hubsNames, False, None)
+            hub = [h["name"] for h in allHubs if h["id"] == associate["hubId"]]
+            print(f">> The associate currently have access to: {' '.join(hub)}")
+            print(f">> What should be the new hub?")
+
+            newHub = get_new_hub(allHubs, hub, False, None)
             move_to_new_hub(env, associate, userName, newHub)
 
     print(f"{f' FINISHED {str(name).upper()} ':#^50}")
