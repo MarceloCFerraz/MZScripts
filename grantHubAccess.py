@@ -298,7 +298,7 @@ def fill_hubs_list(idsList, allHubs):
     return hubsList
 
 
-def search_fleet_with_hubs(allFleets, hubIdsList: list, hubsList: list):
+def search_fleet_with_hubs(allHubs, allFleets, hubIdsList: list):
     """
     Searches for a fleet that contains the exact set of hub IDs.
 
@@ -311,6 +311,10 @@ def search_fleet_with_hubs(allFleets, hubIdsList: list, hubsList: list):
     Returns:
     - fleetId (str): The ID of the fleet that matches the provided hub IDs, or None if no match is found.
     """
+    MAX_FLEET_DIFFERENCE = 20
+    print(
+        f"* compatible fleets can have up to {MAX_FLEET_DIFFERENCE} more hubs other than the selected"
+    )
 
     fleetCandidates = []
     for fleet in allFleets:
@@ -333,7 +337,7 @@ def search_fleet_with_hubs(allFleets, hubIdsList: list, hubsList: list):
                     # Perfect match
                     return fleet["fleetId"]
 
-                if difference <= 3:
+                if difference <= MAX_FLEET_DIFFERENCE:
                     print(f">> {fleet['fleetId']} is valid ({difference} extra hubs)")
                     fleetCandidates.append(fleet)
 
@@ -344,7 +348,7 @@ def search_fleet_with_hubs(allFleets, hubIdsList: list, hubsList: list):
         # No viable option found
         return None
 
-    return choose_fleet_candidate(fleetCandidates, hubIdsList, hubsList)
+    return choose_fleet_candidate(fleetCandidates, hubIdsList, allHubs)
 
 
 def choose_fleet_candidate(fleetCandidates, hubIdsList, hubsList):
@@ -354,6 +358,7 @@ def choose_fleet_candidate(fleetCandidates, hubIdsList, hubsList):
     Returns:
         fleetId (str): the fleet id if the user selected a fleet from the options array
     """
+    MAX_FLEET_SIZE = 20
     print(f">> We found {len(fleetCandidates)} compatible fleets:")
     print(">> '(+)' is a hub that was not in the original search list")
 
@@ -362,6 +367,7 @@ def choose_fleet_candidate(fleetCandidates, hubIdsList, hubsList):
 
     for index in range(0, len(fleetCandidates)):
         fleetHubIds = fleetCandidates[index]["hubIds"]
+
         fleetHubs = [h["name"] for h in hubsList if h["id"] in fleetHubIds]
         fleetHubs.sort()
 
@@ -373,7 +379,7 @@ def choose_fleet_candidate(fleetCandidates, hubIdsList, hubsList):
         ]
         printString = [f"{string:<9}" for string in printString]
 
-        print(f">> {index:<2} - {''.join(printString)}")
+        print(f">> {index:<2}\n{''.join(printString)}\n\n")
 
     selection = -1
     quit = -7
@@ -469,7 +475,7 @@ def get_company_name(name):
     return companyName
 
 
-def apply_changes(env, orgId, hubsList, allFleets, associate, userName):
+def apply_changes(env, orgId, allHubs, hubsList, allFleets, associate, userName):
     """
     Applies changes to the associate's fleet based on the provided information.
 
@@ -489,7 +495,7 @@ def apply_changes(env, orgId, hubsList, allFleets, associate, userName):
 
     print(f"\n>> Searching for a fleet with {' '.join(hubsNames)}")
     fleetId = search_fleet_with_hubs(  # searching for a fleet with same hubs
-        allFleets=allFleets, hubIdsList=hubsIds, hubsList=hubsList
+        allHubs=allHubs, allFleets=allFleets, hubIdsList=hubsIds
     )
 
     if fleetId is not None:  # if a fleet with the correct hubs already exists
@@ -613,13 +619,15 @@ def process_associate(env, orgId, associate, userName, allHubs, allFleets):
                 hubsList.append(newHub)
 
             print(">> Adding access to new hubs...")
-            apply_changes(env, orgId, hubsList, allFleets, associate, userName)
+            apply_changes(env, orgId, allHubs, hubsList, allFleets, associate, userName)
         else:
             # associate doesn't need the previous hubs,
             if len(newHubs) > 1:
                 # only the new ones
                 print(">> Granting access to new hubs only...")
-                apply_changes(env, orgId, newHubs, allFleets, associate, userName)
+                apply_changes(
+                    env, orgId, allHubs, newHubs, allFleets, associate, userName
+                )
             else:
                 # only the new one, so move him to the new hub
                 print(">> Moving associate to new hub...")
