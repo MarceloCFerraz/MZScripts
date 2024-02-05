@@ -127,15 +127,17 @@ def replan(env, orgId, package, next_delivery_date, hubRequested=None):
 
 def prepare_package_for_replan(env, package):
     status = package["packageStatuses"]["status"]
+    REVIVE_STATUSES = ["CANCELLED"]
+    DELIVERY_FAILED_STATUSES = ["DELIVERED", "REJECTED", "DAMAGED"]
 
     # if package is marked as cancelled or damaged,
     # revive the package
-    if status == "CANCELLED":
+    if status in REVIVE_STATUSES:
         packages.revive_package(env, package)
 
     # if package is marked as rejected or delivered,
     # change its status to DELIVERY_FAILED
-    if status == "DELIVERED" or status == "REJECTED":
+    if status in DELIVERY_FAILED_STATUSES:
         packages.mark_package_as_delivery_failed(env, package)
 
 
