@@ -129,7 +129,7 @@ def mark_package_as_delivered(env, org_id, packageId):
     Returns:
         None
     """
-    url = "http://switchboard.{env}.milezero.com/switchboard-war/api/package/update/{org_id}/{packageId}/DELIVERED/status"
+    url = f"http://switchboard.{env}.milezero.com/switchboard-war/api/package/update/{org_id}/{packageId}/DELIVERED/status"
     body = {"notes": "Requested by dispatcher"}
     print(f">>>>> Marking {packageId} as DELIVERED <<<<<")
 
