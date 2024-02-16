@@ -45,36 +45,43 @@ def main():
 
         if associates_count <= 10:
             for associate in associatesArray:
-                extra_details = associates.get_associate_device_and_app(
-                    env, orgId, associate["associateId"]
-                )
-                hub = [hub for hub in allHubs if hub["id"] == associate["hubId"]][0]
-                print(f"Associate State: {associate['state']}")
-                print(f"   Account Type: {associate['associateType']}")
-                print(f"   Associate ID: {associate['associateId']}")
-                print(f"      User Name: {associate['contact']['userName']}")
-                print(f"           Name: {associate['contact']['name']}")
-                print(f"         E-Mail: {associate['contact']['email']}")
-                print(f"          Phone: {associate['contact']['phone']}")
-                print(f"    Location ID: {associate['location']['locationId']}")
-                print(f"   WorldView ID: {associate['worldViewId']}")
-                try:
-                    print(f"       Fleet ID: {associate['fleetId']}")
-                except Exception:
-                    pass
-                print(f"         HUB ID: {associate['hubId']}")
-                print(f"       HUB Name: {hub.get('name')}")
+                if associate is not None:
+                    extra_details = associates.get_associate_device_and_app(
+                        env, orgId, associate["associateId"]
+                    )
+                    hub = [hub for hub in allHubs if hub["id"] == associate["hubId"]][0]
+                    print(f"Associate State: {associate['state']}")
+                    print(f"   Account Type: {associate['associateType']}")
+                    print(f"   Associate ID: {associate['associateId']}")
+                    print(f"      User Name: {associate['contact']['userName']}")
+                    print(f"           Name: {associate['contact']['name']}")
+                    print(f"         E-Mail: {associate['contact']['email']}")
+                    print(f"          Phone: {associate['contact']['phone']}")
+                    print(f"    Location ID: {associate['location']['locationId']}")
+                    print(f"   WorldView ID: {associate['worldViewId']}")
+                    try:
+                        print(f"       Fleet ID: {associate['fleetId']}")
+                    except Exception:
+                        pass
+                    print(f"         HUB ID: {associate['hubId']}")
+                    print(f"       HUB Name: {hub.get('name')}")
 
-                if extra_details is not None:
-                    extra_details = extra_details["extraProperties"]
-                    print(
-                        f"          Phone: {str(extra_details['deviceName']).capitalize() + ' ' + str(extra_details['deviceModel'])}"
-                    )
-                    print(
-                        f"     OS Version: {str(extra_details['type']).capitalize() + ' ' + str(extra_details['osVersion'])}"
-                    )
-                    print(f"    App Version: {extra_details['appVersion']}")
-                print("========================================")
+                    if (
+                        extra_details is not None
+                        and extra_details.get("extraProperties") is not None
+                    ):
+                        try:
+                            extra_details = extra_details["extraProperties"]
+                            print(
+                                f"          Phone: {str(extra_details['deviceName']).capitalize() + ' ' + str(extra_details['deviceModel'])}"
+                            )
+                            print(
+                                f"     OS Version: {str(extra_details['type']).capitalize() + ' ' + str(extra_details['osVersion'])}"
+                            )
+                            print(f"    App Version: {extra_details['appVersion']}")
+                        except Exception:
+                            pass
+                    print("========================================")
         else:
             print(
                 "Too many associates, check 'RESULTS' folder to see the full response!"
