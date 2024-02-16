@@ -30,7 +30,7 @@ def get_associate_data(env, orgId, associateId):
 
 
 def get_associate_device_and_app(env, org_id, associate_id):
-    url = f"http://wv.{env}.milezero.com/wv/api/search/v3/org/{org_id}/container/id/{associate_id}?containerType=WORKER"
+    url = f"http://wv.{utils.convert_env(env)}.milezero.com/wv/api/search/v3/org/{org_id}/container/id/{associate_id}?containerType=WORKER"
 
     response = requests.get(url=url, timeout=15).json()
 

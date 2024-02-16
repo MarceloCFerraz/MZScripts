@@ -1,7 +1,9 @@
-import requests
-from utils import utils
 import concurrent.futures
 
+import requests
+
+from utils import utils
+from utils import utils
 
 real_hubs = []
 
@@ -18,7 +20,7 @@ def get_real_hub(env, orgId, virtualHub):
     Returns:
     None
     """
-    url = f"http://tesseract.{env}.milezero.com/Tesseract-war/api/config/hub/{orgId}?countryCode=USA&companyBrandCode=01&posInstanceNumber={virtualHub}"
+    url = f"http://tesseract.{utils.convert_env(env)}.milezero.com/Tesseract-war/api/config/hub/{orgId}?countryCode=USA&companyBrandCode=01&posInstanceNumber={virtualHub}"
 
     response = requests.get(url=url, timeout=5).json()
 

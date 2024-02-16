@@ -1,6 +1,9 @@
-import requests
-import pandas
 from datetime import datetime
+
+import pandas
+import requests
+
+from utils import utils
 
 ORGS = {
     "PROD": {
@@ -128,7 +131,7 @@ def get_packages_details(env, org_id, key_type, key):
     Returns:
     dict: The package details.
     """
-    endpoint = f"http://switchboard.{env}.milezero.com/switchboard-war/api/package?keyType={key_type}&keyValue={key}&orgId={org_id}&includeCancelledPackage=true"
+    endpoint = f"http://switchboard.{utils.convert_env(env)}.milezero.com/switchboard-war/api/package?keyType={key_type}&keyValue={key}&orgId={org_id}&includeCancelledPackage=true"
 
     print(f"Retrieving Packages From {key_type.upper()} {key}")
 
@@ -148,7 +151,7 @@ def get_packages_histories(env, org_id, key_type, key):
     Returns:
     dict: The package histories.
     """
-    endpoint = f"https://switchboard.{env}.milezero.com/switchboard-war/api/package/histories?keyValue={key}&keyType={key_type}&orgId={org_id}&orderBy=timestamp"
+    endpoint = f"https://switchboard.{utils.convert_env(env)}.milezero.com/switchboard-war/api/package/histories?keyValue={key}&keyType={key_type}&orgId={org_id}&orderBy=timestamp"
 
     print(f"Retrieving Histories From {key_type.upper()} {key}")
 

@@ -55,13 +55,20 @@ CORRECTED_ADDRESSES = []
 
 def print_array_items(array):
     divisor = 4
+    items_per_line = divisor
 
-    for i in range(0, len(array)):
-        item = array[i] + "   "
-        if 0 < i < len(array) and (i + 1) % divisor == 0:
-            item += "\n"
-        print(f"{item}", end="")
+    for i, item in enumerate(array):
+        print(f"{item:^{20}}", end="")
+        if (i + 1) % items_per_line == 0:
+            print()
     print()
+
+
+def convert_env(env):
+    if env == "INTEG":
+        env = "PROD"
+
+    return env.lower()
 
 
 def select_env():
@@ -89,7 +96,9 @@ def select_org(env):
 
 
 def get_all_hubs(env, orgId):
-    endpoint = f"http://cromag.{env}.milezero.com/retail/api/hubs/org/{orgId}"
+    endpoint = (
+        f"http://cromag.{convert_env(env)}.milezero.com/retail/api/hubs/org/{orgId}"
+    )
 
     return requests.get(url=endpoint, timeout=10).json()["hubs"]
 
@@ -127,7 +136,7 @@ def get_address(domain, street, city, state, zip, provider=None):
     return address
 
 
-def get_location(domain, location_id, package_id, hub):
+def get_location(domain, location_id):
     """
     Retrieves and updates location information based on the provided parameters.
 
@@ -216,7 +225,7 @@ def get_location(domain, location_id, package_id, hub):
             payload["id"] = location_id
             payload["hub"] = hub
 
-            print("      Updating " + location_id + "  (" + package_id + ")")
+            print("      Updating " + location_id)
             print(
                 "      {} - {}, {}: {}".format(
                     location_id, response.status_code, response.reason, response.text
@@ -228,8 +237,8 @@ def get_location(domain, location_id, package_id, hub):
         # else:
         # print("      Skipping {}".format(location_id))
 
-    except AttributeError as e:
-        print("***** " + e + " - loc - " + location_id)
+    except AttributeError:
+        print("#### {e} - loc - {location_id}")
 
 
 def get_gazeteer_location_id(env, org_id, index, hubName):

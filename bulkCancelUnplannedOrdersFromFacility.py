@@ -2,6 +2,8 @@ import concurrent.futures
 
 import requests
 
+from utils import utils
+
 ORGS = {
     "PROD": {
         "STAPLES": "3c897e84-3957-4958-b54d-d02c01b14f15",
@@ -96,7 +98,7 @@ def get_unplanned_packages_from_hub(env, orgId, facilityId):
     Returns:
     list: The unplanned packages.
     """
-    url = f"http://alamo.{env}.milezero.com/alamo-war/api/constraints?orgId={orgId}&facilityId={facilityId}&state=UNPLANNED"
+    url = f"http://alamo.{utils.convert_env(env)}.milezero.com/alamo-war/api/constraints?orgId={orgId}&facilityId={facilityId}&state=UNPLANNED"
 
     response = requests.get(url=url, timeout=3000).json()
 
@@ -119,7 +121,7 @@ def bulk_cancel_packages(env, orgId, packageIds):
     """
     # newStatus = "CANCELLED"
 
-    API = f"https://switchboard.{env}.milezero.com/switchboard-war/api/package/cancel"
+    API = f"https://switchboard.{utils.convert_env(env)}.milezero.com/switchboard-war/api/package/cancel"
 
     requestData = {
         "orgId": orgId,
