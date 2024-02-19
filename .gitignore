@@ -1,6 +1,7 @@
 venv
 logs
 results
+RESULTS
 history
 responses
 aikey.py
