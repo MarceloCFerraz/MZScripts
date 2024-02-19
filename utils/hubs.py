@@ -43,7 +43,8 @@ def get_all_hubs(env, orgId):
     response = requests.Response()
 
     try:
-        response = requests.get(url=endpoint, timeout=10).json()["hubs"]
+        response = requests.get(url=endpoint, timeout=10)
+        response = response.json()["hubs"]
     except ConnectionError as e:
         print(f"Connection Error. Please connect to the VPN!\n {e}")
 
