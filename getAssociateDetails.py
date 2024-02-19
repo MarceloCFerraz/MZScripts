@@ -15,9 +15,10 @@ def main():
     """
     env = utils.select_env()
     orgId = utils.select_org(env)
+    key_type_index = utils.get_associate_key_type_index()
+
     allHubs = hubs.get_all_hubs(env, orgId)
 
-    key_type_index = utils.get_associate_key_type_index()
 
     # TODO: allow user to search for more than one field
     associatesArray = []
