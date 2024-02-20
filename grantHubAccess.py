@@ -313,7 +313,7 @@ def search_fleet_with_hubs(allHubs, allFleets, hubIdsList: list):
     """
     MAX_FLEET_DIFFERENCE = 20
     print(
-        f"* compatible fleets can have up to {MAX_FLEET_DIFFERENCE} more hubs other than the selected"
+        f"* We'll consider compatible fleets any fleet with the requested hubs plus up to {MAX_FLEET_DIFFERENCE} more hubs, never less"
     )
 
     fleetCandidates = []
@@ -505,8 +505,6 @@ def apply_changes(env, orgId, allHubs, hubsList, allFleets, associate, userName)
         update_associate(env, associate, userName)
     else:
         print(">> Fleet not found")
-        if select_answer(question=">> Do you want to continue? ") == "N":
-            sys.exit(1)
 
         if associate_has_fleet(associate):  # if associate already have a fleetId
             fleetId = associate["fleetId"]
@@ -527,10 +525,21 @@ def apply_changes(env, orgId, allHubs, hubsList, allFleets, associate, userName)
                 # means we can just update his fleet instead of creating another one
                 print(">> No other associate use this fleetId")
 
+                if (
+                    select_answer(question=">> Do you want to update the fleet? ")
+                    == "N"
+                ):
+                    sys.exit(1)
                 update_fleet(env, orgId, fleetId, hubsList)
             else:
                 # In this case we need to create a new fleet
-                print(">> Someone else uses this fleetId as well")
+                print(">> Someone else share the same fleetId")
+
+                if (
+                    select_answer(question=">> Do you want to create a new fleet? ")
+                    == "N"
+                ):
+                    sys.exit(1)
                 print(f">> Creating new fleet with {' '.join(hubsNames)}")
 
                 fleet = [f for f in allFleets if f["fleetId"] == associate["fleetId"]][
@@ -643,7 +652,7 @@ def process_associate(env, orgId, associate, userName, allHubs, allFleets):
         if answer == "Y":
             hub = [h["name"] for h in allHubs if h["id"] == associate["hubId"]]
             print(f">> The associate currently have access to: {' '.join(hub)}")
-            print(f">> What should be the new hub?")
+            print(">> What should be the new hub?")
 
             newHub = get_new_hub(allHubs, hub, False, None)
             move_to_new_hub(env, associate, userName, newHub)
