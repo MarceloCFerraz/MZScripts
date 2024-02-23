@@ -335,6 +335,7 @@ def search_fleet_with_hubs(allHubs, allFleets, hubIdsList: list):
 
                 if difference == 0:
                     # Perfect match
+                    print(f">> {fleet['fleetId'] is a perfect match!}")
                     return fleet["fleetId"]
 
                 if difference <= MAX_FLEET_DIFFERENCE:
@@ -499,7 +500,7 @@ def apply_changes(env, orgId, allHubs, hubsList, allFleets, associate, userName)
     )
 
     if fleetId is not None:  # if a fleet with the correct hubs already exists
-        print(f">>>> Fleet found: {fleetId}")
+        print(f">>>> Updating associate with: {fleetId}")
         associate["fleetId"] = fleetId
 
         update_associate(env, associate, userName)
