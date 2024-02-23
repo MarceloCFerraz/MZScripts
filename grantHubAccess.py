@@ -335,7 +335,7 @@ def search_fleet_with_hubs(allHubs, allFleets, hubIdsList: list):
 
                 if difference == 0:
                     # Perfect match
-                    print(f">> {fleet['fleetId'] is a perfect match!}")
+                    print(f">> {fleet['fleetId']} is a perfect match!")
                     return fleet["fleetId"]
 
                 if difference <= MAX_FLEET_DIFFERENCE:
