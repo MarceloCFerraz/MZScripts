@@ -70,6 +70,8 @@ def find_route(env, orgId, routeName, hubName, cpt):
         print(f">> Date: {cpt}")
         allRoutes = []
 
+    print(f">> {len(allRoutes)} matching routes")
+
     return allRoutes[0]["metadata"] if len(allRoutes) > 0 else None
 
 
