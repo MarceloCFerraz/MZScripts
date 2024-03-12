@@ -24,7 +24,7 @@ def main():
     associatesArray = []
     if key_type_index > 0:
         print(f"TYPE THE ASSOCIATE'S '{utils.get_associate_key_type(key_type_index)}'")
-        search_key = input("> ")
+        search_key = str(input("> ")).strip()
     else:
         search_key = orgId
 
