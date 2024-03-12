@@ -25,7 +25,7 @@ def get_associate_data(env, orgId, associateId):
     if response.get("organizationId") is not None:
         return response
     else:
-        print("An error has occurred")
+        print("Associate not found or another an error has occurred")
         return None
 
 
