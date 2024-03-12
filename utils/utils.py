@@ -70,20 +70,6 @@ ASSOCIATE_KEY_TYPES = [
 ]
 
 
-def get_formated_now():
-    """
-    Retrieves the current date and time in a formatted string.
-
-    Returns:
-        str: The formatted current date and time.
-    """
-    return (
-        str(datetime.now().replace(second=0, microsecond=0))
-        .replace(":", "-")
-        .replace(" ", "T")
-    )
-
-
 def find_biggest_divisor(number):
     """
     Finds the biggest divisor of a given number.
@@ -168,6 +154,20 @@ def select_org(env):
     while org not in orgs:
         org = str(input("> ")).upper().strip()
     return ORGS[env][org]  # returns orgId
+
+
+def get_formated_now():
+    """
+    Retrieves the current date and time in a formatted string.
+
+    Returns:
+        str: The formatted current date and time.
+    """
+    return (
+        str(datetime.now().replace(second=0, microsecond=0))
+        .replace(":", "-")
+        .replace(" ", "T")
+    )
 
 
 def get_associate_key_type_index():
