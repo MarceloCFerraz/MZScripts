@@ -1,5 +1,6 @@
 import requests
-from utils import utils, associates
+
+from utils import associates, utils
 
 
 def get_associate_auth_perms(env, orgId, associateAuthPermsArray):
@@ -16,7 +17,7 @@ def get_associate_auth_perms(env, orgId, associateAuthPermsArray):
     Returns:
     - response (list): An array of permission labels associated with the given associate's authorization permissions.
     """
-    url = f"http://lmx.{env}.milezero.com/lmx-war/api/auth/{orgId}/roles"
+    url = f"http://lmx.{utils.convert_env(env)}.milezero.com/lmx-war/api/auth/{orgId}/roles"
     orgAuthPermsArray = requests.get(url=url, timeout=5).json()["permissions"]
 
     response = []

@@ -129,7 +129,7 @@ def mark_package_as_delivered(env, org_id, packageId):
     Returns:
         None
     """
-    url = f"http://switchboard.{env}.milezero.com/switchboard-war/api/package/update/{org_id}/{packageId}/DELIVERED/status"
+    url = f"http://switchboard.{utils.convert_env(env)}.milezero.com/switchboard-war/api/package/update/{org_id}/{packageId}/DELIVERED/status"
     body = {"notes": "Requested by dispatcher"}
     print(f">>>>> Marking {packageId} as DELIVERED <<<<<")
 
@@ -139,7 +139,7 @@ def mark_package_as_delivered(env, org_id, packageId):
 
 
 def bulk_get_package_details(env, org_id, key_type, keys):
-    url = f"https://switchboard.{env}.milezero.com/switchboard-war/api/package/search/bulk"
+    url = f"https://switchboard.{utils.convert_env(env)}.milezero.com/switchboard-war/api/package/search/bulk"
 
     payload = {
         "idType": key_type,

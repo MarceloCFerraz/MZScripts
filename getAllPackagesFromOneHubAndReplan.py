@@ -42,7 +42,7 @@ def get_all_hubs(env, orgId):
     Returns:
     - List of hubs
     """
-    endpoint = f"http://cromag.{env}.milezero.com/retail/api/hubs/org/{orgId}"
+    endpoint = f"http://cromag.{utils.convert_env(env)}.milezero.com/retail/api/hubs/org/{orgId}"
 
     return requests.get(url=endpoint, timeout=10).json()["hubs"]
 
@@ -61,7 +61,7 @@ def get_all_packages_for_hub(env, orgId, hubName, oldDate, status):
     Returns:
     - List of valid package IDs
     """
-    endpoint = f"http://sortationservices.{env}.milezero.com/SortationServices-war/api/monitor/getPackagesInWave/{orgId}/{hubName}/{oldDate}/true"
+    endpoint = f"http://sortationservices.{utils.convert_env(env)}.milezero.com/SortationServices-war/api/monitor/getPackagesInWave/{orgId}/{hubName}/{oldDate}/true"
 
     packageCount = 0
     validPackages = []
@@ -101,7 +101,7 @@ def resubmit_package(env, orgId, packageId, newDate, notes):
     Returns:
     - None
     """
-    endpoint = f"https://switchboard.{env}.milezero.com/switchboard-war/api/fulfillment/resubmit/{orgId}/{packageId}"
+    endpoint = f"https://switchboard.{utils.convert_env(env)}.milezero.com/switchboard-war/api/fulfillment/resubmit/{orgId}/{packageId}"
 
     payload = {
         "adjustTimeWindow": True,

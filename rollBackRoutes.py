@@ -1,9 +1,10 @@
-from utils import utils, files
 import requests
+
+from utils import files, utils
 
 
 def rollback_route(env, routeIds, userName):
-    url = f"http://alamo.{env}.milezero.com/alamo-war/api/plannedroutes/rollback"
+    url = f"http://alamo.{utils.convert_env(env)}.milezero.com/alamo-war/api/plannedroutes/rollback"
 
     payload = {
         "routeIds": routeIds,

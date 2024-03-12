@@ -1,7 +1,9 @@
-import requests
-from utils import files
-from datetime import datetime
 import csv
+from datetime import datetime
+
+import requests
+
+from utils import files, utils
 
 
 def get_all_packages_on_route(env, routeId):
@@ -17,7 +19,7 @@ def get_all_packages_on_route(env, routeId):
     Returns:
     - response (dict): The response containing the packages on the specified route.
     """
-    url = f"http://sortationservices.{env}.milezero.com/SortationServices-war/api/package/route/{routeId}"
+    url = f"http://sortationservices.{utils.convert_env(env)}.milezero.com/SortationServices-war/api/package/route/{routeId}"
 
     response = requests.get(url=url, timeout=120).json()
 
