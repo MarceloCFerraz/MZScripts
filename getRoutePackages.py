@@ -105,9 +105,18 @@ if __name__ == "__main__":
                 f"\n>> Total unique packages accross valid itineraries: {len(response['uniquePackages'])}"
             )
 
-            if len(response["uniquePackages"]) > 20:
-                print("Check the full response in the file below")
-                files.save_json_to_file(json.dumps(response, indent=2), "ITINERARY")
-            else:
+            if len(response["uniquePackages"]) < 10:
                 for itinerary in response["itineraries"]:
                     print_data_from_itinerary(itinerary)
+
+            print("Check the full response in the file below")
+            files.save_json_to_file(
+                json.dumps(
+                    {
+                        "routeId": response["routeId"],
+                        "packages": response["uniquePackages"],
+                    },
+                    indent=2,
+                ),
+                f"ITINERARY_{response['routeId']}",
+            )

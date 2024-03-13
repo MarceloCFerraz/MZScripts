@@ -164,9 +164,7 @@ def get_formated_now():
         str: The formatted current date and time.
     """
     return (
-        str(datetime.now().replace(second=0, microsecond=0))
-        .replace(":", "-")
-        .replace(" ", "T")
+        str(datetime.now().replace(microsecond=0)).replace(":", "-").replace(" ", "T")
     )
 
 
