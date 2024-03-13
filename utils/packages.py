@@ -118,6 +118,29 @@ def bulk_cancel_packages(env, org_id, packageIds):
         print(e)
 
 
+def commit_packages(env, org_id, packageIds):
+    """
+    Marks a package as delivered.
+
+    Parameters:
+        org_id (str): The organization ID.
+        packageId (str): The ID of the package.
+
+    Returns:
+        None
+    """
+    url = f"http://alamo.{utils.convert_env(env)}.milezero.com/alamo-war/api/constraints/{org_id}/packages/commit?CommitMode=RECEIVED"
+    body = packageIds
+
+    response = requests.post(url=url, json=body).json()
+
+    print(
+        "> OK"
+        if len(response["failedCommits"]) == 0
+        else f"> FAIL\n{response['failedCommits']}"
+    )
+
+
 def mark_package_as_delivered(env, org_id, packageId):
     """
     Marks a package as delivered.

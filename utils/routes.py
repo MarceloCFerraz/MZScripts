@@ -3,6 +3,43 @@ import requests
 from utils import utils
 
 
+def rollback_routes(env, routes):
+    """ """
+    url = f"http://alamo.{utils.convert_env(env)}.milezero.com/alamo-war/api/plannedroutes/rollback"
+    body = {
+        "routeIds": routes,
+        "requestor": {
+            "associateId": "MZSupportScript",
+            "associateName": "MZSupportScript",
+            "associateType": "MZSupportScript",
+        },
+    }
+    response = requests.post(url=url, json=body, timeout=15)
+
+    print("> OK" if response.status_code < 400 else f"> FAIL\n{response.text}")
+
+    return response
+
+
+def execute_route(env, org_id, routeId):
+    """ """
+    url = f"http://alamo.{utils.convert_env(env)}.milezero.com/alamo-war/api/plannedroutes/{org_id}/execute"
+    body = {
+        "routeId": routeId,
+        "externalRouteName": "string",
+        "requestor": {
+            "associateId": "MZSupportScript",
+            "associateName": "MZSupportScript",
+            "associateType": "MZSupportScript",
+        },
+    }
+    response = requests.post(url=url, json=body, timeout=15)
+
+    print("> OK" if response.status_code < 400 else f"> FAIL\n{response.text}")
+
+    return response
+
+
 def get_all_routes_from_hub_sortation(env, orgId, hubName, cpt):
     """
     Retrieves all routes from a specific hub.
