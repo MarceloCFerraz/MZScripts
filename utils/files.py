@@ -1,7 +1,8 @@
-from utils import utils
 import json
 import os
 import sys
+
+from utils import utils
 
 
 def get_data_from_file(fileName):
@@ -106,7 +107,7 @@ def save_json_to_file(jsonData, filePrefix):
     # this is the complete directory and where the file will be saved
     final_dir = os.path.join(response_dir, key)
 
-    result = f"File {key} "
+    result = f"File {final_dir} "
 
     with open(final_dir, "w") as json_file:
         try:
@@ -219,4 +220,5 @@ def save_package_ids_to_file(packageIDs, fileName):
     """
     with open(fileName, "w") as txt:
         for packageID in packageIDs:
+            txt.write(packageID + "\n")
             txt.write(packageID + "\n")

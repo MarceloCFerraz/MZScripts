@@ -503,7 +503,7 @@ def get_all_packages_on_route(env, org_id, routeId):
 
     response = requests.get(url=url, timeout=15).json()
 
-    print(f"Found {len(response)} packages in {routeId}")
+    print(f">> Found {len(response)} packages in {routeId}\n")
 
     return response
 
