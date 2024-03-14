@@ -139,3 +139,9 @@ def get_route_events(env, routeId):
     url = f"http://alamo.{utils.convert_env(env)}.milezero.com/alamo-war/api/plannedroutes/{routeId}/events"
 
     return requests.get(url=url, timeout=15).json().get("events")
+
+
+def get_stop_details(env, route_id):
+    url = f"http://alamo.{utils.convert_env(env)}.milezero.com/alamo-war/api/plannedroutes/stopdetails/{route_id}"
+
+    return requests.get(url=url).json()

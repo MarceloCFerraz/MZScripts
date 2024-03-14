@@ -7,7 +7,7 @@ from utils import files, itineraries, packages, routes, utils
 ITINERARIES = {}
 
 
-def get_itinerary_packages_and_stops(env, orgId, itinerary):
+def get_itinerary_packages_and_stops(env, orgId, itinerary, timestamp):
     pkgs_and_stops = itineraries.get_itinerary_packages_and_stops(env, orgId, itinerary)
 
     ITINERARIES[itinerary] = {"pkgsAndStops": pkgs_and_stops, "uniquePackages": set()}
@@ -15,8 +15,8 @@ def get_itinerary_packages_and_stops(env, orgId, itinerary):
     print(
         f">> {itinerary} have {len(pkgs_and_stops['loadedPackages'])} packages "
         # TODO: fetch switchboard to check package status
-        # + f"({len(pkgs_and_stops['deliveredPackages'])} delivered) and "
-        + f"{len(pkgs_and_stops['deliveryStops'])} stops"
+        + f"{len(pkgs_and_stops['deliveryStops'])} stops "
+        + f"({timestamp})"
     )
 
     for pkg in pkgs_and_stops["loadedPackages"]:
@@ -27,26 +27,51 @@ def fetch_itineraries(events):
     print(">> Fetching itineraries in Route Events")
     itineraries = []
 
-    notes = [
+    done = [
         e["notes"] for e in events if "done. itinerary ids" in str(e["notes"]).lower()
     ]
+    publishing_stamps = [
+        e["timestamp"]
+        for e in events
+        if "publishing to oegr" in str(e["notes"]).lower()
+    ]
 
-    if len(notes) > 0:
-        for note in notes:
+    if len(done) > 0:
+        for i in range(len(done)):
+            note = done[i]
             start = str(note).find("[")
             end = str(note).find("]")
 
-            itineraries.append(
-                str(note)[
-                    start + 1 : end
-                ].strip()  # Gets [ >> fac1ab60-fd7a-4ff9-8798-e9167060295c << ] or "" it there is no itinerary id
-            )
+            # Gets [ >> fac1ab60-fd7a-4ff9-8798-e9167060295c << ] or "" it there is no itinerary id
+            iti = str(note)[start + 1 : end].strip()
 
-    return itineraries
+            itineraries.append(iti)
+
+    return itineraries, publishing_stamps
 
 
 def no_itinerary_generated(itinerary_ids):
     return len([i for i in itinerary_ids if str(i).strip() != ""]) == 0
+
+
+def get_routes(env, orgId):
+    routeId = "init"
+    rts = set()
+    updated = False
+
+    while True:
+        print(f"\n>> Routes Selected So Far: {' '.join(rts)}")
+
+        if utils.select_answer(">> Do you want to provide another route?") == "Y":
+            print(">> Type the new HUB's name (leave blank and hit enter if done)")
+
+            routeId = get_route_from_user(env, orgId)
+            rts.add(routeId)
+            updated = True
+        elif len(rts) > 0 and updated:  # means the user entered a blank line
+            break
+
+    return list(rts)
 
 
 def get_route_from_user(env, orgId):
@@ -95,63 +120,107 @@ def sync_itineraries_and_response(response, itinerary_ids):
     return response
 
 
-def process_itineraries(env, orgId, itinerary_ids, routeId):
+def process_itineraries(env, orgId, itinerary_ids, timestamps, routeId):
     response = {"routeId": routeId, "itineraries": [], "uniquePackages": set()}
 
     # get all the data for each of them concurrently / in parallel
 
     print("\n>> Fetching itinerary data:")
     with ThreadPoolExecutor() as pool:
-        for itinerary in itinerary_ids:
-            print(f">> Checking itinerary '{itinerary}'")
+        for i in range(len(itinerary_ids)):
+            itinerary = itinerary_ids[i]
+            timestamp = timestamps[i]
+            # print(f">> Checking itinerary '{itinerary}'")
 
             if str(itinerary).strip() != "":
                 pool.submit(
-                    get_itinerary_packages_and_stops,
-                    env,
-                    orgId,
-                    itinerary,
+                    get_itinerary_packages_and_stops, env, orgId, itinerary, timestamp
                 )
+            else:
+                print(f">> [] have 0 packages and 0 stops ({timestamp})")
     pool.shutdown(True)
 
     response = sync_itineraries_and_response(response, itinerary_ids)
 
+    print(
+        f">> {len(response['uniquePackages'])} unique packages found across itineraries"
+    )
     return response
 
 
-def main(env, orgId):
-    routeId = get_route_from_user(env, orgId)
+def get_pkgs_from_stop_details(env, routeId):
+    response = routes.get_stop_details(env, routeId)
+
+    if response.get("routeStopDetail") is None:
+        print(response.get("message"))
+        return set()
+
+    stops = response["routeStopDetail"]["stops"]
     pids = set()
+
+    for stop in stops:
+        stopPackages = stop["stopPackages"]
+
+        for pkgs in stopPackages:
+            pid = pkgs.get("packageId")
+
+            if pid is not None:
+                pids.add(pid)
+
+    print(f">> Found {len(pids)} packages from alamo stop details")
+
+    return pids
+
+
+def main(env, orgId, rts=None):
+    if rts is None:
+        rts = get_routes(env, orgId)
+    else:
+        print(">> These routes were provided:")
+        print("\n".join(rts))
+
+        if utils.select_answer("Do you wish to continue with them?") == "N":
+            rts = get_routes(env, orgId)
+
     final_response = {}
 
-    # get packages from sortation (issue is pkgs are not getting to itinerary)
-    pkgs_sortation = packages.get_all_packages_on_route(env, orgId, routeId)
+    for routeId in rts:
+        pids = set()
+        # get packages from sortation (issue is pkgs are not getting to itinerary)
+        pkgs_sortation = packages.get_route_packages_sortation(env, orgId, routeId)
 
-    for pkg in pkgs_sortation:
-        pids.add(pkg["packageID"])
+        for pkg in pkgs_sortation:
+            pids.add(pkg["packageID"])
 
-    # get packages from itineraries
-    events = routes.get_route_events(env, routeId)
+        # get packages from route stop details
+        pkgs_alamo = get_pkgs_from_stop_details(env, routeId)
 
-    if events is not None:
-        itinerary_ids = fetch_itineraries(events)
+        for pkg in pkgs_alamo:
+            pids.add(pkg)
 
-        print_itineraries(itinerary_ids)
-        if not no_itinerary_generated(
-            itinerary_ids
-        ):  # if at least one itinerary was generated
-            response = process_itineraries(env, orgId, itinerary_ids, routeId)
-            for pid in pids:
-                response["uniquePackages"].add(pid)
+        # get packages from itineraries
+        events = routes.get_route_events(env, routeId)
 
-            response["uniquePackages"] = list(response["uniquePackages"])
-            final_response = response
-    else:
-        print(f"No events found for route {routeId}")
-        final_response["routeId"] = routeId
-        final_response["uniquePackages"] = list(pids)
+        if events is not None:
+            itinerary_ids, timestamps = fetch_itineraries(events)
 
-    print(f'>> {len(final_response["uniquePackages"])} unique packages gathered')
+            # print_itineraries(itinerary_ids)
+            if not no_itinerary_generated(
+                itinerary_ids
+            ):  # if at least one itinerary was generated
+                response = process_itineraries(
+                    env, orgId, itinerary_ids, timestamps, routeId
+                )
+
+                for pid in response["uniquePackages"]:
+                    pids.add(pid)
+
+        # sets are not json compatible, so need to convert to list
+        final_response[routeId] = list(pids)
+
+        print(
+            f">> {len(final_response[routeId])} unique packages gathered from route {routeId}"
+        )
 
     return final_response
 
@@ -164,12 +233,8 @@ if __name__ == "__main__":
     print(">> Results saved in the file below")
     files.save_json_to_file(
         json.dumps(
-            {
-                "routeId": response["routeId"],
-                "itineraries": response["itineraries"],
-                "packages": response["uniquePackages"],
-            },
+            response,
             indent=2,
         ),
-        f"ROUTE_PKGS_{response['routeId']}",
+        "ROUTE_PKGS_",
     )

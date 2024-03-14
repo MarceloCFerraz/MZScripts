@@ -33,7 +33,7 @@ def main():
     if route is None:
         print("Route Not Found!")
     else:
-        pkgs = packages.get_all_packages_on_route(env, orgId, route["routeId"])
+        pkgs = packages.get_route_packages_sortation(env, orgId, route["routeId"])
 
         if len(pkgs) > 0:
             newHub = input("Type the NEW hub name\n> ").strip()

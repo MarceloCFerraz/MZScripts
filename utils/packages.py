@@ -131,14 +131,16 @@ def commit_packages(env, org_id, packageIds):
     """
     url = f"http://alamo.{utils.convert_env(env)}.milezero.com/alamo-war/api/constraints/{org_id}/packages/commit?CommitMode=RECEIVED"
     body = packageIds
+    if len(body) > 0:
+        response = requests.post(url=url, json=body).json()
 
-    response = requests.post(url=url, json=body).json()
-
-    print(
-        "> OK"
-        if len(response["failedCommits"]) == 0
-        else f"> FAIL\n{response['failedCommits']}"
-    )
+        print(
+            "> OK"
+            if len(response["failedCommits"]) == 0
+            else f"> FAIL\n{response['failedCommits']}"
+        )
+    else:
+        print("No packages provided")
 
 
 def mark_package_as_delivered(env, org_id, packageId):
@@ -485,9 +487,9 @@ def bulk_resubmit_packages(env, org_id, packageIDs, next_delivery_date):
     return res
 
 
-def get_all_packages_on_route(env, org_id, routeId):
+def get_route_packages_sortation(env, org_id, routeId):
     """
-    Retrieves all packages on a specific route.
+    Retrieves all packages on a specific route using sortation services.
 
     Args:
         env (str): The environment.
@@ -499,11 +501,11 @@ def get_all_packages_on_route(env, org_id, routeId):
     """
     url = f"http://sortationservices.{utils.convert_env(env)}.milezero.com/SortationServices-war/api/monitor/packages/{org_id}/{routeId}"
 
-    print(f">> Searching for packages in {routeId}")
+    print(f">> Searching for packages in {routeId} using sortation services")
 
     response = requests.get(url=url, timeout=15).json()
 
-    print(f">> Found {len(response)} packages in {routeId}\n")
+    print(f">> Found {len(response)} packages\n")
 
     return response
 

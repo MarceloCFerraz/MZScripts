@@ -1,5 +1,6 @@
-from utils import files, utils, packages, routes
 from datetime import datetime
+
+from utils import files, packages, routes, utils
 
 
 def main():
@@ -29,7 +30,7 @@ def main():
         print("No Route Found")
     else:
         pids = []
-        pkgs = packages.get_all_packages_on_route(env, orgId, route["routeId"])
+        pkgs = packages.get_route_packages_sortation(env, orgId, route["routeId"])
 
         for package in pkgs:
             pids.append(package["packageID"])
@@ -39,4 +40,5 @@ def main():
         files.save_package_ids_to_file(pids, "pids.txt")
 
 
+main()
 main()

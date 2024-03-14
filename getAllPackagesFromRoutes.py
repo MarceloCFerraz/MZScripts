@@ -6,7 +6,7 @@ import requests
 from utils import files, utils
 
 
-def get_all_packages_on_route(env, routeId):
+def get_route_packages_sortation(env, routeId):
     """
     Retrieves all packages on a specific route.
 
@@ -52,7 +52,7 @@ def main():
     """
     Retrieves and saves package data from multiple routes.
 
-    This function sets the environment to "prod" and retrieves the routes from a file using the `get_data_from_file()` function. It generates a result file name based on the current timestamp. It opens the result file in write mode and creates a writer object. It writes the header row to the file. For each route, the function retrieves all packages using the `get_all_packages_on_route()` function and saves the package data to the file using the `save_data_to_file()` function. Finally, it prints a success message indicating that the file has been saved.
+    This function sets the environment to "prod" and retrieves the routes from a file using the `get_data_from_file()` function. It generates a result file name based on the current timestamp. It opens the result file in write mode and creates a writer object. It writes the header row to the file. For each route, the function retrieves all packages using the `get_route_packages_sortation()` function and saves the package data to the file using the `save_data_to_file()` function. Finally, it prints a success message indicating that the file has been saved.
 
     Parameters:
     - None
@@ -69,7 +69,7 @@ def main():
         writer.writerow(["Route ID", "Order ID", "Barcode", "Package ID"])
 
         for route in routes:
-            pkgs = get_all_packages_on_route(env, route)
+            pkgs = get_route_packages_sortation(env, route)
             save_data_to_file(writer, pkgs, route)
     # with thread.ThreadPoolExecutor() as pool:
     #             pool.submit(save_data_to_file, writer, pkgs, route)
