@@ -13,7 +13,7 @@ if __name__ == "__main__":
     packages.commit_packages(env, orgId, response["uniquePackages"])
 
     print("Rolling route back")
-    routes.rollback_routes(env, response["routeId"])
+    routes.rollback_routes(env, [response["routeId"]])
 
     print("Re-executing route")
     routes.execute_route(env, orgId, response["routeId"])

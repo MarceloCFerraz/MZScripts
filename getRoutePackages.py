@@ -147,6 +147,7 @@ def main(env, orgId):
             response["uniquePackages"] = list(response["uniquePackages"])
             final_response = response
     else:
+        print(f"No events found for route {routeId}")
         final_response["routeId"] = routeId
         final_response["uniquePackages"] = list(pids)
 
