@@ -5,7 +5,7 @@ import requests
 from utils import utils
 
 
-def get_hub_config(env, orgId, hubId):
+def get_hub_config(env, orgId, hubId) -> dict | None:
     """
     Retrieves the configuration for a specific hub.
 
@@ -18,17 +18,16 @@ def get_hub_config(env, orgId, hubId):
         dict: The configuration for the hub.
     """
     url = f"http://alamo.{utils.convert_env(env)}.milezero.com/alamo-war/api/hubconfig/key/orgId/{orgId}?key={hubId}&keyType=HUB_ID"
-    response = requests.Response()
 
     try:
         response = requests.get(url=url, timeout=30)
+        return response.json()["config"]
     except ConnectionError as e:
         print(f"Connection Error. Please connect to the VPN!\n {e}")
+        return None
 
-    return response.json().get("config")
 
-
-def get_all_hubs(env, orgId):
+def get_all_hubs(env, orgId) -> list:
     """
     Retrieves all hubs within an organization.
 
@@ -38,17 +37,17 @@ def get_all_hubs(env, orgId):
 
     Returns:
         list: A list of all hubs within the organization.
+        None: if
     """
     endpoint = f"http://cromag.{utils.convert_env(env)}.milezero.com/retail/api/hubs/org/{orgId}?hubType=HUB"
-    response = requests.Response()
 
     try:
         response = requests.get(url=endpoint, timeout=10)
         response = response.json()["hubs"]
-    except ConnectionError as e:
-        print(f"Connection Error. Please connect to the VPN!\n {e}")
-
-    return response
+        return response
+    except Exception as e:
+        print(f"An error occurred, please check the error message and try again!\n {e}")
+        return []
 
 
 def search_hub_by_name(env, orgId, hubName):

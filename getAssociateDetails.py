@@ -19,7 +19,6 @@ def main():
 
     allHubs = hubs.get_all_hubs(env, orgId)
 
-
     # TODO: allow user to search for more than one field
     associatesArray = []
     if key_type_index > 0:
@@ -50,7 +49,7 @@ def main():
                     extra_details = associates.get_associate_device_and_app(
                         env, orgId, associate["associateId"]
                     )
-                    hub = [hub for hub in allHubs if hub["id"] == associate["hubId"]][0]
+                    hub = [h for h in allHubs if h.get("id") == associate["hubId"]][0]
                     print(f"Associate State: {associate['state']}")
                     print(f"   Account Type: {associate['associateType']}")
                     print(f"   Associate ID: {associate['associateId']}")
@@ -92,4 +91,5 @@ def main():
             )
 
 
-main()
+if __name__ == "__main__":
+    main()
