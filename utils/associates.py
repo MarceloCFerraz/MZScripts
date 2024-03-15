@@ -184,3 +184,10 @@ def get_telemetries(env, orgId, associateId, startTime, endTime):
     endpoint = f"http://lmx.{utils.convert_env(env)}.milezero.com/lmx-war/api/lmxtelemetry/org/{orgId}/owner/{associateId}?startTime={formattedStart}&endTime={formattedEnd}"
 
     return requests.get(url=endpoint, timeout=10).json()["events"]
+
+
+def get_associate_latest_itinerary(env, org_id, associate_id):
+    url = f"http://redeux.{utils.convert_env(env)}.milezero.com/redeux-server/api/drivers/{associate_id}/itineraries/latest"
+    headers = {"Accept": "application/json", "X-Consumer-Custom-ID": f"{org_id}"}
+
+    return requests.get(url=url, headers=headers).json()
