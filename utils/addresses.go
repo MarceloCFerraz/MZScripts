@@ -2,12 +2,26 @@ package utils
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/valyala/fasthttp"
 )
 
-func GetAddressFromGazetteer(request *fasthttp.Request, response *fasthttp.Response, env string, orgId string, hubName string, index int) error {
+func GetAllHubs(env *string, orgId *string)
+
+func GetAllHubNames(env *string, orgId *string, hubNames *[]string) error {
+	return nil
+
+}
+
+func GetAddressFromGazetteer(env string, orgId string, hubName string, index int) ([]byte, error) {
+	request := fasthttp.AcquireRequest()
+	defer fasthttp.ReleaseRequest(request)
+
+	response := fasthttp.AcquireResponse()
+	defer fasthttp.ReleaseResponse(response)
+	response.Body()
 	request.SetRequestURI(
 		fmt.Sprintf(
 			"https://gazetteer.%s.milezero.com/gazetteer-war/api/location/matching/org/%s",
@@ -28,7 +42,7 @@ func GetAddressFromGazetteer(request *fasthttp.Request, response *fasthttp.Respo
 			string(request.RequestURI()),
 			": ", err,
 		)
-		return err
+		return nil, err
 	}
 
 	request.SetBody(body)
@@ -38,8 +52,14 @@ func GetAddressFromGazetteer(request *fasthttp.Request, response *fasthttp.Respo
 
 	if err = fasthttp.Do(request, response); err != nil {
 		fmt.Println("An error occurred when marshaling payload for ", request)
-		return err
+		return nil, err
 	}
 
-	return nil
+	if !(response.StatusCode() < 400) {
+		fmt.Println("Request failed with status ", response.StatusCode())
+		fmt.Println("Body: ", string(response.Body()))
+		return nil, errors.New("Get Request failed")
+	}
+
+	return response.Body(), nil
 }

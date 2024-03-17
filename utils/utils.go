@@ -61,7 +61,7 @@ func (u *utils) SelectEnv() string {
 			fmt.Printf("(%d) %s\n> ", i, env)
 		}
 
-		if _, err := fmt.Scanf("%d", &option); err == nil {
+		if _, err := fmt.Scanf("%d", &option); err == nil && option >= 0 && option < len(u.Envs) {
 			fmt.Println()
 			return u.Envs[option]
 		}
@@ -74,26 +74,65 @@ func (u *utils) SelectOrg(env *string) string {
 	fmt.Println("Select one of the Orgs:")
 
 	for {
-		fmt.Printf("> ")
+		fmt.Print("> ")
 
 		// asserting that orgs[env] is a map of string: string
 		// go can't loop over type interface{} so we're basically telling
 		// it that this is not an empty interface
 		if envMap, ok := u.Orgs[*env].(map[string]string); ok {
+			keys := make([]string, 0, len(envMap))
 			var option string
 
 			for key := range envMap { // range returns key, value
 				fmt.Printf("%s\n> ", key)
+				keys = append(keys, key)
 			}
 
 			if _, err := fmt.Scanf("%s", &option); err == nil {
-				if value, ok := envMap[strings.ToUpper(option)]; ok {
-					fmt.Println()
-					return value
+				option = strings.ToUpper(option)
+
+				if Contains(&keys, &option) {
+					value, ok := envMap[strings.ToUpper(option)]
+
+					if ok {
+						fmt.Println()
+						return value
+					}
 				}
 			}
 
-			fmt.Printf("Please select a valid option!\n\n")
+			fmt.Print("Please select a valid option!\n\n")
 		}
 	}
+}
+
+func (u *utils) SelectOption(options *[]string) int {
+	fmt.Println("Please select one of the options below:")
+
+	for {
+		for i, option := range *options {
+			fmt.Printf("> (%d): %s\n", i, option)
+		}
+
+		fmt.Print("> ")
+		fmt.Scanln()
+		var opt int
+		_, err := fmt.Scanf("%d", &opt)
+
+		if err == nil && opt < len(*options) && opt >= 0 && opt < len(*options) {
+			return opt
+		}
+		// fmt.Printf("Error: %s\n\n", err)
+		fmt.Println("Type a valid option!")
+
+	}
+}
+
+func Contains(slice *[]string, item *string) bool {
+	for _, value := range *slice {
+		if value == *item {
+			return true
+		}
+	}
+	return false
 }
