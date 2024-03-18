@@ -106,7 +106,7 @@ func (u *utils) SelectOrg(env *string) string {
 	}
 }
 
-func (u *utils) SelectOption(options *[]string) int {
+func SelectOption(options *[]string) int {
 	fmt.Println("Please select one of the options below:")
 
 	for {
@@ -135,4 +135,12 @@ func Contains(slice *[]string, item *string) bool {
 		}
 	}
 	return false
+}
+
+func ConvertEnv(env *string) {
+	*env = strings.ToLower(*env)
+
+	if *env == "integ" {
+		*env = "prod"
+	}
 }

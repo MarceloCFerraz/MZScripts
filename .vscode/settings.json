@@ -1,5 +1,4 @@
 {
-    "editor.fontFamily": "SF Mono Regular, Ubuntu Mono, Fira Code",
     "files.autoSave": "onFocusChange",
     "files.watcherExclude": {
         "**/target": true

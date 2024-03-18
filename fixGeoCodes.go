@@ -10,10 +10,10 @@ import (
 
 func main() {
 	// var json fastjson.Parser // or ParserPool
-	u := utils.Initialize()
+	util := utils.Initialize()
 
-	env := u.SelectEnv()
-	orgId := u.SelectOrg(&env)
+	env := util.SelectEnv()
+	orgId := util.SelectOrg(&env)
 
 	startTime := time.Now().UTC()
 	fmt.Println(startTime)
@@ -22,7 +22,7 @@ func main() {
 	options := []string{"Update All Hubs", "Update specific Hubs"}
 	// TODO: Add another option to read from .txt file
 
-	option := u.SelectOption(&options)
+	option := utils.SelectOption(&options)
 	switch option {
 	case 1:
 		GetHubNamesFromUser(&env, &orgId, &hubNames)
