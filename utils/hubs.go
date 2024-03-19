@@ -23,19 +23,3 @@ func GetAllHubs(env *string, orgId *string) ([]byte, error) {
 
 	return CheckResponse(response)
 }
-
-// TODO: change this function's return type later to return a cromag hubs object (not implemented yet)
-func GetAllHubNames(env *string, orgId *string, hubNames *[]string) error {
-	allHubs, err := GetAllHubs(env, orgId)
-
-	if allHubs == nil || err != nil {
-		fmt.Println("Couldn't get all Hub Names. Check error from GetAllHubs")
-		return nil
-	}
-
-	// TODO:
-	// create type for cromag response
-	// unmarshal bytes received
-	// return typed object
-	return nil
-}

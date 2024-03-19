@@ -1,15 +1,17 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
+	"sync"
 	"time"
 
+	models "github.com/MarceloCFerraz/MZScripts/ApiModels"
 	"github.com/MarceloCFerraz/MZScripts/utils"
 )
 
 func main() {
-	// var json fastjson.Parser // or ParserPool
 	util := utils.Initialize()
 
 	env := util.SelectEnv()
@@ -18,28 +20,29 @@ func main() {
 	startTime := time.Now().UTC()
 	fmt.Println(startTime)
 
-	var hubNames []string
-	options := []string{"Update All Hubs", "Update specific Hubs"}
-	// TODO: Add another option to read from .txt file
+	fmt.Println("Fetching all hubs...")
 
-	option := utils.SelectOption(&options)
-	switch option {
-	case 1:
-		GetHubNamesFromUser(&env, &orgId, &hubNames)
-		break
-	default:
-		err := utils.GetAllHubNames(&env, &orgId, &hubNames)
-		if err != nil {
-			fmt.Println("An error occurred when fetching for Hub Names:", err)
-			os.Exit(1)
-		}
-		break
+	allHubs, err := getAllHubs(&env, &orgId)
+
+	if err != nil {
+		fmt.Println("An error occurred when getting all hubs: ", err)
+		os.Exit(1)
 	}
 
-	fmt.Println(hubNames)
-	// allOrgHubs = [
-	//     8500  # 8506, 3886,8743,3716,8211,8377,3937,3926,8027,3941,3327,3034
-	// ]
+	var hubNames []string
+	// TODO: Add another option to read from .txt file
+	options := []string{"Update All Hubs", "Update specific Hubs"}
+
+	switch utils.SelectOption(&options) {
+	case 1:
+		GetHubNamesFromUser(&env, &orgId, &hubNames, &allHubs)
+	default:
+		hubNames = getAllHubNames(&allHubs)
+	}
+
+	// every hub can have up to 10k locations, so the most appropriate solution is to
+	// concurrently process locations instead of hubs
+	processHubs(&env, &orgId, &hubNames)
 
 	// for hub in allOrgHubs:
 	//     # uncomment this line below if you got all hubs from API
@@ -49,7 +52,10 @@ func main() {
 
 	//     print("==== Starting {}".format(hubName))
 
-	//     main(env, orgId, hubName)
+	// for index in range(0, 10000, 500):
+	//     print("==== Index: {}".format(index))
+	//     get_gazeteer_location_id(env, orgId, index, hubName)
+	// print("==== Finished {}".format(hubName))
 
 	// print("Finished checking all hubs")
 	// print("Updated {} addresses!".format(len(CORRECTED_ADDRESSES)))
@@ -108,8 +114,31 @@ func main() {
 	// save updated addresses into csv file once all done
 }
 
-func GetHubNamesFromUser(ent *string, orgId *string, hubNames *[]string) {
+func getAllHubs(env, orgId *string) (models.CromagGetHubs, error) {
+	var allHubs models.CromagGetHubs
+	temp, err := utils.GetAllHubs(env, orgId)
+
+	if err != nil {
+		fmt.Println("An error occurred when getting all hubs: ", err)
+		return models.CromagGetHubs{}, err
+	}
+
+	err = json.Unmarshal(temp, &allHubs)
+
+	if err != nil {
+		fmt.Println("Error unmarshaling: ", err)
+		return models.CromagGetHubs{}, err
+	}
+
+	// fmt.Println(allHubs)
+	fmt.Println("Found", allHubs.Count, "Hubs")
+	return allHubs, nil
+}
+
+func GetHubNamesFromUser(ent *string, orgId *string, hubNames *[]string, allHubs *models.CromagGetHubs) {
 	var hubName string
+	allNames := getAllHubNames(allHubs)
+
 	fmt.Println("Type one Hub Name per line")
 	for {
 		fmt.Printf("Hub Names Selected So Far: %v\n", *hubNames)
@@ -117,92 +146,103 @@ func GetHubNamesFromUser(ent *string, orgId *string, hubNames *[]string) {
 		fmt.Scanln()
 
 		if _, err := fmt.Scanf("%s", &hubName); err != nil {
+			// if input is new line and hubNames have at least one item
 			if err.Error() == "unexpected newline" && len(*hubNames) > 0 {
 				fmt.Println("Returning...")
 				return
 			}
 			fmt.Println("Type a valid option")
 		} else if !utils.Contains(hubNames, &hubName) {
-			*hubNames = append(*hubNames, hubName)
+			if utils.Contains(&allNames, &hubName) {
+				*hubNames = append(*hubNames, hubName)
+			} else {
+				fmt.Println("This option doesn't exist in this org")
+			}
 		}
 	}
 }
 
-// def print_array_items(array):
-//     divisor = 4
-//     items_per_line = divisor
+func getAllHubNames(allHubs *models.CromagGetHubs) []string {
+	var hubNames []string
 
-//     for i, item in enumerate(array):
-//         print(f"{item:^{20}}", end="")
-//         if (i + 1) % items_per_line == 0:
-//             print()
-//     print()
+	for _, hub := range allHubs.Hubs {
+		hubNames = append(hubNames, hub.Name)
+	}
 
-// def convert_env(env):
-//     if env == "INTEG":
-//         env = "PROD"
+	return hubNames
+}
 
-//     return env.lower()
+func processHubs(env, orgId *string, hubNames *[]string) {
+	maxGoRoutines := 500
 
-// def select_env():
-//     envs = ["PROD", "STAGE"]
-//     env = ""
-//     print("SELECT THE ENV")
-//     print(f"Options: {'   '.join(envs)}")
-//     while env not in envs:
-//         env = str(input("> ")).upper().strip()
+	limiter := make(chan int8, maxGoRoutines) // a channel will be used to limit the amount of concurrent jobs
+	wg := sync.WaitGroup{}                    // a wait group will be used to wait for all goroutines to finish before continuing
 
-//     return env
+	/* --------- THIS SHOULD BE PLACED BEFORE OR WITHIN EVERY GOROUTING --------- */
+	limiter <- 1 // add one item to channel before each goroutine call up to `maxGoRoutines`
+	<-limiter    // remove one item from this channel after goroutine is finished
 
-// def select_org(env):
-//     orgs = list(ORGS[env].keys())
-//     org = ""
+	wg.Add(1)       // add one to the wg before each goroutine call
+	defer wg.Done() // defer wg.Done() for each goroutine
+	/* -------------------------------------------------------------------------- */
 
-//     print(f"SELECT THE ORG ({env})")
-//     print("Options: ")
-//     print_array_items(orgs)
+	var updatedAddresses models.LBLocation
 
-//     while org not in orgs:
-//         org = str(input("> ")).upper().strip()
-//     return ORGS[env][org]  # returns orgId
+	for _, hub := range *hubNames {
+		fmt.Printf("Starting hub %s\n", hub)
+		processHubLocations(env, orgId, &hub, &updatedAddresses)
+		// fetch gazetteer
+		// check addresses
+		// update address if needed
+		// save old and updated address in struct
+		fmt.Printf("Finishing hub %s\n", hub)
+	}
 
-// def get_all_hubs(env, orgId):
-//     endpoint = (
-//         f"http://cromag.{convert_env(env)}.milezero.com/retail/api/hubs/org/{orgId}"
-//     )
+	wg.Wait() // wait for all goroutines to finish
 
-//     return requests.get(url=endpoint, timeout=10).json()["hubs"]
+	// save updated addresses struct to csv file
+}
 
-// def update_address(env, location_id, payload):
+func processHubLocations(env, orgId, hub *string, updatedAddresses *models.LBLocation) {
+	panic("unimplemented")
+}
+
+// def get_gazeteer_location_id(env, org_id, index, hubName):
+//     """
+//     Retrieves location IDs from the gazetteer based on the provided parameters.
+
+//     Args:
+//     - env (str): The environment.
+//     - org_id (str): The organization ID.
+//     - index (int): The index for pagination.
+//     - hub_name (str): The hub name.
+
+//     Returns:
+//     - response (object): The response object containing the retrieved location IDs.
+//     """
+//     print(hubName, " - index: ", index)
+
 //     headers = {"content-type": "application/json"}
 
-//     lockbox_update_url = lockbox_update_url_template.format(env, location_id)
+//     gazetteer_get_url = gazetteer_get_url_template.format(env, org_id)
 
-//     response = requests.put(
-//         url=lockbox_update_url, data=json.dumps(payload), headers=headers
+//     payload = {
+//         "hubName": f"{hubName}",
+//         "queryMode": "MATCH_ALL_IN_ORDER",
+//         "pagination": {"from": index, "size": 500},
+//     }
+
+//     response = requests.post(
+//         url=gazetteer_get_url, data=json.dumps(payload), headers=headers
 //     )
+
+//     with concurrent.futures.ThreadPoolExecutor() as pool:
+//         for location in response.json().get("locations"):
+//             pool.submit(get_location, env, location)
+
+//     pool.shutdown(wait=True)
 
 //     return response
-
-// def get_address(domain, street, city, state, zip, provider=None):
-//     if provider:
-//         provider = "&provider={}".format(provider)
-//     else:
-//         provider = "&provider=GOOGLE".format()
-
-//     geocoder_get_url = geocoder_get_url_template.format(
-//         domain, street, city, state, zip, provider
-//     )
-
-//     response = requests.get(
-//         url=geocoder_get_url, headers={"Accept": "application/json"}
-//     )
-
-//     address = response.json()
-
-//     # print(json.dumps(address))
-
-//     return address
 
 // def get_location(domain, location_id):
 //     """
@@ -307,60 +347,3 @@ func GetHubNamesFromUser(ent *string, orgId *string, hubNames *[]string) {
 
 //     except AttributeError:
 //         print("#### {e} - loc - {location_id}")
-
-// def get_gazeteer_location_id(env, org_id, index, hubName):
-//     """
-//     Retrieves location IDs from the gazetteer based on the provided parameters.
-
-//     Args:
-//     - env (str): The environment.
-//     - org_id (str): The organization ID.
-//     - index (int): The index for pagination.
-//     - hub_name (str): The hub name.
-
-//     Returns:
-//     - response (object): The response object containing the retrieved location IDs.
-//     """
-//     print(hubName, " - index: ", index)
-
-//     headers = {"content-type": "application/json"}
-
-//     gazetteer_get_url = gazetteer_get_url_template.format(env, org_id)
-
-//     payload = {
-//         "hubName": f"{hubName}",
-//         "queryMode": "MATCH_ALL_IN_ORDER",
-//         "pagination": {"from": index, "size": 500},
-//     }
-
-//     response = requests.post(
-//         url=gazetteer_get_url, data=json.dumps(payload), headers=headers
-//     )
-
-//     with concurrent.futures.ThreadPoolExecutor() as pool:
-//         for location in response.json().get("locations"):
-//             pool.submit(get_location, env, location)
-
-//     pool.shutdown(wait=True)
-
-//     return response
-
-// def main(env, orgId, hubName):
-//     """
-//     Orchestrates the retrieval and updating of location information.
-
-//     Args:
-//     - env (str): The environment.
-//     - org_id (str): The organization ID.
-//     - hub_name (str): The hub name.
-
-//     Returns:
-//     - None
-//     """
-
-//     for index in range(0, 10000, 500):
-//         print("==== Index: {}".format(index))
-
-//         get_gazeteer_location_id(env, orgId, index, hubName)
-
-//     print("==== Finished {}".format(hubName))

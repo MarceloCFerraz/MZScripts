@@ -88,6 +88,8 @@ func (u *utils) SelectOrg(env *string) string {
 				keys = append(keys, key)
 			}
 
+			fmt.Scanln()
+
 			if _, err := fmt.Scanf("%s", &option); err == nil {
 				option = strings.ToUpper(option)
 

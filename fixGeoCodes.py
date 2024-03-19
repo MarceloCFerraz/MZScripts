@@ -268,11 +268,12 @@ def get_gazeteer_location_id(env, org_id, index, hubName):
 
     response = requests.post(
         url=gazetteer_get_url, data=json.dumps(payload), headers=headers
-    )
+    ).json()
 
     with concurrent.futures.ThreadPoolExecutor() as pool:
-        for location in response.json().get("locations"):
-            pool.submit(get_location, env, location)
+        if response.get("locations") is not None:
+            for location in response["locations"]:
+                pool.submit(get_location, env, location)
 
     pool.shutdown(wait=True)
 
