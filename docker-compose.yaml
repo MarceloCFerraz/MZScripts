@@ -1,0 +1,15 @@
+version: "3"
+
+services:
+    script:
+        build:
+            context: .
+            # replace this with your docker file
+            dockerfile: fixGeoCodes.dockerfile
+        network_mode: host
+    deploy:
+        resources:
+            limits:
+                # you can limit how much memory or CPU you want a script to have here
+                # cpus: "1.05" # got up to 50ish %
+                # memory: "300MB" # got up to 100ish MB

@@ -5,13 +5,16 @@ type LBLocation struct {
 	Name                  string        `json:"name,omitempty"`
 	Geo                   Geo           `json:"geo,omitempty"`
 	TypedAddress          TypedAddress  `json:"typedAddress,omitempty"`
-	CustomDescription     string        `json:"customDescription,omitempty"`
 	Timezone              string        `json:"timezone,omitempty"`
 	CommercialType        string        `json:"commercialType,omitempty"`
 	Attributes            []interface{} `json:"attributes,omitempty"`
-	ExecutionScannableIDS interface{}   `json:"executionScannableIds,omitempty"`
-	ExecutionProperties   interface{}   `json:"executionProperties,omitempty"`
+	Precision             Precision     `json:"precision,omitempty"`
+	ExecutionScannableIDS Execution     `json:"executionScannableIds,omitempty"`
+	ExecutionProperties   Execution     `json:"executionProperties,omitempty"`
 	GpsMergable           bool          `json:"gpsMergable,omitempty"`
+}
+
+type Execution struct {
 }
 
 type Geo struct {
@@ -19,11 +22,19 @@ type Geo struct {
 	Longitude float64 `json:"longitude,omitempty"`
 }
 
+type Precision struct {
+	Precision string `json:"precision,omitempty"`
+	Source    string `json:"source,omitempty"`
+}
+
 type TypedAddress struct {
-	AddressType string `json:"addressType,omitempty"`
-	CountryCode string `json:"countryCode,omitempty"`
-	Address1    string `json:"address1,omitempty"`
-	City        string `json:"city,omitempty"`
-	State       string `json:"state,omitempty"`
-	PostalCode  string `json:"postalCode,omitempty"`
+	AddressType     string `json:"addressType,omitempty"`
+	CountryCode     string `json:"countryCode,omitempty"`
+	Name            string `json:"name,omitempty"`
+	Address1        string `json:"address1,omitempty"`
+	Address2        string `json:"address2,omitempty"`
+	City            string `json:"city,omitempty"`
+	State           string `json:"state,omitempty"`
+	BriefPostalCode string `json:"briefPostalCode,omitempty"`
+	PostalCode      string `json:"postalCode,omitempty"`
 }

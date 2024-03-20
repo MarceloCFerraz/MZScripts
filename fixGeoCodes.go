@@ -11,6 +11,11 @@ import (
 	"github.com/MarceloCFerraz/MZScripts/utils"
 )
 
+// type Result struct {
+// 	newAddress models.LBLocation
+// 	oldAddress models.LBLocation
+// }
+
 func main() {
 	util := utils.Initialize()
 
@@ -35,13 +40,44 @@ func main() {
 
 	switch utils.SelectOption(&options) {
 	case 1:
-		GetHubNamesFromUser(&env, &orgId, &hubNames, &allHubs)
+		getHubNamesFromUser(&hubNames, &allHubs)
 	default:
+		// not a pointer because this function is also used in `getHubNamesFromUser`
 		hubNames = getAllHubNames(&allHubs)
 	}
 
-	// every hub can have up to 10k locations, so the most appropriate solution is to
-	// concurrently process locations instead of hubs
+	// every hub can have up to 10k locations, so the most appropriate way to
+	// work on all of them is to concurrently process locations instead of hubs
+	// and limit the amount of addresses being checked and updated in parallel
+	// limit := 500
+
+	// updatedAddresses := make(chan Result, limit)
+	// addresses := make(chan models.LBLocation, limit)
+	// done := make(chan bool)
+
+	// var matrix [][]string
+	// headers := []string{
+	// 	"id", "name", "hub",
+	// 	"old geocode quality", "new geocode quality",
+	// 	"old address line 1", "new address line 1",
+	// 	"old address line 2", "new address line 2",
+	// 	"old geocode provider", "new geocode provider",
+	// 	"old latitude", "new latitude",
+	// 	"old longitude", "new longitude",
+	// }
+	// var csvWriter csv.Writer
+
+	// // a channel will be used to limit and bridge communication between goroutines
+	// wg := sync.WaitGroup{}
+	// // a wait group will be used to wait for all goroutines to finish before continuing
+
+	// /* --------- THIS SHOULD BE PLACED BEFORE OR WITHIN EVERY GOROUTING --------- */
+	// updatedAddresses <- address // add one item to channel before each goroutine call up to `maxGoRoutines`
+	// <-updatedAddresses          // remove one item from this channel after goroutine is finished
+
+	// wg.Add(1)       // add one to the wg before each goroutine call
+	// defer wg.Done() // defer wg.Done() for each goroutine
+	/* -------------------------------------------------------------------------- */
 	processHubs(&env, &orgId, &hubNames)
 
 	// for hub in allOrgHubs:
@@ -135,7 +171,7 @@ func getAllHubs(env, orgId *string) (models.CromagGetHubs, error) {
 	return allHubs, nil
 }
 
-func GetHubNamesFromUser(ent *string, orgId *string, hubNames *[]string, allHubs *models.CromagGetHubs) {
+func getHubNamesFromUser(hubNames *[]string, allHubs *models.CromagGetHubs) {
 	var hubName string
 	allNames := getAllHubNames(allHubs)
 
@@ -162,6 +198,7 @@ func GetHubNamesFromUser(ent *string, orgId *string, hubNames *[]string, allHubs
 	}
 }
 
+// Utility function to iterate through the slice of provided hubs and return only the hub names in it
 func getAllHubNames(allHubs *models.CromagGetHubs) []string {
 	var hubNames []string
 
@@ -173,38 +210,203 @@ func getAllHubNames(allHubs *models.CromagGetHubs) []string {
 }
 
 func processHubs(env, orgId *string, hubNames *[]string) {
-	maxGoRoutines := 500
-
-	limiter := make(chan int8, maxGoRoutines) // a channel will be used to limit the amount of concurrent jobs
-	wg := sync.WaitGroup{}                    // a wait group will be used to wait for all goroutines to finish before continuing
-
-	/* --------- THIS SHOULD BE PLACED BEFORE OR WITHIN EVERY GOROUTING --------- */
-	limiter <- 1 // add one item to channel before each goroutine call up to `maxGoRoutines`
-	<-limiter    // remove one item from this channel after goroutine is finished
-
-	wg.Add(1)       // add one to the wg before each goroutine call
-	defer wg.Done() // defer wg.Done() for each goroutine
-	/* -------------------------------------------------------------------------- */
-
-	var updatedAddresses models.LBLocation
+	semaphore := make(chan bool, 500) // limits the max amount of goroutines to 500
+	wg := sync.WaitGroup{}
 
 	for _, hub := range *hubNames {
-		fmt.Printf("Starting hub %s\n", hub)
-		processHubLocations(env, orgId, &hub, &updatedAddresses)
-		// fetch gazetteer
-		// check addresses
-		// update address if needed
-		// save old and updated address in struct
-		fmt.Printf("Finishing hub %s\n", hub)
+		fmt.Printf("------------------ Starting hub %s ------------------\n", hub)
+
+		// max is 10k addresses for each hub in gazetteer
+		for i := 0; i < 10_000; i = i + 500 {
+			batch, err := utils.GetAddressFromGazetteer(env, orgId, hub, i)
+
+			if err != nil {
+				fmt.Println("Error fetching addresses for", hub)
+				fmt.Println("Error:", err)
+				break // stops fetching for addresses for this hub and starts with the next hub
+			}
+
+			var addresses models.GzMatchingLocation
+			err = json.Unmarshal(batch, &addresses)
+
+			if err != nil || addresses.Message != "" {
+				fmt.Println("Error unmarshaling data or error with data")
+				fmt.Println("Data:", string(batch))
+				fmt.Println("Error:", err)
+				continue // stops current interaction and searches the next 500 addresses for the same hub
+			}
+
+			for _, location := range addresses.Locations {
+				semaphore <- true
+				wg.Add(1)
+				go processHubLocations(env, location.ID, &semaphore, &wg)
+			}
+			wg.Wait() // wait until all goroutines for this hub have finished
+		}
+
+		fmt.Printf("------------------ Finishing hub %s ------------------\n", hub)
 	}
 
-	wg.Wait() // wait for all goroutines to finish
+	// wg.Wait() // wait for all goroutines to finish
 
 	// save updated addresses struct to csv file
 }
 
-func processHubLocations(env, orgId, hub *string, updatedAddresses *models.LBLocation) {
-	panic("unimplemented")
+func processHubLocations(env *string, locationId string, semaphore *(chan bool), wg *sync.WaitGroup) {
+	defer wg.Done()
+	defer func() { <-*semaphore }()
+
+	data, err := utils.GetLocationFromLockbox(*env, locationId)
+
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	var location models.LBLocation
+
+	err = json.Unmarshal(data, &location)
+
+	if err != nil {
+		fmt.Print("Error Unmarshaling location", locationId, "error:", err)
+		return
+	}
+
+	if locationNeedsUpdate(location) {
+		updateLocation(env, location)
+	}
+
+}
+
+func locationNeedsUpdate(location models.LBLocation) bool {
+	if location.Precision.Precision == "" || // location does not have geocode precision registered for some reason
+		location.Precision.Precision == "EXACT" { // location is already perfect
+		return false
+	}
+
+	return true
+}
+
+func newAddressNeedsUpdate(location models.GCLocation) bool {
+	if location.GeocodeQuality == "" || // location does not have geocode precision registered for some reason
+		location.GeocodeQuality == "EXACT" || // location is already perfect
+		location.GeocodeQuality == "HIGH" { // geocode is good enough
+		return false
+	}
+
+	return true
+}
+
+func updateLocation(env *string, location models.LBLocation) {
+	typedAddr := location.TypedAddress
+
+	// TODO: create another function to isolate repeated code
+	response, err := utils.SearchAddressWithGeoCoder(
+		*env,
+		typedAddr.Address1,
+		typedAddr.City,
+		typedAddr.State,
+		typedAddr.PostalCode,
+		"SMARTY",
+	)
+
+	if err != nil {
+		fmt.Println("An error occurred:", err)
+		return
+	}
+
+	var addr models.GCLocation
+
+	err = json.Unmarshal(response, &addr)
+
+	if err != nil {
+		fmt.Println("An error occurred at unmarshaling:", err)
+		return
+	}
+
+	if !newAddressNeedsUpdate(addr) {
+		// save updated and old address
+		return
+	}
+
+	// test 1
+	response, err = utils.SearchAddressWithGeoCoder(
+		*env,
+		typedAddr.Address2,
+		typedAddr.City,
+		typedAddr.State,
+		typedAddr.PostalCode,
+		"SMARTY",
+	)
+
+	if err != nil {
+		fmt.Println("An error occurred:", err)
+		return
+	}
+
+	err = json.Unmarshal(response, &addr)
+
+	if err != nil {
+		fmt.Println("An error occurred at unmarshaling:", err)
+		return
+	}
+
+	if !newAddressNeedsUpdate(addr) {
+		// save updated and old address
+		return
+	}
+
+	// test 2
+	response, err = utils.SearchAddressWithGeoCoder(
+		*env,
+		typedAddr.Address1,
+		typedAddr.City,
+		typedAddr.State,
+		typedAddr.PostalCode,
+		"GOOGLE",
+	)
+
+	if err != nil {
+		fmt.Println("An error occurred:", err)
+		return
+	}
+
+	err = json.Unmarshal(response, &addr)
+
+	if err != nil {
+		fmt.Println("An error occurred at unmarshaling:", err)
+		return
+	}
+
+	if !newAddressNeedsUpdate(addr) {
+		// save updated and old address
+		return
+	}
+
+	// test 3
+	response, err = utils.SearchAddressWithGeoCoder(
+		*env,
+		typedAddr.Address2,
+		typedAddr.City,
+		typedAddr.State,
+		typedAddr.PostalCode,
+		"GOOGLE",
+	)
+
+	if err != nil {
+		fmt.Println("An error occurred:", err)
+		return
+	}
+
+	err = json.Unmarshal(response, &addr)
+
+	if err != nil {
+		fmt.Println("An error occurred at unmarshaling:", err)
+		return
+	}
+
+	// save updated and old address
+
 }
 
 // def get_gazeteer_location_id(env, org_id, index, hubName):
