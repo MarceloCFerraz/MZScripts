@@ -1,6 +1,7 @@
 package models
 
 type LBLocation struct {
+	Hub                   string
 	ID                    string        `json:"id,omitempty"`
 	Name                  string        `json:"name,omitempty"`
 	Geo                   Geo           `json:"geo,omitempty"`

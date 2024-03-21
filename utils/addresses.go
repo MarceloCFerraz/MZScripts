@@ -45,7 +45,7 @@ func GetAddressFromGazetteer(env *string, orgId *string, hubName string, index i
 	return CheckResponse(response)
 }
 
-func UpdateAddress(env, orgId string, updatedAddress []byte) error {
+func UpdateAddress(env, locationId string, updatedAddress []byte) error {
 	response := fasthttp.AcquireResponse()
 	defer fasthttp.ReleaseResponse(response)
 
@@ -54,9 +54,9 @@ func UpdateAddress(env, orgId string, updatedAddress []byte) error {
 	url := fmt.Sprintf(
 		"https://lockbox.%s.milezero.com/lockbox-war/api/location/%s",
 		env,
-		orgId,
+		locationId,
 	)
-	method := "POST"
+	method := "PUT"
 
 	if err := SendResquet(url, method, updatedAddress, response); err != nil {
 		// maybe change the return type to bool or remove completely since the error is being printed here
@@ -79,13 +79,9 @@ func SearchAddressWithGeoCoder(env, street, city, state, zip, provider string) (
 
 	method := "GET"
 	url := fmt.Sprintf(
-		"http://geocoder.%s.milezero.com/gc/api/address?street=%s&city=%s&state=%s&zip_code=%s&cc=US",
-		env, street, city, state, zip,
+		"http://geocoder.%s.milezero.com/gc/api/address?street=%s&city=%s&state=%s&zip_code=%s&cc=US&provider=%s",
+		env, street, city, state, zip, strings.ToUpper(provider),
 	)
-
-	if provider != "" {
-		url = fmt.Sprintf("%s&provider=%s", url, strings.ToUpper(provider))
-	}
 
 	if err := SendResquet(url, method, nil, response); err != nil {
 		// maybe change the return type to bool or remove completely since the error is being printed here
