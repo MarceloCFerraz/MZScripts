@@ -1,5 +1,6 @@
 package models
 
+// Location Object from GeoCoder
 type GCLocation struct {
 	Street1        string  `json:"street1,omitempty"`
 	Street2        string  `json:"street2,omitempty"`

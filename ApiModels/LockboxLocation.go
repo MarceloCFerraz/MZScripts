@@ -1,5 +1,6 @@
 package models
 
+// Location object from Lockbox
 type LBLocation struct {
 	Hub                   string
 	ID                    string        `json:"id,omitempty"`

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -13,9 +14,14 @@ import (
 	"github.com/MarceloCFerraz/MZScripts/utils"
 )
 
-type Result struct {
+type Succeeded struct {
 	newAddress models.LBLocation
 	oldAddress models.LBLocation
+}
+
+type Failed struct {
+	address      models.LBLocation
+	errorMessage error
 }
 
 func main() {
@@ -48,40 +54,70 @@ func main() {
 		hubNames = getAllHubNames(&allHubs)
 	}
 
-	var csvLines [][]string
-	results := make(chan Result)
-	done := make(chan bool)
+	successes := make(chan Succeeded)
+	failures := make(chan Failed)
 
-	go startReader(&results, &csvLines, &done)
+	var successLines [][]string
+	var failLines [][]string
 
-	processHubs(&env, &orgId, &hubNames, &results)
-	<-done
-	// wait for reader finish read all updated addresses and convert them into csv lines
+	wg := sync.WaitGroup{}
 
-	fileName := fmt.Sprintf(
+	wg.Add(2)
+
+	go startSuccessReader(&successes, &successLines, &wg)
+	go startFailsReader(&failures, &failLines, &wg)
+
+	processHubs(&env, &orgId, &hubNames, &successes, &failures)
+	//---------------------------------------
+	wg.Wait()
+	// wait readers finish converting data into csv lines
+
+	successFile := fmt.Sprintf(
 		"UPDATED_ADDRESSES_%s.csv",
 		strings.ReplaceAll(startTime.UTC().Format(time.RFC3339), ":", "_"),
 	)
-	csvFile, err := os.Create(fileName)
+	successCsv, err := os.Create(successFile)
 
 	if err != nil {
-		fmt.Println("Something went wrong when creating the result file:", err)
-		fmt.Printf("We updated %d addresses:\n", len(csvLines))
-		fmt.Println(csvLines)
+		fmt.Println("Something went wrong when creating successes file:", err)
+		fmt.Printf("We updated %d addresses:\n", len(successLines))
+		fmt.Println(successLines)
 	}
-	defer csvFile.Close()
+	successWriter := csv.NewWriter(successCsv)
 
-	writer := csv.NewWriter(csvFile)
+	saveDataToFile(successFile, &successLines, successWriter)
 
-	saveDataToFile(fileName, &csvLines, writer)
+	successCsv.Close()
+	//-------------------------------------
 
+	failFile := fmt.Sprintf(
+		"FAILED_ADDRESSES_%s.csv",
+		strings.ReplaceAll(startTime.UTC().Format(time.RFC3339), ":", "_"),
+	)
+	failCsv, err := os.Create(failFile)
+
+	if err != nil {
+		fmt.Println("Something went wrong when creating failures file:", err)
+		fmt.Printf("%d addresses failed to be updated:\n", len(successLines))
+		fmt.Println(successLines)
+	}
+	failWriter := csv.NewWriter(failCsv)
+	saveDataToFile(failFile, &failLines, failWriter)
+
+	failCsv.Close()
+	//--------------------------------------
+
+	fmt.Println("Hubs Updated:", len(hubNames))
+	fmt.Println("Successful Updates:", len(successLines))
+	fmt.Println("Failed Updates:", len(failLines))
+	fmt.Println(failLines)
+	fmt.Println("Total Processing Time:", time.Now().UTC().Sub(startTime))
 	fmt.Println("Exiting program...")
 	os.Exit(0)
 }
 
 func saveDataToFile(fileName string, csvLines *[][]string, writer *csv.Writer) {
-	fmt.Printf("Saving updated data to file:%s\n", fileName)
-	rowCount := 0
+	fmt.Printf("Saving data to file:%s\n", fileName)
 
 	// err := writer.WriteAll(*csvLines) // saves all data with one line
 
@@ -95,21 +131,17 @@ func saveDataToFile(fileName string, csvLines *[][]string, writer *csv.Writer) {
 			continue
 		}
 
-		rowCount++
+		writer.Flush() // ensure data is written
+		flushError := writer.Error()
 
-		if rowCount%10 == 0 {
-			writer.Flush() // ensure data is written
-			flushError := writer.Error()
-			if flushError != nil {
-				fmt.Println("Error flushing data")
-				fmt.Println("Error:", writeErr)
-			}
-			rowCount = 0
+		if flushError != nil {
+			fmt.Println("Error flushing data")
+			fmt.Println("Error:", writeErr)
 		}
 	}
 }
 
-func startReader(results *chan Result, csvLines *[][]string, done *chan bool) {
+func startSuccessReader(successes *chan Succeeded, csvLines *[][]string, wg *sync.WaitGroup) {
 	headers := []string{
 		"Hub",
 		"ID", "Name",
@@ -124,10 +156,10 @@ func startReader(results *chan Result, csvLines *[][]string, done *chan bool) {
 	*csvLines = append(*csvLines, headers)
 
 	for {
-		result, open := <-*results
+		result, open := <-*successes
 
 		if !open {
-			*done <- true
+			wg.Done()
 			return
 		}
 
@@ -140,6 +172,46 @@ func startReader(results *chan Result, csvLines *[][]string, done *chan bool) {
 			fmt.Sprintf("%f", result.newAddress.Geo.Latitude), fmt.Sprintf("%f", result.newAddress.Geo.Longitude),
 			result.oldAddress.TypedAddress.Address1, result.newAddress.TypedAddress.Address1,
 			result.oldAddress.TypedAddress.Address2, result.newAddress.TypedAddress.Address2,
+		}
+
+		*csvLines = append(*csvLines, line)
+	}
+}
+
+func startFailsReader(fails *chan Failed, csvLines *[][]string, wg *sync.WaitGroup) {
+
+	headers := []string{
+		"Hub",
+		"ID", "Name",
+		"Error Message",
+		"Geo Quality", "Provider",
+		"Latitude", "Longitude",
+		"Address Line 1", "Address Line 2",
+		"City", "State", "Zip", "Country", "Address Type", "Timezone",
+	}
+
+	*csvLines = append(*csvLines, headers)
+
+	for {
+		result, open := <-*fails
+
+		if !open {
+			wg.Done()
+			return
+		}
+
+		regex := regexp.MustCompile(`[{},:"\[\]]`)
+
+		line := []string{
+			result.address.Hub,
+			result.address.ID, result.address.Name,
+			strings.ReplaceAll(regex.ReplaceAllString(result.errorMessage.Error(), " "), "\n", ""),
+			result.address.Precision.Precision, result.address.Precision.Source,
+			fmt.Sprintf("%f", result.address.Geo.Latitude), fmt.Sprintf("%f", result.address.Geo.Longitude),
+			result.address.TypedAddress.Address1, result.address.TypedAddress.Address2,
+			result.address.TypedAddress.City, result.address.TypedAddress.State,
+			result.address.TypedAddress.PostalCode, result.address.TypedAddress.CountryCode,
+			result.address.TypedAddress.AddressType, result.address.Timezone,
 		}
 
 		*csvLines = append(*csvLines, line)
@@ -203,18 +275,28 @@ func getAllHubNames(allHubs *models.CromagGetHubs) []string {
 	return hubNames
 }
 
-func processHubs(env, orgId *string, hubNames *[]string, results *chan Result) {
-	defer close(*results)
+func processHubs(
+	env, orgId *string,
+	hubNames *[]string,
+	successes *chan Succeeded,
+	failures *chan Failed,
+) {
+	defer close(*successes)
+	defer close(*failures)
 
-	semaphore := make(chan bool, 500) // limits the max amount of goroutines to 500
+	semaphore := make(chan bool, 100) // limits the max amount of goroutines to 100
 	wg := sync.WaitGroup{}
 
 	for _, hub := range *hubNames {
-		fmt.Printf("------------------ Starting hub %s ------------------\n", hub)
+		fmt.Printf("-------------------- Starting hub %s --------------------\n", hub)
 
 		// max is 10k addresses for each hub in gazetteer
-		for i := 0; i < 10_000; i = i + 500 {
-			batch, err := utils.GetAddressFromGazetteer(env, orgId, hub, i)
+		// request 10000 addresses per api call
+		// increase another 10k and fetch the next batch of addresses until all were read
+		increase := 10_000
+
+		for i := 0; i < 10_000; i = i + increase {
+			batch, err := utils.GetAddressFromGazetteer(env, orgId, hub, i, increase)
 
 			if err != nil {
 				fmt.Println("Error fetching addresses for", hub)
@@ -235,16 +317,27 @@ func processHubs(env, orgId *string, hubNames *[]string, results *chan Result) {
 			for _, location := range addresses.Locations {
 				semaphore <- true
 				wg.Add(1)
-				go processHubLocations(env, hub, location.ID, &semaphore, &wg, results)
+				go processHubLocations(
+					env, hub, location.ID,
+					&semaphore, &wg, successes, failures,
+				)
 			}
 		}
 		wg.Wait() // wait until all goroutines have finished
 
-		fmt.Printf("------------------ Finishing hub %s ------------------\n", hub)
+		fmt.Printf("-------------------- Finishing hub %s --------------------\n", hub)
 	}
 }
 
-func processHubLocations(env *string, hubName string, locationId string, semaphore *chan bool, wg *sync.WaitGroup, results *chan Result) {
+func processHubLocations(
+	env *string,
+	hubName string,
+	locationId string,
+	semaphore *chan bool,
+	wg *sync.WaitGroup,
+	successes *chan Succeeded,
+	failures *chan Failed,
+) {
 	defer wg.Done()
 	defer func() { <-*semaphore }() // deferring the removal of whatever is in the semaphore
 	// this is basically saying: "hey, this goroutine has finished, some other goroutine can execute now"
@@ -268,13 +361,20 @@ func processHubLocations(env *string, hubName string, locationId string, semapho
 
 	if locationNeedsUpdate(&location) {
 		location.Hub = hubName
-		updateLocation(env, location, results)
+		updateLocation(env, location, successes, failures)
 	}
 }
 
-func updateLocation(env *string, location models.LBLocation, results *chan Result) {
-	update := Result{}
-	update.oldAddress = location
+func updateLocation(
+	env *string,
+	location models.LBLocation,
+	successes *chan Succeeded,
+	failures *chan Failed,
+) {
+	success := Succeeded{}
+	fail := Failed{}
+
+	success.oldAddress = location
 	// fmt.Printf("Original Location: %v\n", location)
 
 	typedAddr := location.TypedAddress
@@ -290,15 +390,22 @@ func updateLocation(env *string, location models.LBLocation, results *chan Resul
 	location.Timezone = bestGeoCoderLocation.TimeZone
 	// location.TypedAddress is already updated in getBestLoc, i'm passing a pointer to it
 
-	update.newAddress = location
+	success.newAddress = location
+	fail.address = location
 
-	*results <- update
-	err := saveAddress(env, &location)
+	err := updateAddress(env, &location)
 
 	if err != nil {
-		fmt.Printf("An error occurred when trying to update address %s in locbox\n", location.ID)
+		fmt.Printf("An error occurred when trying to update location '%s' in lockbox\n", location.ID)
 		fmt.Println("Error:", err)
+
+		fail.errorMessage = err
+		*failures <- fail
+
+		return
 	}
+
+	*successes <- success
 }
 
 func getBestLoc(env *string, typedAddr *models.TypedAddress, locationId *string) models.GCLocation {
@@ -312,13 +419,13 @@ func getBestLoc(env *string, typedAddr *models.TypedAddress, locationId *string)
 	test1, err := getGCAddress(env, &smarty, typedAddr)
 
 	if err != nil {
-		fmt.Printf("An error occurred during Test 1 for location %s:\n", *locationId)
-		fmt.Println("Error:", err)
+		// fmt.Printf("Test 1 for location %s failed\n", *locationId)
+		// fmt.Println("Error:", err)
 	}
 
 	// fmt.Printf("Test 1: %v\n", test1)
 
-	if !newAddressNeedsUpdate(&test1) {
+	if !newLocationNeedsUpdate(&test1) {
 		return test1
 	}
 	tests = append(tests, test1)
@@ -331,13 +438,13 @@ func getBestLoc(env *string, typedAddr *models.TypedAddress, locationId *string)
 		test2, err := getGCAddress(env, &smarty, typedAddr)
 
 		if err != nil {
-			fmt.Printf("An error occurred during Test 2 for location %s:\n", *locationId)
-			fmt.Println("Error:", err)
+			// fmt.Printf("Test 2 for location %s failed\n", *locationId)
+			// fmt.Println("Error:", err)
 		}
 
 		// fmt.Printf("Test 2: %v\n", test2)
 
-		if !newAddressNeedsUpdate(&test2) {
+		if !newLocationNeedsUpdate(&test2) {
 			return test2
 		}
 		tests = append(tests, test2)
@@ -350,13 +457,13 @@ func getBestLoc(env *string, typedAddr *models.TypedAddress, locationId *string)
 	test3, err := getGCAddress(env, &google, typedAddr)
 
 	if err != nil {
-		fmt.Printf("An error occurred during Test 3 for location %s:\n", *locationId)
-		fmt.Println("Error:", err)
+		// fmt.Printf("Test 3 for location %s failed\n", *locationId)
+		// fmt.Println("Error:", err)
 	}
 
 	// fmt.Printf("Test 3: %v\n", test3)
 
-	if !newAddressNeedsUpdate(&test3) {
+	if !newLocationNeedsUpdate(&test3) {
 		return test3
 	}
 	tests = append(tests, test3)
@@ -369,13 +476,13 @@ func getBestLoc(env *string, typedAddr *models.TypedAddress, locationId *string)
 		test4, err := getGCAddress(env, &google, typedAddr)
 
 		if err != nil {
-			fmt.Printf("An error occurred during Test 4 for location %s:\n", *locationId)
-			fmt.Println("Error:", err)
+			// fmt.Printf("Test 4 for location %s failed\n", *locationId)
+			// fmt.Println("Error:", err)
 		}
 
 		// fmt.Printf("Test 4: %v\n", test4)
 
-		if !newAddressNeedsUpdate(&test4) {
+		if !newLocationNeedsUpdate(&test4) {
 			return test4
 		}
 		tests = append(tests, test4)
@@ -383,7 +490,7 @@ func getBestLoc(env *string, typedAddr *models.TypedAddress, locationId *string)
 
 	// none of the above tries were sufficient, so save the best option and let the user know
 
-	fmt.Println("None of our tries were sufficient, we'll update the location with the best option")
+	fmt.Printf("Location %s have a bad address. We'll use the best option available\n", *locationId)
 	var bestLoc *models.GCLocation
 
 	for _, loc := range tests {
@@ -409,7 +516,7 @@ func locationNeedsUpdate(location *models.LBLocation) bool {
 	return true
 }
 
-func newAddressNeedsUpdate(location *models.GCLocation) bool {
+func newLocationNeedsUpdate(location *models.GCLocation) bool {
 	if location.GeocodeQuality == "EXACT" || // location is already perfect
 		location.GeocodeQuality == "HIGH" { // geocode is good enough
 		return false
@@ -422,8 +529,12 @@ func getGCAddress(env, provider *string, address *models.TypedAddress) (models.G
 	var addr models.GCLocation
 
 	response, err := utils.SearchAddressWithGeoCoder(
-		*env, strings.ReplaceAll(address.Address1, " ", "%20"), address.City,
-		address.State, address.PostalCode, *provider,
+		*env,
+		strings.ReplaceAll(address.Address1, " ", "%20"),
+		strings.ReplaceAll(address.City, " ", "%20"),
+		strings.ReplaceAll(address.State, " ", "%20"),
+		strings.ReplaceAll(address.PostalCode, " ", "%20"),
+		*provider,
 	)
 
 	if err != nil {
@@ -441,7 +552,7 @@ func getGCAddress(env, provider *string, address *models.TypedAddress) (models.G
 	return addr, nil
 }
 
-func saveAddress(env *string, loc *models.LBLocation) error {
+func updateAddress(env *string, loc *models.LBLocation) error {
 	locationId := loc.ID
 	loc.ID = ""
 	data, err := json.Marshal(&loc)

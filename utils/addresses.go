@@ -9,7 +9,7 @@ import (
 )
 
 // TODO: analyze making env and orgId not pointers depending on how concurrency will be handled
-func GetAddressFromGazetteer(env *string, orgId *string, hubName string, index int) ([]byte, error) {
+func GetAddressFromGazetteer(env *string, orgId *string, hubName string, index, increase int) ([]byte, error) {
 	response := fasthttp.AcquireResponse()
 	defer fasthttp.ReleaseResponse(response)
 
@@ -22,7 +22,7 @@ func GetAddressFromGazetteer(env *string, orgId *string, hubName string, index i
 	payload := map[string]interface{}{
 		"hubName":    hubName,
 		"queryMode":  "MATCH_ALL_IN_ORDER",
-		"pagination": map[string]interface{}{"from": index, "size": 500},
+		"pagination": map[string]interface{}{"from": index, "size": increase},
 	}
 
 	body, err := json.Marshal(payload)
@@ -64,11 +64,11 @@ func UpdateAddress(env, locationId string, updatedAddress []byte) error {
 		return err
 	}
 
-	if _, err := CheckResponse(response); err != nil {
-		fmt.Println(err)
-	}
+	fmt.Printf("Updating Location %s: %d\n", locationId, response.StatusCode())
 
-	fmt.Printf("Location %s Update: %d\n", locationId, response.StatusCode())
+	if _, err := CheckResponse(response); err != nil {
+		return err
+	}
 
 	return nil
 }

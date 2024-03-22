@@ -1,8 +1,11 @@
 package utils
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
 
+	models "github.com/MarceloCFerraz/MZScripts/ApiModels"
 	"github.com/valyala/fasthttp"
 )
 
@@ -24,12 +27,27 @@ func SendResquet(url, method string, body []byte, response *fasthttp.Response) e
 
 func CheckResponse(response *fasthttp.Response) ([]byte, error) {
 	if response.StatusCode() >= 400 {
-		return nil, fmt.Errorf(
-			"request to %s failed with status code %d. body: %v",
-			response.RemoteAddr(),
+		msg := fmt.Sprintf("status %d",
 			response.StatusCode(),
-			string(response.Body()),
 		)
+
+		// TODO: make this more future proof by extending somehow from just LockBoxUpdateError to something more generic
+
+		var parsedBody models.LockBoxUpdateErrors
+		err := json.Unmarshal(response.Body(), &parsedBody)
+
+		if err == nil {
+			for _, er := range parsedBody {
+				msg = fmt.Sprintf("%s - %s %s",
+					msg,
+					er.Property, er.Message,
+				)
+			}
+
+		} else {
+			msg = fmt.Sprintf("%s - %v", msg, string(response.Body()))
+		}
+		return nil, errors.New(msg)
 	}
 
 	return response.Body(), nil
