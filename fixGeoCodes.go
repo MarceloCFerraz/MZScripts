@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -57,7 +58,55 @@ func main() {
 	<-done
 	// wait for reader finish read all updated addresses and convert them into csv lines
 
-	fmt.Println(csvLines)
+	fileName := fmt.Sprintf(
+		"UPDATED_ADDRESSES_%s.csv",
+		strings.ReplaceAll(startTime.UTC().Format(time.RFC3339), ":", "_"),
+	)
+	csvFile, err := os.Create(fileName)
+
+	if err != nil {
+		fmt.Println("Something went wrong when creating the result file:", err)
+		fmt.Printf("We updated %d addresses:\n", len(csvLines))
+		fmt.Println(csvLines)
+	}
+	defer csvFile.Close()
+
+	writer := csv.NewWriter(csvFile)
+
+	saveDataToFile(fileName, &csvLines, writer)
+
+	fmt.Println("Exiting program...")
+	os.Exit(0)
+}
+
+func saveDataToFile(fileName string, csvLines *[][]string, writer *csv.Writer) {
+	fmt.Printf("Saving updated data to file:%s\n", fileName)
+	rowCount := 0
+
+	// err := writer.WriteAll(*csvLines) // saves all data with one line
+
+	for i, row := range *csvLines {
+		writeErr := writer.Write(row)
+
+		if writeErr != nil {
+			fmt.Printf("Error saving row %d:\n", i)
+			fmt.Println("Row:", row)
+			fmt.Println("Error:", writeErr)
+			continue
+		}
+
+		rowCount++
+
+		if rowCount%10 == 0 {
+			writer.Flush() // ensure data is written
+			flushError := writer.Error()
+			if flushError != nil {
+				fmt.Println("Error flushing data")
+				fmt.Println("Error:", writeErr)
+			}
+			rowCount = 0
+		}
+	}
 }
 
 func startReader(results *chan Result, csvLines *[][]string, done *chan bool) {
@@ -102,14 +151,12 @@ func getAllHubs(env, orgId *string) (models.CromagGetHubs, error) {
 	temp, err := utils.GetAllHubs(env, orgId)
 
 	if err != nil {
-		fmt.Println("An error occurred when getting all hubs: ", err)
 		return models.CromagGetHubs{}, err
 	}
 
 	err = json.Unmarshal(temp, &allHubs)
 
 	if err != nil {
-		fmt.Println("Error unmarshaling: ", err)
 		return models.CromagGetHubs{}, err
 	}
 
@@ -190,8 +237,8 @@ func processHubs(env, orgId *string, hubNames *[]string, results *chan Result) {
 				wg.Add(1)
 				go processHubLocations(env, hub, location.ID, &semaphore, &wg, results)
 			}
-			wg.Wait() // wait until all goroutines for this hub have finished
 		}
+		wg.Wait() // wait until all goroutines have finished
 
 		fmt.Printf("------------------ Finishing hub %s ------------------\n", hub)
 	}
@@ -201,7 +248,7 @@ func processHubLocations(env *string, hubName string, locationId string, semapho
 	defer wg.Done()
 	defer func() { <-*semaphore }() // deferring the removal of whatever is in the semaphore
 	// this is basically saying: "hey, this goroutine has finished, some other goroutine can execute now"
-	fmt.Println("Go Routines:", len(*semaphore))
+	// fmt.Println("Go Routines:", len(*semaphore))
 
 	data, err := utils.GetLocationFromLockbox(*env, locationId)
 
@@ -228,13 +275,13 @@ func processHubLocations(env *string, hubName string, locationId string, semapho
 func updateLocation(env *string, location models.LBLocation, results *chan Result) {
 	update := Result{}
 	update.oldAddress = location
-	fmt.Printf("Original Location: %v\n", location)
+	// fmt.Printf("Original Location: %v\n", location)
 
 	typedAddr := location.TypedAddress
 
 	bestGeoCoderLocation := getBestLoc(env, &typedAddr, &location.ID)
 
-	fmt.Printf("Best geo location: %v\n", bestGeoCoderLocation)
+	// fmt.Printf("Best geo location: %v\n", bestGeoCoderLocation)
 
 	location.Geo.Latitude = bestGeoCoderLocation.Lat
 	location.Geo.Longitude = bestGeoCoderLocation.Lon
@@ -256,8 +303,8 @@ func updateLocation(env *string, location models.LBLocation, results *chan Resul
 
 func getBestLoc(env *string, typedAddr *models.TypedAddress, locationId *string) models.GCLocation {
 	tests := make([]models.GCLocation, 4)
-	addr1 := typedAddr.Address1
-	addr2 := typedAddr.Address2
+	addr1 := strings.TrimSpace(typedAddr.Address1)
+	addr2 := strings.TrimSpace(typedAddr.Address2)
 	smarty := "SMARTY"
 	google := "GOOGLE"
 
@@ -265,7 +312,7 @@ func getBestLoc(env *string, typedAddr *models.TypedAddress, locationId *string)
 	test1, err := getGCAddress(env, &smarty, typedAddr)
 
 	if err != nil {
-		fmt.Printf("An error occurred for location %s:\n", *locationId)
+		fmt.Printf("An error occurred during Test 1 for location %s:\n", *locationId)
 		fmt.Println("Error:", err)
 	}
 
@@ -277,22 +324,24 @@ func getBestLoc(env *string, typedAddr *models.TypedAddress, locationId *string)
 	tests = append(tests, test1)
 
 	// test 2
-	typedAddr.Address1 = addr2
-	typedAddr.Address2 = addr1
+	if addr2 != "" {
+		typedAddr.Address1 = addr2
+		typedAddr.Address2 = addr1
 
-	test2, err := getGCAddress(env, &smarty, typedAddr)
+		test2, err := getGCAddress(env, &smarty, typedAddr)
 
-	if err != nil {
-		fmt.Printf("An error occurred for location %s:\n", *locationId)
-		fmt.Println("Error:", err)
+		if err != nil {
+			fmt.Printf("An error occurred during Test 2 for location %s:\n", *locationId)
+			fmt.Println("Error:", err)
+		}
+
+		// fmt.Printf("Test 2: %v\n", test2)
+
+		if !newAddressNeedsUpdate(&test2) {
+			return test2
+		}
+		tests = append(tests, test2)
 	}
-
-	// fmt.Printf("Test 2: %v\n", test2)
-
-	if !newAddressNeedsUpdate(&test2) {
-		return test2
-	}
-	tests = append(tests, test2)
 
 	// test 3
 	typedAddr.Address1 = addr1
@@ -301,7 +350,7 @@ func getBestLoc(env *string, typedAddr *models.TypedAddress, locationId *string)
 	test3, err := getGCAddress(env, &google, typedAddr)
 
 	if err != nil {
-		fmt.Printf("An error occurred for location %s:\n", *locationId)
+		fmt.Printf("An error occurred during Test 3 for location %s:\n", *locationId)
 		fmt.Println("Error:", err)
 	}
 
@@ -313,22 +362,24 @@ func getBestLoc(env *string, typedAddr *models.TypedAddress, locationId *string)
 	tests = append(tests, test3)
 
 	// test 4
-	typedAddr.Address1 = addr2
-	typedAddr.Address2 = addr1
+	if addr2 != "" {
+		typedAddr.Address1 = addr2
+		typedAddr.Address2 = addr1
 
-	test4, err := getGCAddress(env, &google, typedAddr)
+		test4, err := getGCAddress(env, &google, typedAddr)
 
-	if err != nil {
-		fmt.Printf("An error occurred for location %s:\n", *locationId)
-		fmt.Println("Error:", err)
+		if err != nil {
+			fmt.Printf("An error occurred during Test 4 for location %s:\n", *locationId)
+			fmt.Println("Error:", err)
+		}
+
+		// fmt.Printf("Test 4: %v\n", test4)
+
+		if !newAddressNeedsUpdate(&test4) {
+			return test4
+		}
+		tests = append(tests, test4)
 	}
-
-	// fmt.Printf("Test 4: %v\n", test4)
-
-	if !newAddressNeedsUpdate(&test4) {
-		return test4
-	}
-	tests = append(tests, test4)
 
 	// none of the above tries were sufficient, so save the best option and let the user know
 

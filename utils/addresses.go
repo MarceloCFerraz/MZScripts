@@ -68,6 +68,8 @@ func UpdateAddress(env, locationId string, updatedAddress []byte) error {
 		fmt.Println(err)
 	}
 
+	fmt.Printf("Location %s Update: %d\n", locationId, response.StatusCode())
+
 	return nil
 }
 
