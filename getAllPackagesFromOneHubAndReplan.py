@@ -4,7 +4,7 @@ from datetime import datetime
 
 import requests
 
-from utils import hubs, utils
+from utils import hubs, routes, utils
 
 STATUSES = [
     "CANCELLED",
@@ -61,30 +61,37 @@ def get_all_packages_for_hub(env, orgId, hubName, oldDate, status):
     Returns:
     - List of valid package IDs
     """
-    endpoint = f"http://sortationservices.{utils.convert_env(env)}.milezero.com/SortationServices-war/api/monitor/getPackagesInWave/{orgId}/{hubName}/{oldDate}/true"
+    rts = routes.get_all_routes_from_hub_alamo(env, orgId, hubName, oldDate).get(
+        "routes"
+    )
 
-    packageCount = 0
-    validPackages = []
+    print(f"Found {len(rts)} routes")
+    pids = set()
 
-    try:
-        print(f"calling {endpoint}")
-        packages = requests.get(url=endpoint, timeout=10).json()["packagesMap"]
+    with concurrent.futures.ThreadPoolExecutor() as pool:
+        for route in rts:
+            routeId = route.get("metadata").get("routeId")
 
-        for statusGroup in packages.keys():
-            packageCount += len(packages[statusGroup])
-            # sortation services groups packages by status
-            if status == "" or statusGroup == status:
-                for package in packages[statusGroup]:
-                    packageId = package["externalPackageId"]
-                    validPackages.append(packageId)
+            response = routes.get_stop_details(env, routeId)
 
-    except Exception:
-        pass
+            if response.get("routeStopDetail") is None:
+                print(response.get("message"))
+                return set()
 
-    if packageCount > 0:
-        print(f"{len(validPackages)} (valid) / {packageCount} (total) packages")
+            stops = response["routeStopDetail"]["stops"]
 
-    return validPackages
+            for stop in stops:
+                stopPackages = stop["stopPackages"]
+
+                for pkgs in stopPackages:
+                    pid = pkgs.get("packageId")
+
+                    if pid is not None:
+                        pids.add(pid)
+
+            print(f">> Found {len(pids)} packages for route {routeId}")
+
+    return pids
 
 
 def resubmit_package(env, orgId, packageId, newDate, notes):
@@ -303,12 +310,13 @@ def main():
     )
 
     today = datetime.now()
-    newDate = datetime.min
 
     oldDate = datetime.strptime(
         input("Input the Original Date (yyyy-mm-dd): ").strip(), "%Y-%m-%d"
     )
-    oldDateCpt = (oldDate.strftime("%Y-%m-%d") + "T16:00:00Z").replace(":", "%3A")
+    oldDateCpt = oldDate.strftime("%Y-%m-%d")
+
+    newDate = oldDate
 
     status = "a"
     print("Valid Statuses:")
@@ -332,7 +340,7 @@ def main():
         if len(pkgs) > 0:
             print(f"Total Valid Packages to be Replanned: {len(pkgs)}\n")
 
-            while newDate < today or newDate < oldDate:
+            while newDate >= oldDate:
                 newDate = datetime.strptime(
                     input(
                         f"Input the New Date (yyyy-mm-dd. Later than {today.date()} and {oldDate.date()}): "
