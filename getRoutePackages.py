@@ -236,5 +236,5 @@ if __name__ == "__main__":
             response,
             indent=2,
         ),
-        "ROUTE_PKGS_",
+        "ROUTE_PKGS",
     )
