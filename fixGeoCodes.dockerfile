@@ -5,10 +5,13 @@ FROM golang:1.22.1-alpine3.19 AS builder
 WORKDIR /app
 
 # Copy the source files first
-COPY **/*.go ./
+COPY *.go ./
+# Copy necessary utilities to their respective directories
+COPY utils/*.go ./utils/
+COPY ApiModels/*.go ./ApiModels/
 
 # Copy dependencies files
-COPY go.mod ./
+COPY go.mod go.sum ./
 
 # Install dependencies
 RUN go mod download && go mod verify
