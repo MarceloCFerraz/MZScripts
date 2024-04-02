@@ -234,12 +234,15 @@ def print_minimal_package_details(package):
     hubName = package.get("packageDetails").get("sourceLocation").get("name")
     barcode = package.get("packageDetails").get("shipmentBarcode")
     status = package.get("packageStatuses").get("status")
+    routeId = package.get("planningDetails").get("plannerRouteId")
 
+    # TODO: replace this stupid spacing with proper string formatting
     print(f"HUB Name:           {hubName}")
     print(f"Package ID:         {packageID}")
     print(f"Order Reference ID: {ori}")
     print(f"Scannable Barcode:  {barcode}")
     print(f"Curent Status:      {status}")
+    print(f"Route ID:           {routeId}")
 
 
 def print_package_details(package):
