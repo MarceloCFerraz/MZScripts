@@ -15,7 +15,7 @@ def get_itinerary_packages_and_stops(env, orgId, itinerary, timestamp):
     print(
         f">> {itinerary} have {len(pkgs_and_stops['loadedPackages'])} packages "
         # TODO: fetch switchboard to check package status
-        + f"{len(pkgs_and_stops['deliveryStops'])} stops "
+        # + f"{len(pkgs_and_stops['deliveryStops'])} stops "
         + f"({timestamp})"
     )
 
@@ -113,9 +113,6 @@ def sync_itineraries_and_response(response, itinerary_ids):
             response["uniquePackages"].add(pkg)
 
     # response["uniquePackages"] = list(response["uniquePackages"])
-    print(
-        f"\n>> Total unique packages accross valid itineraries: {len(response['uniquePackages'])}"
-    )
 
     return response
 
@@ -125,7 +122,6 @@ def process_itineraries(env, orgId, itinerary_ids, timestamps, routeId):
 
     # get all the data for each of them concurrently / in parallel
 
-    print("\n>> Fetching itinerary data:")
     with ThreadPoolExecutor() as pool:
         for i in range(len(itinerary_ids)):
             itinerary = itinerary_ids[i]
@@ -148,8 +144,9 @@ def process_itineraries(env, orgId, itinerary_ids, timestamps, routeId):
     return response
 
 
-def get_pkgs_from_stop_details(env, routeId):
+def get_pkgs_from_alamo(env, routeId):
     response = routes.get_stop_details(env, routeId)
+    print(">> Searching for packages with Alamo's Stop Details")
 
     if response.get("routeStopDetail") is None:
         print(response.get("message"))
@@ -167,7 +164,7 @@ def get_pkgs_from_stop_details(env, routeId):
             if pid is not None:
                 pids.add(pid)
 
-    print(f">> Found {len(pids)} packages from alamo stop details")
+    print(f">> Found {len(pids)} packages\n")
 
     return pids
 
@@ -185,7 +182,11 @@ def main(env, orgId, rts=None):
     final_response = {}
 
     for routeId in rts:
+        print(f'{"{:=<50}".format("")}')  # prints 50 `=` characters aligned to the left
+        print(f">> Route ID: {routeId}")
+
         pids = set()
+
         # get packages from sortation (issue is pkgs are not getting to itinerary)
         pkgs_sortation = packages.get_route_packages_sortation(env, orgId, routeId)
 
@@ -193,7 +194,7 @@ def main(env, orgId, rts=None):
             pids.add(pkg["packageID"])
 
         # get packages from route stop details
-        pkgs_alamo = get_pkgs_from_stop_details(env, routeId)
+        pkgs_alamo = get_pkgs_from_alamo(env, routeId)
 
         for pkg in pkgs_alamo:
             pids.add(pkg)
@@ -203,11 +204,11 @@ def main(env, orgId, rts=None):
 
         if events is not None:
             itinerary_ids, timestamps = fetch_itineraries(events)
+            print(f">> Found {len(itinerary_ids)} itineraries")
 
             # print_itineraries(itinerary_ids)
-            if not no_itinerary_generated(
-                itinerary_ids
-            ):  # if at least one itinerary was generated
+            # if at least one itinerary was generated
+            if not no_itinerary_generated(itinerary_ids):
                 response = process_itineraries(
                     env, orgId, itinerary_ids, timestamps, routeId
                 )
@@ -218,9 +219,9 @@ def main(env, orgId, rts=None):
         # sets are not json compatible, so need to convert to list
         final_response[routeId] = list(pids)
 
-        print(
-            f">> {len(final_response[routeId])} unique packages gathered from route {routeId}"
-        )
+        print(f">> Total of {len(final_response[routeId])} unique packages")
+
+    print()
 
     return final_response
 

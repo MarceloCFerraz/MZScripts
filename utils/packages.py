@@ -501,7 +501,7 @@ def get_route_packages_sortation(env, org_id, routeId):
     """
     url = f"http://sortationservices.{utils.convert_env(env)}.milezero.com/SortationServices-war/api/monitor/packages/{org_id}/{routeId}"
 
-    print(f">> Searching for packages in {routeId} using sortation services")
+    print(">> Searching for packages with Sortation Services")
 
     response = requests.get(url=url, timeout=15).json()
 
