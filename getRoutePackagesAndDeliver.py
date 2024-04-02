@@ -21,18 +21,16 @@ if __name__ == "__main__":
             print(f"Marking all packages from {routeId} as delivered")
 
             with ThreadPoolExecutor() as pool:
-                for pid in response["uniquePackages"]:
+                for pid in pkgs:
                     pool.submit(packages.mark_package_as_delivered, env, orgId, pid)
             pool.shutdown(True)
-
-            validRoutes[routeId] = response[routeId]
 
     # lastly, save data on which routes and which packages the script interacted with to a .json file
     print("results saved in the file below")
     files.save_json_to_file(
         json.dumps(
-            validRoutes,
+            response,
             indent=2,
         ),
-        "ROUTES_DELIVERED_",
+        "ROUTES_DELIVERED",
     )
