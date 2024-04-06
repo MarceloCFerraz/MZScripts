@@ -68,5 +68,5 @@ if __name__ == "__main__":
             validRoutes,
             indent=2,
         ),
-        "ROUTES_COMMITTED_",
+        "ROUTES_COMMITTED",
     )
