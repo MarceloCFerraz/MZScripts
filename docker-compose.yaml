@@ -6,6 +6,8 @@ services:
             context: .
             # replace this with your docker file
             # TODO: have to figure a way to pass args to the script and define them here
+            # https://docs.docker.com/compose/compose-file/build/#args
+            # https://docs.docker.com/compose/compose-file/build/#secrets
             dockerfile: fixGeoCodes.dockerfile
         network_mode: host
         # deploy:
