@@ -1,15 +1,21 @@
 version: "3"
 
 services:
-    script:
+    fixGeoCodes: # replace me with other script's name
         build:
             context: .
-            # replace this with your docker file
-            # TODO: have to figure a way to pass args to the script and define them here
+            # remember to delete your docker image if you need to build it again
             # https://docs.docker.com/compose/compose-file/build/#args
             # https://docs.docker.com/compose/compose-file/build/#secrets
             dockerfile: fixGeoCodes.dockerfile
+            # remember the docker file to point to your script
+            # TODO: if the script saves files, there must be a way to get them from the container
         network_mode: host
+        env_file:
+            - path: ./fixGeoCodes.env
+              required: true # default
+
+
         # deploy:
         #     resources:
         #         limits:

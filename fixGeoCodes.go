@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -25,16 +26,25 @@ type Failed struct {
 }
 
 func main() {
-	util := utils.Initialize()
-
-	env := util.SelectEnv()
-	orgId := util.SelectOrg(&env)
-
 	startTime := time.Now().UTC()
 	fmt.Println(startTime)
 
-	fmt.Println("Fetching all hubs...")
+	util := utils.Initialize()
 
+	var env, orgId, orgName string
+	var found bool
+
+	if env, found = os.LookupEnv("ENVIROMENT"); !found {
+		env = util.SelectEnv()
+	}
+
+	if orgName, found = os.LookupEnv("ORG"); found {
+		orgId = util.SelectOrg(env, orgName)
+	} else {
+		orgId = util.SelectOrg(env)
+	}
+
+	fmt.Println("Fetching available Hubs...")
 	allHubs, err := getAllHubs(&env, &orgId)
 
 	if err != nil {
@@ -42,16 +52,31 @@ func main() {
 		os.Exit(1)
 	}
 
-	var hubNames []string
 	// TODO: Add another option to read from .txt file
-	options := []string{"Update All Hubs", "Update specific Hubs"}
+	options := []string{"Update All Hubs", "Update specific Hubs (from console)"}
+	var hubNames []string
+	var option int64
 
-	switch utils.SelectOption(&options) {
+	if opt, found := os.LookupEnv("SEARCH_OPTION"); !found {
+		option = utils.SelectOption(&options)
+	} else if option, err = strconv.ParseInt(opt, 10, 32); err != nil {
+		fmt.Println("Unable to int parse the provided arg option. Check error below", opt)
+		panic(err)
+	}
+
+	switch option {
+	case 0:
+		hubNames = getAllHubNames(&allHubs)
 	case 1:
 		getHubNamesFromUser(&hubNames, &allHubs)
+	case 2:
+		if hubs, found := os.LookupEnv("HUB_NAMES"); found {
+			json.Unmarshal([]byte(hubs), &hubNames)
+		}
+		fmt.Println("Fixing geo codes provided by env:", hubNames)
+	// TODO: Add another option to read from .txt file
 	default:
-		// not a pointer because this function is also used in `getHubNamesFromUser`
-		hubNames = getAllHubNames(&allHubs)
+		panic("Please provide a valid option")
 	}
 
 	successes := make(chan Succeeded)
@@ -245,7 +270,6 @@ func getHubNamesFromUser(hubNames *[]string, allHubs *models.CromagGetHubs) {
 	for {
 		fmt.Printf("Hub Names Selected So Far: %v\n", *hubNames)
 		fmt.Print("> ")
-		fmt.Scanln()
 
 		if _, err := fmt.Scanf("%s", &hubName); err != nil {
 			// if input is new line and hubNames have at least one item
@@ -253,14 +277,24 @@ func getHubNamesFromUser(hubNames *[]string, allHubs *models.CromagGetHubs) {
 				fmt.Println("Returning...")
 				return
 			}
-			fmt.Println("Type a valid option")
-		} else if !utils.Contains(hubNames, &hubName) {
-			if utils.Contains(&allNames, &hubName) {
-				*hubNames = append(*hubNames, hubName)
-			} else {
-				fmt.Println("This option doesn't exist in this org")
-			}
+			fmt.Println("Type a valid option! ")
+			continue
 		}
+
+		if utils.Contains(hubNames, &hubName) {
+			fmt.Println("You've already selected this hub. Try a different one")
+			continue
+		}
+
+		if !utils.Contains(&allNames, &hubName) {
+			fmt.Println(hubName, "doesn't exist in this org")
+			continue
+		}
+
+		*hubNames = append(*hubNames, hubName)
+
+		// fmt.Println("Press Enter to continue")
+		// fmt.Scanln()
 	}
 }
 

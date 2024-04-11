@@ -12,6 +12,7 @@ def get_itinerary_packages_and_stops(env, orgId, itinerary, timestamp):
 
     ITINERARIES[itinerary] = {"pkgsAndStops": pkgs_and_stops, "uniquePackages": set()}
 
+    # TODO: check why the fuck this is not printing every time.
     print(
         f">> {itinerary} have {len(pkgs_and_stops['loadedPackages'])} packages "
         # TODO: fetch switchboard to check package status
