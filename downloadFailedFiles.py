@@ -2,16 +2,14 @@ import datetime
 import json
 import time
 from concurrent.futures import ThreadPoolExecutor
+from multiprocessing import cpu_count
 
 import requests
 
 from utils import utils
 from utils.files import save_json_to_file
 
-# from multiprocessing import cpu_count
-
-
-# thread_count = cpu_count()
+thread_count = cpu_count()
 FAILED_REQUESTS = []
 DETAILED_REQUESTS = []
 
@@ -49,7 +47,6 @@ def save_failed_request(newReq):
     response = {requestId: inner_body}
 
     FAILED_REQUESTS.append(response)
-    print("Saved failed data")
 
 
 def get_request_file(env: str, requestId: str):
@@ -68,7 +65,6 @@ def save_completed_request(req, requestId):
 
     response = {requestId: inner_body}
 
-    print(response)
     DETAILED_REQUESTS.append(response)
 
 
@@ -91,7 +87,6 @@ def check_if_failed(env: str, requestId: str):
         time.sleep(5)
 
         print(f"Re-checking {requestId}: {count + 1}")
-        # retry(env, requestId)
         request = check_request(env, requestId)
 
         if request is None or request.get("requestStatus") is None:
@@ -118,43 +113,6 @@ def process_requests(env: str, thread_number: int, request_list: list):
     if len(request_list) == 0:
         return
     # each thread will operate on an interval TO AVOID DATA RACES
-    # START DELETING FROM HERE
-    # let`s call the number of requests per thread `rt`
-    # the thread identifier number will be called `tn`,
-    # the lower limit of the interval will be called `ll`
-    # and the higher limit `hl`
-    # -> rt = requests len / thread count
-    # -> hl = rt * tn
-    # -> ll = hl - rt
-    # if hl is higher than rt, also need to convert to a positive number
-    # Example:
-    # assuming there are 5 threads (i know this is impossible), each identified by a number (1 - 5),
-    # and the requests len is 250, same as the max (5 threads * 50 reqs per page)
-    # -> rt = 250 / 5 = 50
-    # -> hl = 50 * tn
-    # -> ll = hl - rt
-    # thread 1 =>   0 - 50      -> hl = 50 * 1 = 50     -> ll =  50 - 50 = 0
-    # thread 2 =>  50 - 100     -> hl = 50 * 2 = 100    -> ll = 100 - 50 = 50
-    # thread 3 => 100 - 150     -> hl = 50 * 3 = 150    -> ll = 150 - 50 = 100
-    # thread 4 => 150 - 200     -> hl = 50 * 4 = 200    -> ll = 200 - 50 = 150
-    # thread 5 => 200 - 250     -> hl = 50 * 5 = 250    -> ll = 250 - 50 = 200
-    # if we're dealing with a number of requests that's less than the maximum allowed,
-    # the logic above won't work 100%. that's because rt won't be an integer, so the high and
-    # low level calculations won't work as expected.
-    # Example: requests = 172; Max = 250; threads = 5
-    # -> rt = 172 / 5 = 34,4
-    # -> hl = 34,4 * tn (result will be int)
-    # -> ll = hl - rt (result will be int)
-    # thread 1 =>   0 - 34      -> hl = 34,4 * 1 = 34,4  = 34 (int)   -> ll =  34 - 34,4 = -0,4  = 0 (int)
-    # thread 2 =>  33 - 68      -> hl = 34,4 * 2 = 68,8  = 68 (int)   -> ll =  68 - 34,4 = 33,6  = 33 (int)
-    # thread 3 =>  68 - 103     -> hl = 34,4 * 3 = 103,2 = 103 (int)  -> ll = 103 - 34,4 = 68,6  = 68 (int)
-    # thread 4 => 102 - 137     -> hl = 34,4 * 4 = 137,6 = 137 (int)  -> ll = 137 - 34,4 = 102,6 = 102 (int)
-    # thread 5 => 137 - 172     -> hl = 34,4 * 5         = 172 (int)  -> ll = 172 - 34,4 = 137,6 = 137 (int)
-    # as we can see, thread 2 overlaps the last element of thread 1 and the same occurs for 4 and 3
-    # the good thing is we can easily identify when that's occurring:
-    # -> when tn is even and when requests len > max len
-    # so we could easily overcome this by treating this edge case with an if statement,
-    # STOP DELETING HERE
     # according to my tests, splitting the integer conversion to a different line already solves the issue where
     # a thread overlaps the job of another thread or leave some request behind
     # don't ask me why, but here's my test: https://github.com/MarceloCFerraz/MZScripts/blob/master/experiments.ipynb
@@ -178,9 +136,6 @@ def process_requests(env: str, thread_number: int, request_list: list):
 
 
 def fetch_requests(url: str):
-    # global done, full, request_list, thread_count, page_size, page_number, threads_done
-    # print(f"Thread {thread_number} is fetching request ids")
-
     response = requests.get(url=url, timeout=300).json()
 
     try:
@@ -188,50 +143,15 @@ def fetch_requests(url: str):
 
         if err is not None:
             print(f"An error occurred: {err}")
-            # print(f"An error occurred in thread {thread_number}: {err}")
             return []
-            # done = True  # this can probably stop other threads
-    except AttributeError:
+    except Exception:
         # if there is an error accessing "message", it's because the object is an array, so nothing to worry about
-        pass
+        return []
 
     return response
 
-    # if response != []:
-    #     for request in response:
-    #         existing_request = [
-    #             r
-    #             for r in request_list
-    #             if r["id"] != request["requestStatusParent"]["parentId"]
-    #         ]
-    #         if existing_request == []:
-    #             # Orderdet files reference their parent orders file in requestStatusParen.parentId and parentName properties
-    #             # This if is only checking if the parent is already in the set of requests.
-    #             # If it is, (maybe) there'se no need to add this one too as it would only generate duplicate data for us to review
-    #             request_list.append(request)
-
-    #     # threads should not process everything at once. The idea is, fetch some data until a certain limit, process it and then fetch more data
-    #     # For example, if pagenumber is 50 and we have 5 cores, the max number of requests is 250.
-    #     # When 250 are reached, pause and process them before continuing
-    #     full = len(request_list) == max_requests
-    # else:
-    #     print("No requests found, we're done here")
-    #     done = True
-    #     full = True
-
-    # # if full and len(request_list) > 0:
-    # # process_requests(env, thread_number)
-
-    # # while len(threads_done) < thread_count:
-    # #     # make all threads wait until all threads have processed their stuff before continuing
-    # #     time.sleep(0.1)
-    # # full = False
-    # # threads_done = []
-    # # request_list = []
-
 
 if __name__ == "__main__":
-    thread_count = 8
     request_list = []
     full = False
     done = False
@@ -289,9 +209,6 @@ if __name__ == "__main__":
                 or r["id"] == request["id"]
             ]
             if not existing_request:
-                # Orderdet files reference their parent orders file in requestStatusParen.parentId and parentName properties
-                # This if statement is only checking if the parent is already in the set of requests.
-                # If it is, (maybe) there'se no need to add the orderdet too as it would only generate duplicate data for us to review
                 print(f'Saving {request["id"]}')
                 request_list.append(request)
 
@@ -314,7 +231,9 @@ if __name__ == "__main__":
         print("Cleared request list")
         page_number += 1
 
-    print(FAILED_REQUESTS)
-    save_json_to_file(json.dumps(FAILED_REQUESTS), "FAILED_RETRIED_REQUESTS")
-    print(DETAILED_REQUESTS)
-    save_json_to_file(json.dumps(DETAILED_REQUESTS), "SUCCEEDED_RETRIED_REQUESTS")
+    if len(FAILED_REQUESTS) > 0:
+        save_json_to_file(json.dumps(FAILED_REQUESTS), "FAILED_RETRIED_REQUESTS")
+    if len(DETAILED_REQUESTS) > 0:
+        save_json_to_file(json.dumps(DETAILED_REQUESTS), "SUCCEEDED_RETRIED_REQUESTS")
+
+    print("Quitting program")
