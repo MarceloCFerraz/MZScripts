@@ -296,7 +296,29 @@ def main():
         if status == "":
             status = DEFAULT_IGNORE
 
-    for hubName in ["316", "215", "242", "273", "278", "610", "109", "554", "437", "423", "244", "534", "205", "614", "355", "106", "112", "434", "207", "651", "411"]:
+    for hubName in [
+        "316",
+        "215",
+        "242",
+        "273",
+        "278",
+        "610",
+        "109",
+        "554",
+        "437",
+        "423",
+        "244",
+        "534",
+        "205",
+        "614",
+        "355",
+        "106",
+        "112",
+        "434",
+        "207",
+        "651",
+        "411",
+    ]:
         print(f"Working on {hubName}")
         # hub = hubs.search_hub_by_name(env, orgId, input(">> Type the Hub Name: "))
         hub = hubs.search_hub_by_name(env, orgId, hubName)

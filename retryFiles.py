@@ -67,6 +67,7 @@ if __name__ == "__main__":
             state = "FAILED"
 
             i = 0
+
             url = f"http://tesseract.{utils.convert_env(env)}.milezero.com/Tesseract-war/api/request/status/{orgId}?startDate={start_date_str}&endDate={end_date_str}&filterByState={state}&hubId={hubId}&pageNumber={i}&pageSize=10000"
             response = requests.get(url=url)
             reqs = set()
