@@ -370,14 +370,15 @@ def choose_fleet_candidate(fleetCandidates, hubIdsList, hubsList):
         fleetHubIds = fleetCandidates[index]["hubIds"]
 
         fleetHubs = [h["name"] for h in hubsList if h["id"] in fleetHubIds]
-        fleetHubs.sort()
 
         # the section below prints something like this:
         # >> 0 - HUB1     HUB2     HUB3     HUB4     HUB5     HUB6(+)
 
         printString = [
-            f"{hub}{'' if hub in desiredHubs else '(+)'}" for hub in fleetHubs
+            f"{'' if hub in desiredHubs else '(+)'}{hub}" for hub in fleetHubs
         ]
+        printString.sort(reverse=True)
+
         printString = [f"{string:<9}" for string in printString]
 
         print(f">> {index:<2}\n{''.join(printString)}\n\n")
