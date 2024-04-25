@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"strings"
+
+	"github.com/MarceloCFerraz/MZScripts/utils/colors"
 )
 
 type utils struct {
@@ -18,7 +20,7 @@ type Orgs struct {
 	Integ map[string]string `json:"INTEG"`
 }
 
-func Initialize() utils {
+func Initialize(i *colors.Input) utils {
 	data := []byte(`{
 		"PROD": {
 			"CLM": "8a9e84be-9874-4346-baab-26053d35871e",
@@ -54,37 +56,55 @@ func Initialize() utils {
 	}
 
 	if err := json.Unmarshal(data, &utils.Orgs); err != nil {
-		fmt.Println("Could not initialize Orgs. Check error below.")
+		i.Text = "Could not initialize Orgs. Check error below."
+		i.FontColor = colors.Red
+		i.Bold = true
+		fmt.Println(i.Paint())
 		panic(err)
 	}
 
 	return utils
 }
 
-func (u *utils) SelectEnv() string {
-	fmt.Println("Select one of the Envs:")
+func (u *utils) SelectEnv(input *colors.Input) string {
+	input.Text = "Select one of the Envs:"
+	input.FontColor = colors.Green
+
+	fmt.Println(input.Paint())
 	var option int
 
 	for {
-		fmt.Printf("> ")
+		input.FontColor = colors.Green
+		input.Bold = false
+
 		for i, env := range u.Envs {
-			fmt.Printf("(%d) %s\n> ", i, env)
+			input.Text = fmt.Sprintf("> (%d) %s", i, env)
+			fmt.Println(input.Paint())
 		}
 
+		fmt.Print("> ")
 		if _, err := fmt.Scanf("%d", &option); err == nil && option >= 0 && option < len(u.Envs) {
 			fmt.Println()
+			input.Reset()
 			return u.Envs[option]
 		}
 
-		fmt.Println("Type a valid number")
+		input.Text = "Type a valid number"
+		input.FontColor = colors.Red
+		input.Bold = true
+
+		fmt.Println(input.Paint())
 	}
 }
 
-func (u *utils) SelectOrg(envs ...string) string {
+func (u *utils) SelectOrg(input *colors.Input, envs ...string) string {
 	var env, orgName, orgId string
+	input.FontColor = colors.Green
 
 	length := len(envs)
-	fmt.Printf("%d arguments provided:\n", length)
+
+	input.Text = fmt.Sprintf("%d arguments provided:", length)
+	fmt.Println(input.Paint())
 
 	for i, val := range envs {
 		switch i {
@@ -93,20 +113,30 @@ func (u *utils) SelectOrg(envs ...string) string {
 		case 1:
 			orgName = strings.ToUpper(val)
 		default:
-			fmt.Printf("Arg: %s\n", val)
+			input.FontColor = colors.Red
+			input.Text = fmt.Sprintf("Unexpected Arg: %s", val)
+			fmt.Println(input.Paint())
 		}
 	}
 
+	input.Bold = true
+	input.FontColor = colors.Red
+
 	switch length {
 	case 0:
-		fmt.Println("No arguments provided, can't determine which orgId to pick. Quitting now")
+		input.Text = "No arguments provided, can't determine which orgId to pick. Quitting now"
+
+		fmt.Println(input.Paint())
 		os.Exit(1)
 	case 1:
 		orgId = getOrgFromUser(env, u)
 	case 2:
 		orgId = getOrgFromArgs(env, orgName, u)
 	default:
-		panic("More than 2 arguments were provided. Please check them above and review your code or add more support to them")
+		input.Text = "More than 2 arguments were provided. Please check them above and review your code or add more support to them"
+
+		fmt.Println(input.Paint())
+		os.Exit(1)
 	}
 
 	return orgId

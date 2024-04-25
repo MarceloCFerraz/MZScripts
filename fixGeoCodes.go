@@ -13,6 +13,7 @@ import (
 
 	models "github.com/MarceloCFerraz/MZScripts/ApiModels"
 	"github.com/MarceloCFerraz/MZScripts/utils"
+	"github.com/MarceloCFerraz/MZScripts/utils/colors"
 )
 
 type Succeeded struct {
@@ -26,22 +27,25 @@ type Failed struct {
 }
 
 func main() {
+	colors.Init()
+	i := colors.Input{}
+
 	startTime := time.Now().UTC()
 	fmt.Println(startTime)
 
-	util := utils.Initialize()
+	util := utils.Initialize(&i)
 
 	var env, orgId, orgName string
 	var found bool
 
 	if env, found = os.LookupEnv("ENVIROMENT"); !found {
-		env = util.SelectEnv()
+		env = util.SelectEnv(&i)
 	}
 
 	if orgName, found = os.LookupEnv("ORG"); found {
-		orgId = util.SelectOrg(env, orgName)
+		orgId = util.SelectOrg(&i, env, orgName)
 	} else {
-		orgId = util.SelectOrg(env)
+		orgId = util.SelectOrg(&i, env)
 	}
 
 	fmt.Println("Fetching available Hubs...")
