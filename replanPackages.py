@@ -22,11 +22,47 @@ def fill_packages_list(env, orgId, keyType, key):
     None
     """
     add_to_packages_list(
-        packages.get_packages_details(env, orgId, keyType, key)["packageRecords"]
+        packages.get_package_details(env, orgId, keyType, key)["packageRecords"]
     )
 
 
-def fill_packages_list_batch(env, orgId, keyType, batchOfKeys):
+def search_pkgs(env, orgId, keyType, batch, hubName: str | None):
+    pids = set()
+
+    try:
+        for pkg in batch:
+            p = packages.search_for_package(env, orgId, pkg, hubName)["packages"]
+
+            if len(p) <= 0:
+                print(
+                    f"Package Seeker couldn't find {pkg}" + f" for {hubName}"
+                    if hubName
+                    else ""
+                )
+                continue
+
+            pids.add(p[0]["packageId"])
+
+        print(
+            f"Found {len(pids)} packages for batch" + f" for {hubName}"
+            if hubName
+            else ""
+        )
+    except Exception as e:
+        print(e)
+
+    if len(pids) == 0:
+        # print("packageSeeker couldn't find any of the packages from this batch")
+        return
+
+    add_to_packages_list(
+        packages.bulk_get_package_details(env, orgId, "pi", list(pids))[
+            "packageRecords"
+        ]
+    )
+
+
+def fill_packages_list_batch(env, orgId, keyType, batch, hubName: str | None):
     """
     Fill the PACKAGES list with package details.
 
@@ -40,9 +76,7 @@ def fill_packages_list_batch(env, orgId, keyType, batchOfKeys):
     None
     """
     add_to_packages_list(
-        packages.bulk_get_package_details(env, orgId, keyType, batchOfKeys)[
-            "packageRecords"
-        ]
+        packages.bulk_get_package_details(env, orgId, keyType, batch)["packageRecords"]
     )
 
 
@@ -220,33 +254,45 @@ def load_inputs(
 
 
 def main(
-    env,
-    orgId,
-    keys,
-    keyType,
-    next_delivery_date,
+    env: str,
+    orgId: str,
+    keys: list[str],
+    keyType: str,
+    next_delivery_date: str,
     hubName=None,
 ):
-    load_packages(env, orgId, keyType, keys)
+    print(f"Key Types: {keyType.upper()}\nKeys: {keys}\n")
+    load_packages(env, orgId, keyType, keys, hubName)
     process_packages(env, orgId, next_delivery_date, hubName)
 
 
-def load_packages(env, orgId, keyType, keys):
-    print(f"Key Types: {keyType.upper()}\nKeys: {keys}\n")
-
+def load_packages(
+    env: str,
+    orgId: str,
+    keyType: str,
+    keys: list[str],
+    hubName: str | None,
+    pkgSeeker: bool = False,
+):
     # Using multithreading to fetch multiple packages simultaneosly
     # also split in batches to make less api calls and also accelerate the whole process
     with concurrent.futures.ThreadPoolExecutor(8) as pool:
         # getting packages in Switchboard with keys (ori, bc, etc) provided in the file <fileName>.txt
-        if len(keys) > 1:
-            batches = utils.divide_into_batches(keys)
 
-            for batch in batches:
-                pool.submit(fill_packages_list_batch, env, orgId, keyType, batch)
-        else:
-            for key in keys:
-                pool.submit(fill_packages_list, env, orgId, keyType, key)
+        batches = utils.divide_into_batches(keys)
+        fn = fill_packages_list_batch
+
+        if pkgSeeker:
+            fn = search_pkgs
+
+        for batch in batches:
+            pool.submit(fn, env, orgId, keyType, batch, hubName)
     pool.shutdown(wait=True)
+
+    if len(PACKAGES) == 0 and not pkgSeeker:
+        print("Trying to search again with Package Seeker + Switchboard")
+        # time.sleep(5)
+        load_packages(env, orgId, keyType, keys, hubName, pkgSeeker=True)
 
     print()
     print("===============================")

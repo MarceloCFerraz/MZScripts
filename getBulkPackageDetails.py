@@ -20,7 +20,7 @@ def fill_packages_list(env, orgId, key_type, key):
     Returns:
     None
     """
-    pkgs = packages.get_packages_details(env, orgId, key_type, key)["packageRecords"]
+    pkgs = packages.get_package_details(env, orgId, key_type, key)["packageRecords"]
 
     if len(pkgs) == 0:
         print("> NO PACKAGES FOUND <\n")

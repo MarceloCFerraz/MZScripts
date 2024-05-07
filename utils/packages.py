@@ -178,7 +178,7 @@ def bulk_get_package_details(env, org_id, key_type, keys):
     return requests.post(url=url, json=payload, timeout=30).json()
 
 
-def get_packages_details(env, org_id, key_type, key):
+def get_package_details(env, org_id, key_type, key):
     """
     Retrieves details of packages based on a specific key.
 
@@ -201,7 +201,7 @@ def get_packages_details(env, org_id, key_type, key):
     return requests.get(endpoint, timeout=5).json()
 
 
-def get_packages_histories(env, org_id, key_type, key):
+def get_package_histories(env, org_id, key_type, key):
     """
     Retrieves the histories of packages based on a specific key.
 
@@ -614,3 +614,18 @@ def get_package_hub(package):
         return hubName
 
     return None
+
+
+def search_for_package(env: str, orgId: str, keyword: str, hubName: str | None):
+    url = f"https://packageseeker.{utils.convert_env(env)}.milezero.com/packageseeker-war/api/seeker/search/{orgId}"
+
+    payload = {}
+    payload["keyword"] = keyword
+    payload["pagination"] = {"from": 0, "size": 10}
+
+    if hubName:
+        payload["hubName"] = hubName
+
+    response = requests.post(url=url, json=payload, timeout=300)
+
+    return response.json()

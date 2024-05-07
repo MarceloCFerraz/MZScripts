@@ -1,4 +1,6 @@
 import sys
+
+
 from utils import files, packages, utils
 
 
@@ -61,7 +63,7 @@ def main(key, key_type, statuses):
     valid_packages = []
     invalid_packages = 0
 
-    pkgs = packages.get_packages_details(env, orgId, key_type, key)["packageRecords"]
+    pkgs = packages.get_package_details(env, orgId, key_type, key)["packageRecords"]
     for package in pkgs:
         status = package["packageStatuses"]["status"]
 

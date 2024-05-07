@@ -118,7 +118,7 @@ def load_data_from_file(file_name):
     return data
 
 
-def get_packages_details(env, org_id, key_type, key):
+def get_package_details(env, org_id, key_type, key):
     """
     Retrieves package details based on the provided parameters.
 
@@ -138,7 +138,7 @@ def get_packages_details(env, org_id, key_type, key):
     return requests.get(endpoint, timeout=15).json()
 
 
-def get_packages_histories(env, org_id, key_type, key):
+def get_package_histories(env, org_id, key_type, key):
     """
     Retrieves package histories based on the provided parameters.
 
@@ -211,7 +211,7 @@ def main():
                 .strftime("%Y-%m-%d")
             )
 
-            package_data = get_packages_details(env, org_id, "bc", barcode)[
+            package_data = get_package_details(env, org_id, "bc", barcode)[
                 "packageRecords"
             ]
             print(f"{len(package_data)} packages found")
@@ -226,7 +226,7 @@ def main():
             elif len(package_data) == 1:
                 package = package_data[0]
 
-                package_history = get_packages_histories(
+                package_history = get_package_histories(
                     env, org_id, "pi", package["packageId"]
                 )["histories"][0]
 

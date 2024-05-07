@@ -33,9 +33,7 @@ def main(fileName, keyType):
 
     for line in lines:
         # getting packages from barcode present in file line
-        pkgs = packages.get_packages_details(env, orgId, keyType, line)[
-            "packageRecords"
-        ]
+        pkgs = packages.get_package_details(env, orgId, keyType, line)["packageRecords"]
 
         if len(pkgs) == 0:
             print("> NO PACKAGES FOUND <\n")
@@ -47,15 +45,16 @@ def main(fileName, keyType):
             packageID = package["packageId"]
             hubName = package["packageDetails"]["sourceLocation"]["name"]
 
-            if status != "DELIVERED":
-                print(f"----> PACKAGE ID: {packageID} (OK)")
-                print(f"--> PROVIDER: {provider}")
-                print(f"--> STATUS: {status}\n")
-                print(f"--> HUB: {hubName}")
+            print(
+                f"\n---> PACKAGE ID: {packageID}" + " (DELIVERED)"
+                if status == "DELIVERED"
+                else "OK"
+            )
+            print(f"--> PROVIDER: {provider}")
+            print(f"--> STATUS: {status}\n")
+            print(f"--> HUB: {hubName}")
 
-                packages.mark_package_as_delivered(env, orgId, packageID)
-            else:
-                print(f"\n----> PACKAGE ID: {packageID} (already DELIVERED)\n")
+            packages.mark_package_as_delivered(env, orgId, packageID)
 
 
 # get command line argument

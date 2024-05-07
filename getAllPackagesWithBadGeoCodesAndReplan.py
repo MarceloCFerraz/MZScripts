@@ -90,7 +90,7 @@ def main():
 
         print("Searching for badly geo coded packages...")
         for packageID in pkgs:
-            pkg = packages.get_packages_details(env, orgId, "pi", packageID)[
+            pkg = packages.get_package_details(env, orgId, "pi", packageID)[
                 "packageRecords"
             ][0]
 

@@ -1,6 +1,7 @@
-from utils import files, packages, utils
 import os
 import sys
+
+from utils import files, packages, utils
 
 
 def get_file_name():
@@ -48,7 +49,7 @@ def main(FILENAME, KEY_TYPE):
     files.start_logging(logFile)
 
     for line in lines:
-        pkgs = packages.get_packages_details(env, orgId, KEY_TYPE, line)[
+        pkgs = packages.get_package_details(env, orgId, KEY_TYPE, line)[
             "packageRecords"
         ]
 

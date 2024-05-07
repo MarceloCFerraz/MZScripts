@@ -19,7 +19,7 @@ def fill_packages_list(env, orgId, key_type, key):
     Returns:
     None
     """
-    pkgs = packages.get_packages_histories(env, orgId, key_type, key)["histories"]
+    pkgs = packages.get_package_histories(env, orgId, key_type, key)["histories"]
 
     if len(pkgs) == 0:
         print("> NO PACKAGES FOUND <\n")

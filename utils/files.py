@@ -1,8 +1,26 @@
 import json
 import os
+import re
 import sys
 
 from utils import utils
+
+
+def sanitizeLines(lines: list[str]):
+    # no duplicates allowed
+    results = set()
+
+    for line in lines:
+        # This pattern matches the first special character and everything after it
+        pattern = r"[!@#$%^&*(),.?\"':{}\[\]\\/|<>].*"
+        line = re.sub(pattern, "", line.strip())
+
+        line.replace("\n", "")
+        if line != "":
+            results.add(line.strip())
+
+    results = list(results)
+    return results
 
 
 def get_data_from_file(fileName):
@@ -18,16 +36,7 @@ def get_data_from_file(fileName):
     with open(fileName + ".txt", "r") as file:
         lines = file.readlines()
 
-    results = []
-
-    for line in lines:
-        if line != "":
-            results.append(line.strip())
-
-    # removing duplicates from list
-    # this make the list unordered. Comment this line if
-    # this impact your workflow somehow
-    results = list(set(results))
+    results = sanitizeLines(lines)
 
     print("{} unique lines in file {}\n".format(len(results), fileName))
     return results

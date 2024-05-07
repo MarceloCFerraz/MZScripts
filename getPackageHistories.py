@@ -1,4 +1,6 @@
 import sys
+
+
 from utils import files, packages, utils
 
 
@@ -23,7 +25,7 @@ def main(KEY, KEY_TYPE):
     env = utils.select_env()
     orgId = utils.select_org(env)
 
-    histories = packages.get_packages_histories(env, orgId, KEY_TYPE, KEY)["histories"]
+    histories = packages.get_package_histories(env, orgId, KEY_TYPE, KEY)["histories"]
 
     if histories != []:
         for history in histories:
