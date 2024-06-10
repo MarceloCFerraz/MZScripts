@@ -175,6 +175,8 @@ def bulk_get_package_details(env, org_id, key_type, keys):
         },
     }
 
+    print(payload)
+
     return requests.post(url=url, json=payload, timeout=30).json()
 
 

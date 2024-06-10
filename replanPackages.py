@@ -82,19 +82,27 @@ def fill_packages_list_batch(env, orgId, keyType, batch, hubName: str | None):
 
 def add_to_packages_list(pkgs):
     if len(pkgs) == 0:
-        print("> NO PACKAGES FOUND <\n")
+        print("> NO PACKAGES FOUND\n")
+        return
+
+    now = datetime.now()
     for pkg in pkgs:
         statuses = pkg["packageStatuses"]
 
         # replanning only undelivered packages. Comment this if statement if you need to replan a package marked as delivered in error
-        if statuses.get("deliveryFlags") is not None and (
-            statuses["deliveryFlags"].get("deliveryDay") is None
-            or not statuses["deliveryFlags"].get("delivered")
+        if (
+            statuses["status"] != "DELIVERED"
+            or not statuses.get("deliveryFlags")
+            or (
+                statuses["deliveryFlags"].get("delivered") == False
+                or statuses["deliveryFlags"].get("deliveryDay") is None
+                # or statuses["deliveryFlags"].get("deliveryDay") > now.date()
+            )
         ):
             PACKAGES.append(pkg)
 
 
-def replan_batch(env, orgId, batch, next_delivery_date, hubRequested=None):
+def replan_batch(env, orgId, batch: list[dict], next_delivery_date, hubRequested=None):
     """
     Replan packages in batches based on specific criteria.
 
@@ -113,8 +121,8 @@ def replan_batch(env, orgId, batch, next_delivery_date, hubRequested=None):
     for package in batch:
         hubName = packages.get_package_hub(package)
 
-        # if package is from the correct hub, continues.
-        if hubName == hubRequested or hubRequested is None:
+        # if package is from the correct hub or if we don't want to filter by hub, continues
+        if hubName == hubRequested or not hubRequested:
             prepare_package_for_replan(env, package)
 
             packageIDs.append(package["packageId"])
@@ -169,7 +177,7 @@ def replan(env, orgId, package, next_delivery_date, hubRequested=None):
 def prepare_package_for_replan(env, package):
     status = package["packageStatuses"]["status"]
     REVIVE_STATUSES = ["CANCELLED"]
-    DELIVERY_FAILED_STATUSES = ["DELIVERED", "REJECTED", "DAMAGED"]
+    DELIVERY_FAILED_STATUSES = ["REJECTED", "DAMAGED", "DELIVERED"]
 
     # if package is marked as cancelled or damaged,
     # revive the package
@@ -263,6 +271,12 @@ def main(
 ):
     print(f"Key Types: {keyType.upper()}\nKeys: {keys}\n")
     load_packages(env, orgId, keyType, keys, hubName)
+
+    if len(PACKAGES) == 0:
+        print("Trying to search again with Package Seeker + Switchboard")
+        # time.sleep(5)
+        load_packages(env, orgId, keyType, keys, hubName, pkgSeeker=True)
+
     process_packages(env, orgId, next_delivery_date, hubName)
 
 
@@ -276,24 +290,19 @@ def load_packages(
 ):
     # Using multithreading to fetch multiple packages simultaneosly
     # also split in batches to make less api calls and also accelerate the whole process
-    with concurrent.futures.ThreadPoolExecutor(8) as pool:
-        # getting packages in Switchboard with keys (ori, bc, etc) provided in the file <fileName>.txt
+    # with concurrent.futures.ThreadPoolExecutor(8) as pool:
+    # getting packages in Switchboard with keys (ori, bc, etc) provided in the file <fileName>.txt
 
-        batches = utils.divide_into_batches(keys)
-        fn = fill_packages_list_batch
+    batches = utils.divide_into_batches(keys)
 
+    for batch in batches:
         if pkgSeeker:
-            fn = search_pkgs
-
-        for batch in batches:
-            pool.submit(fn, env, orgId, keyType, batch, hubName)
-    pool.shutdown(wait=True)
-
-    if len(PACKAGES) == 0 and not pkgSeeker:
-        print("Trying to search again with Package Seeker + Switchboard")
-        # time.sleep(5)
-        load_packages(env, orgId, keyType, keys, hubName, pkgSeeker=True)
-
+            # pool.submit(search_pkgs, env, orgId, keyType, batch, hubName)
+            search_pkgs(env, orgId, keyType, batch, hubName)
+        else:
+            # pool.submit(fill_packages_list_batch, env, orgId, keyType, batch, hubName)
+            fill_packages_list_batch(env, orgId, keyType, batch, hubName)
+    #    pool.shutdown(wait=True)
     print()
     print("===============================")
     for pkg in PACKAGES:

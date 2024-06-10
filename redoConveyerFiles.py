@@ -46,14 +46,18 @@ def getData(orgId, startDate, hubName):
                 logging.exception("Exception occurred")
 
 
-def filter_duplicate_entries(lines: list):
+def filter_duplicate_entries(lines: list[str]):
     unique_entries = set()
+    filtered_lines = []
 
     for line in lines:
         entry = line.split()[0]
-        unique_entries.add(entry)
 
-    return list(unique_entries)
+        if entry not in unique_entries:
+            unique_entries.add(entry)
+            filtered_lines.append(line)
+
+    return filtered_lines
 
 
 def utc_to_time(native, timezone="America/New_York"):
@@ -61,12 +65,12 @@ def utc_to_time(native, timezone="America/New_York"):
 
 
 def getConveyerData(orgId, hubsList, fileNamePrefix):
-    day = "05032024"
+    day = "05062024"
 
     # File is ftpied 6 times:
     #     15:45, 17:45, 18:45, 19:45, 20:45, 21:45 ET
     # Chris wants copies of the files from 16:45 - 19:45 EDT (15 - 18:45 EST and 17 - 20:45 BRST)
-    times = ["175920", "184511", "194526"]
+    times = ["121212"]  # , "175920", "184511", "194526"]
     # https://build.dev.milezero.com/job/ConveyerReport/6738/console
     # https://build.dev.milezero.com/job/ConveyerReport/6739/console
     # https://build.dev.milezero.com/job/ConveyerReport/6740/console
