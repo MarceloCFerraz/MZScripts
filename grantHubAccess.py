@@ -333,12 +333,14 @@ def search_fleet_with_hubs(allHubs, allFleets, hubIdsList: list):
             if valid:
                 difference = len(fleet["hubIds"]) - len(hubIdsList)
 
-                if difference == 0:
-                    # Perfect match
+                perfectMatch = difference == 0
+                belowMax = difference <= MAX_FLEET_DIFFERENCE
+
+                if perfectMatch:
                     print(f">> {fleet['fleetId']} is a perfect match!")
                     return fleet["fleetId"]
 
-                if difference <= MAX_FLEET_DIFFERENCE:
+                if belowMax:
                     print(f">> {fleet['fleetId']} is valid ({difference} extra hubs)")
                     fleetCandidates.append(fleet)
 
@@ -354,12 +356,18 @@ def search_fleet_with_hubs(allHubs, allFleets, hubIdsList: list):
 
 def choose_fleet_candidate(fleetCandidates, hubIdsList, hubsList):
     """
-    Iterates through each fleet in fleet candidates list and gives the user the option to select a fleet that offers a better fit or select none
+    Iterates through each fleet in fleet candidates list and gives the user the option to select a fleet that offers a better fit or select none.
+
+    The section below prints something like this:
+        ```text
+        >> 0 - HUB1     HUB2     HUB3     HUB4     HUB5     HUB6(+)
+        >> 1 - HUB1     HUB2     HUB3     HUB4     HUB5     HUB7(+)
+        >> 2 - HUB1     HUB2     HUB3     HUB4     HUB5     HUB6(+)     HUB7(+)
+        ```
 
     Returns:
         fleetId (str): the fleet id if the user selected a fleet from the options array
     """
-    MAX_FLEET_SIZE = 20
     print(f">> We found {len(fleetCandidates)} compatible fleets:")
     print(">> '(+)' is a hub that was not in the original search list")
 
@@ -368,11 +376,9 @@ def choose_fleet_candidate(fleetCandidates, hubIdsList, hubsList):
 
     for index in range(0, len(fleetCandidates)):
         fleetHubIds = fleetCandidates[index]["hubIds"]
+        fleetId = fleetCandidates[index]["fleetId"]
 
         fleetHubs = [h["name"] for h in hubsList if h["id"] in fleetHubIds]
-
-        # the section below prints something like this:
-        # >> 0 - HUB1     HUB2     HUB3     HUB4     HUB5     HUB6(+)
 
         printString = [
             f"{'' if hub in desiredHubs else '(+)'}{hub}" for hub in fleetHubs
@@ -381,7 +387,8 @@ def choose_fleet_candidate(fleetCandidates, hubIdsList, hubsList):
 
         printString = [f"{string:<9}" for string in printString]
 
-        print(f">> {index:<2}\n{''.join(printString)}\n\n")
+        print(f">> {index:<2} ({fleetId})")
+        print(f"\n{''.join(printString)}\n")
 
     selection = -1
     quit = -7
