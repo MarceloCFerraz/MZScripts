@@ -41,7 +41,7 @@ def get_associate_device_and_app(env, org_id, associate_id):
     return response
 
 
-def search_associate(env, org_id, key_type_index, search_key):
+def search_associate(env, org_id, key_type_index, search_key) -> list | None:
     """
     Searches for associates based on a specific key type and search key.
 

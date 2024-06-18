@@ -3,7 +3,7 @@ import sys
 from utils import associates, fleets, hubs, utils
 
 
-def get_associate(env, orgId, acceptBlank):
+def get_associate(env, orgId, acceptBlank, allHubs: list):
     """
     Retrieves associate data based on the associate's ID or search key.
 
@@ -21,7 +21,7 @@ def get_associate(env, orgId, acceptBlank):
     if answer == "Y":
         associate = get_associate_by_id(env, orgId, acceptBlank)
     else:
-        associate = get_associate_by_name_or_email(env, orgId, acceptBlank)
+        associate = get_associate_by_name_or_email(env, orgId, acceptBlank, allHubs)
 
     return associate
 
@@ -61,7 +61,7 @@ def get_associate_by_id(env, orgId, acceptBlank):
             return associates.get_associate_data(env, orgId, associateId)
 
 
-def get_associate_by_name_or_email(env, orgId, acceptBlank):
+def get_associate_by_name_or_email(env, orgId, acceptBlank, allHubs: list):
     """
     Retrieves associate data based on the associate's name or email.
 
@@ -87,22 +87,36 @@ def get_associate_by_name_or_email(env, orgId, acceptBlank):
         search_key = input("> ")
         print()
 
-        if search_key != "":
-            search_key_index = 3 if "@" in search_key else 2
-            # based on key_types list in associates.search_associate()
-
-            associate = associates.search_associate(
-                env, orgId, search_key_index, search_key
-            )
-
-            if associate:
-                return associate[0]
-            elif not acceptBlank:
-                print(
-                    ">> Associate wasn't found and blank is not allowed. Try again or hit CTRL + C to quit"
-                )
-        elif acceptBlank:
+        if search_key == "" and acceptBlank:
             return None
+
+        search_key_index = 3 if "@" in search_key else 2
+        # based on key_types list in associates.search_associate()
+
+        associate = associates.search_associate(
+            env, orgId, search_key_index, search_key
+        )
+
+        if not associate:
+            msg = ">> Associate not found"
+            blankMsg = " and blank is not allowed"
+            end = ". Try again or hit CTRL + C to quit"
+
+            if not acceptBlank:
+                print(msg + blankMsg + end)
+            else:
+                print(msg + " but we'll continue anyway")
+                return None
+
+            continue
+
+        if len(associate) > 0:
+            associate = choose_associate(associate, allHubs)
+        else:
+            associate = associate[0]
+
+        if associate:
+            return associate
 
 
 def get_new_hubs(hubsNames, allHubs):
@@ -189,8 +203,9 @@ def select_answer(question=None, answers=None):
     This function presents a question to the user and expects a specific answer. It ensures that the user's input matches the available answer options.
 
     Parameters:
-    - question (str, optional): The question to be presented. If not provided, a default question will be used.
     - answers (list, optional): The available answer options. If not provided, "Y" or "N" will be used.
+    - question (str, optional): The question to be presented. If not provided, a default question will be used:
+        - `Does the associate need to maintain access to all previous hubs? `
 
     Returns:
     - answer (str): The user's selected answer.
@@ -352,6 +367,59 @@ def search_fleet_with_hubs(allHubs, allFleets, hubIdsList: list):
         return None
 
     return choose_fleet_candidate(fleetCandidates, hubIdsList, allHubs)
+
+
+def choose_associate(associatesList: list, allHubs: list) -> dict | None:
+    """
+    Iterates through each associate in associates list and gives the user the option to select a associate that offers a better fit or select none.
+
+    The section below prints something like this:
+        ```text
+        >> 0 - NAME 1 - E-MAIL 1 - ID 1
+        >> 1 - NAME 2 - E-MAIL 2 - ID 2
+        >> 2 - NAME 3 - E-MAIL 3 - ID 3
+        ```
+
+    Returns:
+        associate (dict): the associate data if the user selected a associate from the options array
+    """
+    print(f">> We found {len(associatesList)} compatible associates:")
+    index = 0
+
+    for index in range(0, len(associatesList)):
+        id = associatesList[index]["associateId"]
+        name = associatesList[index]["contact"]["name"]
+        email = associatesList[index]["contact"]["email"]
+        accountType = associatesList[index]["associateType"]
+        state = associatesList[index]["state"]
+        hubId = associatesList[index]["hubId"]
+        hub = [h["name"] for h in allHubs if h["id"] == hubId]
+        if hub:
+            hub = hub[0]
+        else:
+            hub = "NA"
+
+        print(f"{index}: {name} ({state}) - {email} - {hub} - {accountType} - {id}")
+
+    selection = -1
+    quit = -7
+
+    print(f"\n>> Please type the number of the associate or '{quit}' to quit")
+    while selection not in range(0, len(associatesList)):
+        try:
+            selection = int(input("> ").strip())
+
+            if selection == quit:
+                return None
+
+        except ValueError:
+            print(
+                "\n>> Please type only the number of the desired associate. For example:"
+            )
+            print(">> 0 << - NAME 1 - E-MAIL 1 - ID 1")
+            print(">> 1 << - NAME 2 - E-MAIL 2 - ID 2")
+
+    return associatesList[selection]
 
 
 def choose_fleet_candidate(fleetCandidates, hubIdsList, hubsList):
@@ -621,7 +689,8 @@ def process_associate(env, orgId, associate, userName, allHubs, allFleets):
     None
     """
     name = associate.get("contact").get("name")
-    print(f"{f' PROCESSING {str(name).upper()} ':#^50}")
+    id = associate.get("associateId")
+    print(f"{f' PROCESSING {str(name).upper()} -> {id} ':#^100}")
 
     if associate["associateType"] not in ["DRIVER", "SORTER"]:
         hubsList = get_hubs_from_associate_fleet(associate, allFleets, allHubs)
@@ -685,16 +754,13 @@ def main():
     env = utils.select_env()
     orgId = utils.select_org(env)
 
-    associate = get_associate(env, orgId, False)
-    print(">> Associate Found")
-
     allFleets = fleets.search_fleet(env, orgId)
     allHubs = hubs.get_all_hubs(env, orgId)
+
+    associate = get_associate(env, orgId, False, allHubs)
 
     process_associate(env, orgId, associate, userName, allHubs, allFleets)
 
 
 if __name__ == "__main__":
     main()
-    # TODO: there is something wrong with the `search_fleet_with_hubs` function
-    # TODO: prompt user to select compatible fleet if no exact match was found (must contain all desired hubs + 1 or 2 more)
