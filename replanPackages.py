@@ -85,18 +85,21 @@ def add_to_packages_list(pkgs):
         print("> NO PACKAGES FOUND\n")
         return
 
-    now = datetime.now()
     for pkg in pkgs:
         statuses = pkg["packageStatuses"]
 
         # replanning only undelivered packages. Comment this if statement if you need to replan a package marked as delivered in error
         if (
             statuses["status"] != "DELIVERED"
-            or not statuses.get("deliveryFlags")
+            or not statuses.get(
+                "deliveryFlags"
+            )  # no deliveryFlags property in the response
             or (
-                statuses["deliveryFlags"].get("delivered") == False
-                or statuses["deliveryFlags"].get("deliveryDay") is None
-                # or statuses["deliveryFlags"].get("deliveryDay") > now.date()
+                not statuses["deliveryFlags"].get(
+                    "delivered"
+                )  # no delivered property in the response
+                or statuses["deliveryFlags"].get("deliveryDay")
+                is None  # no deliveryDay property in the response
             )
         ):
             PACKAGES.append(pkg)
@@ -305,10 +308,13 @@ def load_packages(
     #    pool.shutdown(wait=True)
     print()
     print("===============================")
+
     for pkg in PACKAGES:
         if len(PACKAGES) <= 10:
             packages.print_package_details(pkg)
-            print("===============================")
+            print("\n\n")
+
+    print("===============================")
     print(f">> {len(PACKAGES)} packages loaded out of {len(keys)} keys")
     print()
 
