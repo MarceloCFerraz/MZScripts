@@ -3,6 +3,150 @@ import requests
 from utils import utils
 
 
+def choose_associate(associatesList: list) -> dict | None:
+    """
+    Iterates through each associate in associates list and gives the user the option to select a associate that offers a better fit or select none.
+
+    The section below prints something like this:
+        ```text
+        >> 0 - NAME 1 - E-MAIL 1 - ID 1
+        >> 1 - NAME 2 - E-MAIL 2 - ID 2
+        >> 2 - NAME 3 - E-MAIL 3 - ID 3
+        ```
+
+    Returns:
+        associate (dict): the associate data if the user selected a associate from the options array
+    """
+    print(f">> We found {len(associatesList)} compatible associates:")
+    index = 0
+
+    for index in range(0, len(associatesList)):
+        id = associatesList[index]["associateId"]
+        name = associatesList[index]["contact"]["name"]
+        email = associatesList[index]["contact"]["email"]
+        accountType = associatesList[index]["associateType"]
+        state = associatesList[index]["state"]
+        hubId = associatesList[index]["hubId"]
+
+        print(f"{index}:")
+        print(f"\tID: {id}")
+        print(f"\tName: {name}")
+        print(f"\tEmail: {email}")
+        print(f"\tAccount Type: {accountType}")
+        print(f"\tState: {state}")
+        print(f"\tHub ID: {hubId}")
+
+    selection = -1
+    quit = -7
+
+    print(f"\n>> Please type the number of the associate or '{quit}' to quit")
+    while selection not in range(0, len(associatesList)):
+        try:
+            selection = int(input("> ").strip())
+
+            if selection == quit:
+                return None
+
+        except ValueError:
+            print(
+                "\n>> Please type only the number of the desired associate. For example:"
+            )
+            print(">> 0 << - NAME 1 - E-MAIL 1 - ID 1")
+            print(">> 1 << - NAME 2 - E-MAIL 2 - ID 2")
+
+    return associatesList[selection]
+
+
+def get_associate_by_id(env, orgId, acceptBlank) -> dict | None:
+    """
+    Retrieves associate data based on the associate's ID.
+
+    Parameters:
+    - env (str): The environment in which the associate data is stored.
+    - orgId (str): The organization ID associated with the associate.
+    - acceptBlank (bool): Whether to accept blank input from the user.
+
+    Returns:
+    - associate (dict): an associate LMX data.
+    - None: if an associate wasn't found or if blank input is allowed
+    """
+    while True:
+        print(
+            ">> Insert the Associate ID ",
+            (
+                "(leave blank and hit enter if done)"
+                if acceptBlank
+                else "(or hit Ctrl + C to quit program)"
+            ),
+        )
+        associateId = input("> ")
+
+        if associateId == "":
+            if acceptBlank:
+                return None
+            else:
+                print(
+                    ">> Can't accept blank. Try again (or hit Ctrl + C to quit program)"
+                )
+        else:
+            return get_associate_data(env, orgId, associateId)
+
+
+def get_associate_by_name_or_email(env, orgId, acceptBlank) -> dict | None:
+    """
+    Retrieves associate data based on the associate's name or email.
+
+    Parameters:
+    - env (str): The environment in which the associate data is stored.
+    - orgId (str): The organization ID associated with the associate.
+    - acceptBlank (bool): Whether to accept blank input from the user.
+
+    Returns:
+    - associate (dict): an associate LMX data.
+    - None: if an associate wasn't found or if blank input is allowed
+    """
+    # TODO: list associates found and ask user to select one
+    while True:
+        print(
+            ">> Type the associate's e-mail or name ",
+            (
+                "(leave blank and hit enter if done)"
+                if acceptBlank
+                else "(or hit Ctrl + C to quit program)"
+            ),
+        )
+        search_key = input("> ")
+        print()
+
+        if search_key == "" and acceptBlank:
+            return None
+
+        search_key_index = 3 if "@" in search_key else 2
+        # based on key_types list in associates.search_associate()
+
+        associate = search_associate(env, orgId, search_key_index, search_key)
+
+        if not associate:
+            msg = ">> Associate not found"
+            blankMsg = " and blank is not allowed"
+            end = ". Try again or hit CTRL + C to quit"
+
+            if not acceptBlank:
+                print(msg + blankMsg + end)
+            else:
+                print(msg + " but we'll continue anyway")
+                return None
+
+            continue
+
+        if len(associate) > 0:
+            associate = choose_associate(associate)
+        elif associate:
+            associate = associate[0]
+
+        return None
+
+
 def get_associate_data(env, orgId, associateId):
     """
     Retrieves associate data by organization ID and associate ID.
