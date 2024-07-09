@@ -137,8 +137,13 @@ def route_found(searched_route_name, route):
 
 def get_route_events(env, routeId):
     url = f"http://alamo.{utils.convert_env(env)}.milezero.com/alamo-war/api/plannedroutes/{routeId}/events"
+    response = requests.get(url=url, timeout=15)
 
-    return requests.get(url=url, timeout=15).json().get("events")
+    if response.status_code >= 400:
+        print(str(response.status_code) + ": " + response.text)
+        return {}
+
+    return response.json().get("events")
 
 
 def get_stop_details(env, route_id):
