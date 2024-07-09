@@ -4,7 +4,8 @@ from datetime import datetime
 
 import requests
 
-from utils import hubs, utils
+import getRoutePackages
+from utils import hubs, routes, utils
 
 STATUSES = [
     "CANCELLED",
@@ -61,30 +62,21 @@ def get_all_packages_for_hub(env, orgId, hubName, oldDate, status):
     Returns:
     - List of valid package IDs
     """
-    endpoint = f"http://sortationservices.{utils.convert_env(env)}.milezero.com/SortationServices-war/api/monitor/getPackagesInWave/{orgId}/{hubName}/{oldDate}/true"
+    all_routes = routes.get_all_routes_from_hub_alamo(env, orgId, hubName, oldDate)
+    valid_packages = set()
 
-    packageCount = 0
-    validPackages = []
+    route_pkgs = getRoutePackages.main(env, orgId, [r["routeId"] for r in all_routes])
+    all_route_pkgs = set()
+    for route in route_pkgs:
+        pkgs = route_pkgs[route]
+        for pkg in pkgs:
+            all_route_pkgs.add(pkg)
+            if pkg["packageStatuses"]["status"] == status:
+                valid_packages.add(pkg["packageId"])
 
-    try:
-        # print(f"calling {endpoint}")
-        pkgs = requests.get(url=endpoint, timeout=10).json()["packagesMap"]
+    print(f"{len(valid_packages)} (valid) / {len(all_route_pkgs)} (total) packages")
 
-        for statusGroup in pkgs.keys():
-            packageCount += len(pkgs[statusGroup])
-            # sortation services groups packages by status
-            if statusGroup != status:
-                for package in pkgs[statusGroup]:
-                    packageId = package["externalPackageId"]
-                    validPackages.append(packageId)
-
-    except Exception:
-        pass
-
-    if packageCount > 0:
-        print(f"{len(validPackages)} (valid) / {packageCount} (total) packages")
-
-    return validPackages
+    return valid_packages
 
 
 def mark_package_as_delivered(env, org_id, packageId):
