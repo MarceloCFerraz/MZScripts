@@ -23,7 +23,7 @@ def sanitizeLines(lines: list[str]):
     return results
 
 
-def get_data_from_file(fileName):
+def get_data_from_file(fileName, sanitize=True):
     """
     Retrieves data from a text file and removes duplicates.
 
@@ -33,12 +33,38 @@ def get_data_from_file(fileName):
     Returns:
         list: The unique lines of data from the file.
     """
+    results = []
+
     with open(fileName + ".txt", "r") as file:
         lines = file.readlines()
 
-    results = sanitizeLines(lines)
+        if sanitize:
+            results = sanitizeLines(lines)
+        else:
+            results = lines
 
-    print("{} unique lines in file {}\n".format(len(results), fileName))
+    print("{} unique lines in file {}.txt\n".format(len(results), fileName))
+    return results
+
+
+def get_sanitized_data_from_file(fileName):
+    """
+    Retrieves data from a text file and removes duplicates.
+
+    Parameters:
+        fileName (str): The name of the file (without the extension).
+
+    Returns:
+        list: The unique lines of data from the file.
+    """
+    results = []
+
+    with open(fileName + ".txt", "r") as file:
+        lines = file.readlines()
+
+        results = sanitizeLines(lines)
+
+    print("{} unique lines in file {}.txt\n".format(len(results), fileName))
     return results
 
 
