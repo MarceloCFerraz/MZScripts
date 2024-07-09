@@ -170,7 +170,7 @@ def get_pkgs_from_alamo(env, routeId):
     return pids
 
 
-def main(env, orgId, rts=None):
+def main(env, orgId, rts=None) -> dict[str, list]:
     if rts is None:
         rts = get_routes(env, orgId)
     else:
