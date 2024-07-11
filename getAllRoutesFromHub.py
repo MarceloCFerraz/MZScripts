@@ -1,5 +1,6 @@
 from datetime import datetime
-from utils import utils, routes
+
+from utils import routes, utils
 
 
 def main():
@@ -26,8 +27,10 @@ def main():
     if len(rts) == 0:
         print("Routes Not Found!")
     else:
-        for route in rts:
+        for route in rts["routes"]:
+            route = route["metadata"]
             print(f"{route.get('routeName')} - {route.get('routeId')}")
 
 
-main()
+if __name__ == "__main__":
+    main()
