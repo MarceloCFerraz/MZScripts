@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/MarceloCFerraz/MZScripts/utils/colors"
+	"MZScripts/golang/utils/colors"
 )
 
 type utils struct {

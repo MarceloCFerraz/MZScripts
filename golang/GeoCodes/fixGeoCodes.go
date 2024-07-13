@@ -11,9 +11,9 @@ import (
 	"sync"
 	"time"
 
-	models "github.com/MarceloCFerraz/MZScripts/ApiModels"
-	"github.com/MarceloCFerraz/MZScripts/utils"
-	"github.com/MarceloCFerraz/MZScripts/utils/colors"
+	models "MZScripts/golang/ApiModels"
+	"MZScripts/golang/utils"
+	"MZScripts/golang/utils/colors"
 )
 
 type Succeeded struct {
