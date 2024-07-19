@@ -50,21 +50,33 @@ def main():
                         env, orgId, associate["associateId"]
                     )
                     hub = [h for h in allHubs if h.get("id") == associate["hubId"]][0]
-                    print(f"Associate State: {associate['state']}")
-                    print(f"   Account Type: {associate['associateType']}")
-                    print(f"   Associate ID: {associate['associateId']}")
-                    print(f"      User Name: {associate['contact']['userName']}")
-                    print(f"           Name: {associate['contact']['name']}")
-                    print(f"         E-Mail: {associate['contact']['email']}")
-                    print(f"          Phone: {associate['contact']['phone']}")
-                    print(f"    Location ID: {associate['location']['locationId']}")
-                    print(f"   WorldView ID: {associate['worldViewId']}")
+                    spaces = 20
+
+                    print(f"{'Associate State: ': >{spaces}}{associate['state']}")
+                    print(f"{'Account Type: ': >{spaces}}{associate['associateType']}")
+                    print(f"{'Associate ID: ': >{spaces}}{associate['associateId']}")
+                    print(
+                        f"{'User Name: ': >{spaces}}{associate['contact']['userName']}"
+                    )
+                    print(f"{'Name: ': >{spaces}}{associate['contact']['name']}")
+                    print(f"{'E-Mail: ': >{spaces}}{associate['contact']['email']}")
+                    print(f"{'Phone: ': >{spaces}}{associate['contact']['phone']}")
+                    print(
+                        f"{'Location ID: ': >{spaces}}{associate['location']['locationId']}"
+                    )
+                    print(f"{'WorldView ID: ': >{spaces}}{associate['worldViewId']}")
                     try:
-                        print(f"       Fleet ID: {associate['fleetId']}")
+                        print(f"{'Fleet ID: ': >{spaces}}{associate['fleetId']}")
                     except Exception:
                         pass
-                    print(f"         HUB ID: {associate['hubId']}")
-                    print(f"       HUB Name: {hub.get('name')}")
+                    print(f"{'HUB ID: ': >{spaces}}{associate['hubId']}")
+                    print(f"{'HUB Name: ': >{spaces}}{hub.get('name')}")
+                    print(
+                        f"{'Preferred Vehicle: ': >{spaces}}{associate.get('preferredVehicle')}"
+                    )
+                    print(
+                        f"{'Preferred Route: ': >{spaces}}{associate.get('preferredRoute')}"
+                    )
 
                     if (
                         extra_details is not None
@@ -73,12 +85,14 @@ def main():
                         try:
                             extra_details = extra_details["extraProperties"]
                             print(
-                                f"          Phone: {str(extra_details['deviceName']).capitalize() + ' ' + str(extra_details['deviceModel'])}"
+                                f"{'Phone: ': >{spaces}}{str(extra_details['deviceName']).capitalize() + ' ' + str(extra_details['deviceModel'])}"
                             )
                             print(
-                                f"     OS Version: {str(extra_details['type']).capitalize() + ' ' + str(extra_details['osVersion'])}"
+                                f"{'OS Version: ': >{spaces}}{str(extra_details['type']).capitalize() + ' ' + str(extra_details['osVersion'])}"
                             )
-                            print(f"    App Version: {extra_details['appVersion']}")
+                            print(
+                                f"{'App Version: ': >{spaces}}{extra_details['appVersion']}"
+                            )
                         except Exception:
                             pass
                     print("========================================")
