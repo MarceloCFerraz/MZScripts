@@ -23,12 +23,16 @@ def search_fleet(env, orgId, fleetId=None):
 
     # print(f"Searching for:")
     # print(f"ORG ID: {orgId}")
-    # print(f"Fleet ID: {fleetId}\n")
+    # print(f"Fleet ID: {fleetId}\n")response = requests.get(url=url, timeout=10)
+    response = requests.get(url=url, timeout=10)
 
-    return requests.get(url=url, timeout=10).json()
+    if response.status_code >= 400:
+        raise Exception(f"Error getting hubs ({response.status_code}): {response.text}")
+
+    return response.json()
 
 
-def get_hubs_from_fleet(env, orgId, fleetId):
+def get_hubs_from_fleet(env, orgId, fleetId) -> list[str]:
     """
     Retrieves the hub IDs associated with a fleet.
 

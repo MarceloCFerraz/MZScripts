@@ -19,12 +19,16 @@ def get_hub_config(env, orgId, hubId) -> dict | None:
     """
     url = f"http://alamo.{utils.convert_env(env)}.milezero.com/alamo-war/api/hubconfig/key/orgId/{orgId}?key={hubId}&keyType=HUB_ID"
 
-    try:
-        response = requests.get(url=url, timeout=30)
-        return response.json()["config"]
-    except ConnectionError as e:
-        print(f"Connection Error. Please connect to the VPN!\n {e}")
+    response = requests.get(url=url, timeout=10)
+
+    if response.status_code >= 400:
+        raise Exception(f"Error getting hubs: {response.status_code} {response.text}")
+
+    if not response.json().get("config"):
+        print(f"Hub not found: {hubId}")
         return None
+
+    return response.json()["config"]
 
 
 def get_all_hubs(env, orgId) -> list:
