@@ -7,20 +7,22 @@ from utils import files, packages, utils
 PACKAGES = []
 
 
-def fill_packages_list(env, orgId, key_type, key):
+def fill_packages_list(env, org_id, key_type, key_batch):
     """
     Fill the PACKAGES list with package details.
 
     Parameters:
     - env: The environment.
-    - orgId: The organization ID.
-    - keyType: The type of key.
+    - org_id: The organization ID.
+    - key_type: The type of key.
     - key: The key.
 
     Returns:
     None
     """
-    pkgs = packages.get_package_details(env, orgId, key_type, key)["packageRecords"]
+    pkgs = packages.bulk_get_package_details(env, org_id, key_type, key_batch)[
+        "packageRecords"
+    ]
 
     if len(pkgs) == 0:
         print("> NO PACKAGES FOUND <\n")
@@ -50,7 +52,7 @@ def main(file_name, key_type, statuses):
     - None
     """
     env = utils.select_env()
-    orgId = utils.select_org(env)
+    org_id = utils.select_org(env)
 
     valid_statuses = []
 
@@ -62,11 +64,13 @@ def main(file_name, key_type, statuses):
     valid_packages = []
     invalid_packages = []
 
+    batches = utils.divide_into_batches(keys)
+
     # Using multithreading to fetch multiple packages simultaneosly
     with concurrent.futures.ThreadPoolExecutor() as pool:
-        for key in keys:
+        for batch in batches:
+            pool.submit(fill_packages_list, env, org_id, key_type, batch)
             # getting packages from key (ori, bc, etc) present in file line
-            pool.submit(fill_packages_list, env, orgId, key_type, key)
 
     pool.shutdown(wait=True)
 
@@ -75,13 +79,14 @@ def main(file_name, key_type, statuses):
 
         if valid_statuses != [] and status not in valid_statuses:
             invalid_packages.append(package)
+            continue
+
+        if len(PACKAGES) > 10:
+            packages.print_minimal_package_details(package)
+            print(f"\nPackage added to final response ({status})\n\n")
+            valid_packages.append(package)
         else:
-            if len(PACKAGES) > 10:
-                packages.print_minimal_package_details(package)
-                print(f"\nPackage added to final response ({status})\n\n")
-                valid_packages.append(package)
-            else:
-                packages.print_package_details(package)
+            packages.print_package_details(package)
 
     response["packageRecords"] = valid_packages
     response["count"] = len(valid_packages)
