@@ -1,4 +1,5 @@
 import sys
+from concurrent.futures import ThreadPoolExecutor
 
 from utils import files, packages, utils
 
@@ -24,7 +25,7 @@ def main(fileName, keyType):
 
     print(
         "Key Types: {}\n".format(keyType.upper())
-        + "Keys: \n".format()
+        + "Keys: \n"
         + "\n".join(map(str, lines))
         + "\n"
     )
@@ -38,23 +39,27 @@ def main(fileName, keyType):
         if len(pkgs) == 0:
             print("> NO PACKAGES FOUND <\n")
 
-        for package in pkgs:
-            orgId = package["orgId"]
-            provider = str(package["providerDetails"]["providerName"]).upper()
-            status = package["packageStatuses"]["status"]
-            packageID = package["packageId"]
-            hubName = package["packageDetails"]["sourceLocation"]["name"]
+        print(f"\n{'':=<50}")
+        print(f"Found {len(pkgs)} packages, Applying filters")
 
-            print(
-                f"\n---> PACKAGE ID: {packageID}" + " (DELIVERED)"
-                if status == "DELIVERED"
-                else "OK"
-            )
-            print(f"--> PROVIDER: {provider}")
-            print(f"--> STATUS: {status}\n")
-            print(f"--> HUB: {hubName}")
+        with ThreadPoolExecutor() as pool:
+            for package in pkgs:
+                orgId = package["orgId"]
+                provider = str(package["providerDetails"]["providerName"]).upper()
+                status = package["packageStatuses"]["status"]
+                package_id = package["packageId"]
+                hub_name = package["packageDetails"]["sourceLocation"]["name"]
 
-            packages.mark_package_as_delivered(env, orgId, packageID)
+                print(
+                    f"\n---> PACKAGE ID: {package_id}" + " (DELIVERED)"
+                    if status == "DELIVERED"
+                    else "OK"
+                )
+                print(f"--> PROVIDER: {provider}")
+                print(f"--> STATUS: {status}\n")
+                print(f"--> HUB: {hub_name}")
+
+                pool.submit(packages.mark_package_as_delivered, env, orgId, package_id)
 
 
 # get command line argument
