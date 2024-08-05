@@ -85,24 +85,24 @@ def add_to_packages_list(pkgs):
         print("> NO PACKAGES FOUND\n")
         return
 
+    print(f"\n{'':=<50}")
+    print(f"Found {len(pkgs)} packages, Applying filters")
+
     for pkg in pkgs:
         statuses = pkg["packageStatuses"]
 
         # replanning only undelivered packages. Comment this if statement if you need to replan a package marked as delivered in error
-        if (
-            statuses["status"] != "DELIVERED"
-            or not statuses.get(
-                "deliveryFlags"
-            )  # no deliveryFlags property in the response
-            or (
-                not statuses["deliveryFlags"].get(
-                    "delivered"
-                )  # no delivered property in the response
-                or statuses["deliveryFlags"].get("deliveryDay")
-                is None  # no deliveryDay property in the response
+        if statuses["status"] == "DELIVERED" or (
+            statuses.get("deliveryFlags")
+            and (
+                statuses["deliveryFlags"].get("delivered") is True
+                and statuses["deliveryFlags"].get("deliveryDay") is not None
             )
         ):
-            PACKAGES.append(pkg)
+            print(f"Ignoring {pkg['packageId']} with status DELIVERED")
+            continue
+
+        PACKAGES.append(pkg)
 
 
 def replan_batch(env, orgId, batch: list[dict], next_delivery_date, hubRequested=None):

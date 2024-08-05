@@ -160,7 +160,11 @@ def mark_package_as_delivered(env, org_id, packageId):
 
     response = requests.post(url=url, json=body)
 
-    print("> OK" if response.status_code < 400 else f"> FAIL\n{response.text}")
+    print(
+        f"> {packageId}" + " marked as DELIVERED\n"
+        if response.status_code < 400
+        else f"(FAIL)\n{response.text}"
+    )
 
 
 def bulk_get_package_details(env, org_id, key_type, keys):
