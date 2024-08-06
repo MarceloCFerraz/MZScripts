@@ -143,7 +143,9 @@ def commit_packages(env, org_id, packageIds):
         print("No packages provided")
 
 
-def mark_package_as_delivered(env, org_id, packageId):
+def mark_package_as_delivered(
+    env: str, org_id: str, packageId: str, notes: str | None = None
+):
     """
     Marks a package as delivered.
 
@@ -154,16 +156,18 @@ def mark_package_as_delivered(env, org_id, packageId):
     Returns:
         None
     """
+    if not notes:
+        notes = "Requested by dispatcher"
+
     url = f"http://switchboard.{utils.convert_env(env)}.milezero.com/switchboard-war/api/package/update/{org_id}/{packageId}/DELIVERED/status"
-    body = {"notes": "Requested by dispatcher"}
-    print(f">>>>> Marking {packageId} as DELIVERED <<<<<")
+    body = {"notes": notes}
 
     response = requests.post(url=url, json=body)
 
     print(
-        f"> {packageId}" + " marked as DELIVERED\n"
+        f"> {packageId}" + " DELIVERED: '{notes}'"
         if response.status_code < 400
-        else f"(FAIL)\n{response.text}"
+        else f" FAILED to be marked as DELIVERED: '{response.text}'"
     )
 
 
@@ -204,7 +208,7 @@ def get_package_details(env, org_id, key_type, key):
 
     print(f">>>>> Retrieving Packages From {key_type.upper()} {key} <<<<<")
 
-    return requests.get(endpoint, timeout=5).json()
+    return requests.get(endpoint, timeout=500).json()
 
 
 def get_package_histories(env, org_id, key_type, key):
