@@ -8,23 +8,23 @@ SUCCESSES = []
 ERRORS = []
 
 
-def main(fileName, keyType):
+def main(file_name: str | None, key_type: str):
     """
     The main function that reads data from a file, retrieves package details based on the specified key type, and performs operations on the packages, such as marking them as delivered.
 
     Parameters:
-    - fileName (str): The name of the file to read data from. Every line should be a package reference (ori, pi, bc)
-    - keyType (str): The type of key to use for retrieving package details such as bc, ori, pi and so on.
+    - file_name (str): The name of the file to read data from. Every line should be a package reference (ori, pi, bc)
+    - key_type (str): The type of key to use for retrieving package details such as bc, ori, pi and so on.
 
     Returns:
     None
     """
-    lines = files.get_data_from_file(fileName)
+    lines = files.get_data_from_file(file_name)
     env = utils.select_env()
     orgId = utils.select_org(env)
 
     print(
-        "Key Types: {}\n".format(keyType.upper())
+        "Key Types: {}\n".format(key_type.upper())
         + "Keys: \n"
         + "\n".join(map(str, lines))
         + "\n"
@@ -34,7 +34,9 @@ def main(fileName, keyType):
 
     for line in lines:
         # getting packages from barcode present in file line
-        pkgs = packages.get_package_details(env, orgId, keyType, line)["packageRecords"]
+        pkgs = packages.get_package_details(env, orgId, key_type, line)[
+            "packageRecords"
+        ]
 
         if len(pkgs) == 0:
             print("> NO PACKAGES FOUND <\n")
@@ -69,8 +71,8 @@ if len(sys.argv) < 3:
         + "PRE REQUISITES:\n"
         + "> A file <file>.txt should be created in this same directory. You should paste the barcodes/ORIs/PIs/etc there\n"
         + "SCRIPT USAGE:\n"
-        + "--> python markDelivered.py <fileName> <keyType>\n\n"
-        + "-> Accepted keyTypes:\n"
+        + "--> python markDelivered.py <file_name> <key_type>\n\n"
+        + "-> Accepted key_types:\n"
         + "> pi (Package Id)\n"
         + "> tn (Tracking Number)\n"
         + "> ci (Container Id)\n"
@@ -82,13 +84,13 @@ if len(sys.argv) < 3:
         + "--> python replanPackages.py 8506 bc\n"
         + "> This will load all the barcodes on 8506.txt and mark delivered packages that are not already delivered\n\n"
         + "NOTES:\n"
-        + "> Check comments on code to update relevant data such as keyType (bc, ori, etc), ORG Environment accordingly to your needs\n"
+        + "> Check comments on code to update relevant data such as key_type (bc, ori, etc), ORG Environment accordingly to your needs\n"
     )
     sys.exit(1)
 
 # The file name must be to the requester's hub name (e.g. 8506)
-fileName = sys.argv[1].replace(".txt", "").replace(".\\", "")
-# A KeyType arg must be provided. provide one of the following keyTypes:
+file_name = sys.argv[1].replace(".txt", "").replace(".\\", "")
+# A key_type arg must be provided. provide one of the following key_types:
 # -> pi (Package Id)
 # -> tn (Tracking Number)
 # -> ci (Container Id)
@@ -96,6 +98,6 @@ fileName = sys.argv[1].replace(".txt", "").replace(".\\", "")
 # -> oi (Order Id)
 # -> ori (Order Reference Id)
 # -> ji (Job Id)
-keyType = sys.argv[2].lower()
+key_type = sys.argv[2].lower()
 
-main(fileName, keyType)
+main(file_name, key_type)
