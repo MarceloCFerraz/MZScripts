@@ -6,6 +6,8 @@ from utils import files, packages, utils
 SUCCESSES = []
 ERRORS = []
 PACKAGES = []
+FORCE_REPLAN = False
+ALREADY_ASKED = False
 
 
 def fill_packages_list(env, orgId, keyType, key):
@@ -81,12 +83,27 @@ def fill_packages_list_batch(env, orgId, keyType, batch, hubName: str | None):
 
 
 def add_to_packages_list(pkgs):
+    global ALREADY_ASKED, FORCE_REPLAN
+
     if len(pkgs) == 0:
         print("> NO PACKAGES FOUND\n")
         return
 
     print(f"\n{'':=<50}")
     print(f"Found {len(pkgs)} packages, Applying filters")
+
+    if FORCE_REPLAN is False and ALREADY_ASKED is False:
+        ALREADY_ASKED = True
+
+        answer = input(
+            "> Do you want to force replan all packages? Type 'Y' or leave blank to continue: "
+        )
+
+        if answer.upper() == "Y":
+            print("Forcing replan for all packages")
+            FORCE_REPLAN = True
+        else:
+            print("We'll ignore any DELIVERED packages")
 
     for pkg in pkgs:
         statuses = pkg["packageStatuses"]
@@ -99,8 +116,14 @@ def add_to_packages_list(pkgs):
                 and statuses["deliveryFlags"].get("deliveryDay") is not None
             )
         ):
-            print(f"Ignoring {pkg['packageId']} with status DELIVERED")
-            continue
+            print(
+                f"> {pkg['packageId']} was already DELIVERED." + " Ignoring"
+                if not FORCE_REPLAN
+                else " but will be replanned"
+            )
+
+            if not FORCE_REPLAN:
+                continue
 
         PACKAGES.append(pkg)
 
@@ -278,7 +301,7 @@ def main(
     if len(PACKAGES) == 0:
         print("Trying to search again with Package Seeker + Switchboard")
         # time.sleep(5)
-        load_packages(env, orgId, keyType, keys, hubName, pkgSeeker=True)
+        load_packages(env, orgId, keyType, keys, hubName, usePkgSeeker=True)
 
     process_packages(env, orgId, next_delivery_date, hubName)
 
@@ -289,7 +312,7 @@ def load_packages(
     keyType: str,
     keys: list[str],
     hubName: str | None,
-    pkgSeeker: bool = False,
+    usePkgSeeker: bool = False,
 ):
     # Using multithreading to fetch multiple packages simultaneosly
     # also split in batches to make less api calls and also accelerate the whole process
@@ -299,7 +322,7 @@ def load_packages(
     batches = utils.divide_into_batches(keys)
 
     for batch in batches:
-        if pkgSeeker:
+        if usePkgSeeker:
             # pool.submit(search_pkgs, env, orgId, keyType, batch, hubName)
             search_pkgs(env, orgId, keyType, batch, hubName)
         else:
