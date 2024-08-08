@@ -165,7 +165,7 @@ def mark_package_as_delivered(
     response = requests.post(url=url, json=body)
 
     print(
-        f"> {packageId}" + " DELIVERED: '{notes}'"
+        f"> {packageId}" + f" DELIVERED: '{notes}'"
         if response.status_code < 400
         else f" FAILED to be marked as DELIVERED: '{response.text}'"
     )
