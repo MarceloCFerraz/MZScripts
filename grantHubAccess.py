@@ -110,16 +110,17 @@ def get_associate_by_name_or_email(env, orgId, acceptBlank, allHubs: list):
 
             continue
 
-        if len(associate) > 0:
+        if len(associate) > 1:
             associate = choose_associate(associate, allHubs)
         else:
             associate = associate[0]
 
+        # choose_associate can return None
         if associate:
             return associate
 
 
-def get_new_hubs(hubsNames, allHubs):
+def get_new_hubs(hubsNames: list[str], allHubs: list[dict]):
     """
     Retrieves new hubs and adds them to the newHubs list.
 
@@ -135,12 +136,14 @@ def get_new_hubs(hubsNames, allHubs):
     """
     hubName = "init"
     newHubs = []
+    old_hub_names = hubsNames.copy()
     updated = False
 
-    print(f">> Old HUBs: {' '.join(hubsNames)}")
     while hubName != "" and not updated:
-        if newHubs:
-            print(f"\n>> New HUBs: {' '.join([h['name'] for h in newHubs])}")
+        print(
+            f">> HUBs: {print_old_hub_names(old_hub_names)}"
+            + f" {print_new_hub_names(newHubs)}"
+        )
 
         print(">> Type the new HUB's name (leave blank and hit enter if done)")
 
@@ -153,6 +156,28 @@ def get_new_hubs(hubsNames, allHubs):
         newHubs.append(newHub)
 
     return newHubs
+
+
+def print_old_hub_names(old_hub_names: list[str]):
+    if not old_hub_names:
+        return ""
+
+    hubs_names = [h for h in old_hub_names]
+    hubs_names.sort()
+
+    return " ".join(hubs_names)
+
+
+def print_new_hub_names(new_hubs: list[dict]):
+    if not new_hubs:
+        return ""
+
+    hubs_names = [h["name"] for h in new_hubs]
+    hubs_names.sort()
+
+    hubs_names_with_parenthesis = [f"({h})" for h in hubs_names]
+
+    return " ".join(hubs_names_with_parenthesis)
 
 
 def get_new_hub(allHubs, hubsNames, acceptBlank, hubName=None):
@@ -689,8 +714,11 @@ def process_associate(env, orgId, associate, userName, allHubs, allFleets):
     None
     """
     name = associate.get("contact").get("name")
-    id = associate.get("associateId")
-    print(f"{f' PROCESSING {str(name).upper()} -> {id} ':#^100}")
+    associate_id = associate.get("associateId")
+
+    print(f"{f' PROCESSING {str(name).upper()} ':#^100}")
+    print(f"Associate ID: {associate_id}")
+    print()
 
     if associate["associateType"] not in ["DRIVER", "SORTER"]:
         hubsList = get_hubs_from_associate_fleet(associate, allFleets, allHubs)
