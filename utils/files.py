@@ -34,16 +34,19 @@ def get_data_from_file(fileName, sanitize=True):
         list: The unique lines of data from the file.
     """
     results = []
+    try:
+        with open(fileName + ".txt", "r") as file:
+            lines = file.readlines()
 
-    with open(fileName + ".txt", "r") as file:
-        lines = file.readlines()
+            if sanitize:
+                results = sanitizeLines(lines)
+            else:
+                results = lines
 
-        if sanitize:
-            results = sanitizeLines(lines)
-        else:
-            results = lines
+        print("{} unique lines in file {}.txt\n".format(len(results), fileName))
+    except Exception as e:
+        print(f"Failed to read file '{fileName}': {e}")
 
-    print("{} unique lines in file {}.txt\n".format(len(results), fileName))
     return results
 
 

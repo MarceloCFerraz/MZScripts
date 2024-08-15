@@ -716,7 +716,7 @@ def process_associate(env, orgId, associate, userName, allHubs, allFleets):
     name = associate.get("contact").get("name")
     associate_id = associate.get("associateId")
 
-    print(f"{f' PROCESSING {str(name).upper()} ':#^100}")
+    print(f"{f' PROCESSING {str(name).upper()} ':#^50}")
     print(f"Associate ID: {associate_id}")
     print()
 

@@ -54,7 +54,7 @@ def search_pkgs(env, orgId, keyType, batch, hubName: str | None):
         print(e)
 
     if len(pids) == 0:
-        # print("packageSeeker couldn't find any of the packages from this batch")
+        print("packageSeeker couldn't find any of the packages from this batch")
         return
 
     add_to_packages_list(
@@ -85,12 +85,13 @@ def fill_packages_list_batch(env, orgId, keyType, batch, hubName: str | None):
 def add_to_packages_list(pkgs):
     global ALREADY_ASKED, FORCE_REPLAN
 
+    print(f">Found {len(pkgs)} packages")
+
     if len(pkgs) == 0:
-        print("> NO PACKAGES FOUND\n")
+        print("> Quitting\n")
         return
 
-    print(f"\n{'':=<50}")
-    print(f"Found {len(pkgs)} packages, Applying filters")
+    print(f"{' Applying filters ':=^50}")
 
     if FORCE_REPLAN is False and ALREADY_ASKED is False:
         ALREADY_ASKED = True
@@ -185,19 +186,20 @@ def replan(env, orgId, package, next_delivery_date, hubRequested=None):
     hubName = packages.get_package_hub(package)
 
     # if package is from the correct hub, continues.
-    if hubName == hubRequested or hubRequested is None:
-        prepare_package_for_replan(env, package)
-
-        response = packages.resubmit_package(env, orgId, packageID, next_delivery_date)
-
-        if response["SUCCESS"]:
-            SUCCESSES.append(response["SUCCESS"])
-        if response["ERROR"]:
-            ERRORS.append(response["ERROR"])
-    else:
+    if hubRequested and hubName != hubRequested:
         print(
             f">> {packageID} Ignored because it isn't from hub {hubRequested} (it is from {hubName})\n"
         )
+        return
+
+    prepare_package_for_replan(env, package)
+
+    response = packages.resubmit_package(env, orgId, packageID, next_delivery_date)
+
+    if response["SUCCESS"]:
+        SUCCESSES.append(response["SUCCESS"])
+    if response["ERROR"]:
+        ERRORS.append(response["ERROR"])
 
 
 def prepare_package_for_replan(env, package):
@@ -205,13 +207,13 @@ def prepare_package_for_replan(env, package):
     REVIVE_STATUSES = ["CANCELLED"]
     DELIVERY_FAILED_STATUSES = ["REJECTED", "DAMAGED", "DELIVERED"]
 
-    # if package is marked as cancelled or damaged,
+    # if package is has terminal status,
     # revive the package
     if status in REVIVE_STATUSES:
         packages.revive_package(env, package)
 
-    # if package is marked as rejected or delivered,
-    # change its status to DELIVERY_FAILED
+    # if package is not being seen by the planner and needs to,
+    # change status to DELIVERY_FAILED
     if status in DELIVERY_FAILED_STATUSES:
         packages.mark_package_as_delivery_failed(env, package)
 
@@ -256,6 +258,8 @@ def load_inputs(
             )
             # if user wants to read packages from a file, get them now
             keys = files.get_data_from_file(fileName)
+            if not keys:
+                return
 
     if keyType is None:
         keyType = packages.select_key_type()
