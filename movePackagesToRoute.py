@@ -29,6 +29,8 @@ def main():
     """
 
     fileName = "pids"
+    print(f"Reading package ids from file '{fileName}'")
+
     packageIdsList = files.get_data_from_file(fileName)
 
     # supportMember = input("What is your name?\n> ").strip()

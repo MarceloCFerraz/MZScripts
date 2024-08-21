@@ -1,4 +1,4 @@
-from utils import files, utils, packages
+from utils import files, packages, utils
 
 
 def main():
@@ -13,6 +13,9 @@ def main():
     env = utils.select_env()
     orgId = utils.select_org(env)
     newHub = input("Type in the new hub name\n> ").strip()
+
+    fileName = "pids"
+    print(f"Reading package ids from file '{fileName}'")
 
     packageIds = files.get_data_from_file("pids")
 
