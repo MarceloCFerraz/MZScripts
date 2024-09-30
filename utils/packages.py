@@ -46,7 +46,8 @@ def move_package_to_hub(env, org_id, newHub, packageId, dispatcher, userName):
         "notes": f"Requested by {dispatcher}. Executed by {userName}",
     }
     response = requests.post(url=url, json=payload, timeout=15)
-    print(f"{response} {response.text if response.status_code >= 400 else ''}")
+    print(f"{packageId}: {response} ({response.text if response.status_code >= 400 else ''})")
+    
 
 
 def move_packages_to_route(env, org_id, newRouteId, packageIdsList):
