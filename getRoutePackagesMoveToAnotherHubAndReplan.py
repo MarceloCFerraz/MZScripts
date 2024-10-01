@@ -1,9 +1,9 @@
-from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime
 
-import replanPackages
 import getRoutePackages
-from utils import files, packages, routes, utils
+import replanPackages
+from utils import packages, routes, utils
 
 
 def main():
@@ -28,18 +28,17 @@ def main():
     cpt = datetime.strptime(
         input("Type date to look for the route (yyyy-mm-dd)\n> ").strip(), "%Y-%m-%d"
     )
-    cpt = cpt.strftime("%Y-%m-%d") + "T16:00:00Z"
+    cpt = cpt.strftime("%Y-%m-%d")
 
     route = routes.find_route(env, orgId, routeName, oldHub, cpt)
-
 
     if route is None:
         print("Route Not Found!")
         return
 
-    response = getRoutePackages.main(env, orgId, [route])
+    response = getRoutePackages.main(env, orgId, [route["routeId"]])
 
-    for routeId in response.keys:
+    for routeId in response.keys():
         pkgIds = response[routeId]
 
         if len(pkgIds) <= 0:
@@ -51,26 +50,40 @@ def main():
         pkgs = []
 
         for batch in batches:
-            for pkg in (packages.bulk_get_package_details(env, orgId, "pi", batch)["packageRecords"]):
+            for pkg in packages.bulk_get_package_details(env, orgId, "pi", batch)[
+                "packageRecords"
+            ]:
                 pkgs.append(pkg)
 
         print(f"Moving {len(pkgs)} packages from route {routeId} to {newHub}")
 
         with ThreadPoolExecutor() as pool:
             for pkg in pkgs:
-                packages.move_package_to_hub(
-                    env, orgId, newHub, pkg["packageId"], dispatcher, userName
+                pool.submit(
+                    packages.move_package_to_hub,
+                    env,
+                    orgId,
+                    newHub,
+                    pkg["packageId"],
+                    dispatcher,
+                    userName,
                 )
         pool.shutdown(wait=True)
 
-        newDate = datetime.strptime(
-            input("Type date for replan (yyyy-mm-dd)\n> ").strip(), "%Y-%m-%d"
-        )
-        newDate = newDate.strftime("%Y-%m-%d")
+        newDate = datetime.now()
+        while 1:
+            try:
+                newDate = datetime.strptime(
+                    input("Type date for replan (yyyy-mm-dd)\n> ").strip(), "%Y-%m-%d"
+                )
+                newDate = newDate.strftime("%Y-%m-%d")
+                break
+            except Exception as ex:
+                print(ex)
+                continue
 
         print("Replanning packages...")
         replanPackages.process_packages(env, orgId, newDate, newHub, pkgs)
-
 
 
 main()
