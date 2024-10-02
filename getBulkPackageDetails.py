@@ -1,5 +1,4 @@
 import concurrent.futures
-import sys
 
 import getPackageDetails
 from utils import files, packages, utils
@@ -7,7 +6,48 @@ from utils import files, packages, utils
 PACKAGES = []
 
 
-def fill_packages_list(env, org_id, key_type, key_batch):
+def search_packages(env: str, org_id: str, key_type: str, key: str, pids: set[str]):
+    pkgs = packages.search_for_package(env, org_id, key, hub_name)["packages"]
+
+    if len(pkgs) <= 0:
+        return
+
+    if len(pkgs) > 1 and key_type == "bc":
+        raise Exception(
+            f"Provided key is a barcode, which means it should have returned only 1 package. Please select the appropriate barcode from the objects below and try again:\n{pkgs}"
+        )
+
+    pids.add(pkgs[0]["packageId"])
+
+
+def get_pkgs_from_pkg_seeker(
+    env: str, org_id: str, key_type: str, batch: list[str], hub_name: str
+):
+    pids = set()
+
+    with concurrent.futures.ThreadPoolExecutor() as pool:
+        for key in batch:
+            pool.submit(search_packages, env, org_id, key_type, key, pids)
+    pool.shutdown(wait=True)
+
+    print(f"Found {len(pids)} packages for batch" + f" for {hub_name}")
+
+    if len(pids) == 0:
+        raise Exception(
+            "packageSeeker couldn't find any of the packages from this batch"
+        )
+
+    return packages.bulk_get_package_details(env, org_id, "pi", list(pids))
+
+
+def fill_packages_list(
+    env: str,
+    org_id: str,
+    key_type: str,
+    key_batch: list[str],
+    hub_name: str,
+    use_pkg_seeker=False,
+):
     """
     Fill the PACKAGES list with package details.
 
@@ -20,17 +60,26 @@ def fill_packages_list(env, org_id, key_type, key_batch):
     Returns:
     None
     """
-    pkgs = packages.bulk_get_package_details(env, org_id, key_type, key_batch)[
-        "packageRecords"
-    ]
+    if use_pkg_seeker:
+        pkgs = get_pkgs_from_pkg_seeker(env, org_id, key_type, key_batch, hub_name)
+    else:
+        pkgs = packages.bulk_get_package_details(env, org_id, key_type, key_batch)
 
-    if len(pkgs) == 0:
-        print("> NO PACKAGES FOUND <\n")
+    print(f"{len(pkgs)} packages found")
+
+    if len(pkgs) == 0 and not use_pkg_seeker:
+        print("We'll try again with Package Seeker + Switchboard")
+        fill_packages_list(
+            env, org_id, key_type, key_batch, hub_name, use_pkg_seeker=True
+        )
+
     for pkg in pkgs:
         PACKAGES.append(pkg)
 
 
-def main(file_name, key_type, statuses):
+def main(
+    env: str, org_id: str, key_type: str, keys: list[str], hub_name: str, statuses=""
+):
     """
     Retrieves and processes package details.
 
@@ -51,15 +100,12 @@ def main(file_name, key_type, statuses):
     Returns:
     - None
     """
-    env = utils.select_env()
-    org_id = utils.select_org(env)
 
     valid_statuses = []
 
     if statuses != "":
         valid_statuses = getPackageDetails.get_status_list(statuses)
 
-    keys = files.get_data_from_file(file_name)
     response = {}
     valid_packages = []
     invalid_packages = []
@@ -69,7 +115,7 @@ def main(file_name, key_type, statuses):
     # Using multithreading to fetch multiple packages simultaneosly
     with concurrent.futures.ThreadPoolExecutor() as pool:
         for batch in batches:
-            pool.submit(fill_packages_list, env, org_id, key_type, batch)
+            pool.submit(fill_packages_list, env, org_id, key_type, batch, hub_name)
             # getting packages from key (ori, bc, etc) present in file line
 
     pool.shutdown(wait=True)
@@ -108,38 +154,19 @@ def main(file_name, key_type, statuses):
 
 
 if __name__ == "__main__":
-    # get command line argument
-    if len(sys.argv) < 3:
-        print(
-            "\nNO ARGS PROVIDED!\n"
-            + "Please, check the correct script usage bellow:\n\n"
-            + "PRE REQUISITES:\n"
-            + "> A file <hubName>.txt should be created in this same directory.\n"
-            + "You should paste the barcodes/ORIs to be replanned there\n"
-            + "--> hubName: the hub that requested support\n\n"
-            + "SCRIPT USAGE:\n"
-            + "--> python getBulkPackageDetails.py <HUB_NAME> <key_type> (OPTIONAL) <statuses>\n\n"
-            + "-> Accepted key_types:\n"
-            + "\n".join(map(str, packages.VALID_KEY_TYPES))
-            + "\n\n--> Valid Statuses:\n"
-            + "\n".join(map(str, packages.VALID_STATUSES))
-            + "\n\nSCRIPT EXAMPLE:\n"
-            + "--> python getBulkPackageDetails.py 8506 bc 'cancelled delivered'\n"
-            + "> This will load all the barcodes on 8506.txt, print the HTTP request for "
-            + "each of them on a json file and console IF their status corresponds to"
-            + " 'CANCELLED' or 'DELIVERED'.\n\n"
-            + " If no filter status is informed, all statuses will be displayed\n\n"
-            + "NOTES:\n"
-            + "> Check comments on code to update relevant data such as key_type (bc, ori, etc)\n"
-        )
-        sys.exit(1)
+    env = utils.select_env()
+    org_id = utils.select_org(env)
 
-    # The file name must be to the requester's hub name (e.g. 8506)
-    file_name = sys.argv[1].replace(".txt", "").replace(".\\", "")
-    key_type = sys.argv[2].lower()
+    file_name = input("Type the file with the package keys: ").strip()
+    keys = files.get_data_from_file(file_name)
+
+    hub_name = input("Type the hub name these packages belong to: ").strip()
+    key_type = packages.select_key_type()
+
     statuses = ""
-    try:
-        statuses = sys.argv[3]
-    except Exception:
-        pass
-    main(file_name, key_type, statuses)
+    if utils.select_answer("Do you want to filter by package status?") == "Y":
+        statuses = input(
+            "Type the status you want to see separated by spaces (e.g. cancelled delivered packed): "
+        )
+
+    main(env, org_id, key_type, keys, hub_name, statuses)

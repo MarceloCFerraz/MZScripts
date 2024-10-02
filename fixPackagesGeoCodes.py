@@ -7,7 +7,7 @@ PACKAGES = []
 
 
 def fill_packages_list(env, orgId, keyType, key):
-    pkgs = packages.get_package_details(env, orgId, "pi", pid)["packageRecords"]
+    pkgs = packages.get_package_details(env, orgId, "pi", pid)
 
     for pkg in pkgs:
         PACKAGES.append(pkg)

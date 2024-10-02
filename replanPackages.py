@@ -23,44 +23,44 @@ def fill_packages_list(env, orgId, keyType, key):
     Returns:
     None
     """
-    add_to_packages_list(
-        packages.get_package_details(env, orgId, keyType, key)["packageRecords"]
-    )
+    add_to_packages_list(packages.get_package_details(env, orgId, keyType, key))
 
 
-def search_pkgs(env, orgId, keyType, batch, hubName: str | None):
+def search_pkg(env: str, orgId: str, key: str, key_type: str, pids: set[str]):
+    pkgs = packages.search_for_package(env, orgId, key)["packages"]
+
+    if len(pkgs) <= 0:
+        print(f"Package Seeker couldn't find {key}")
+        return
+
+    if len(pkgs) > 1 and key_type == "bc":
+        raise Exception(
+            f"Provided key is a barcode, which means it should have returned only 1 package. Please select the appropriate barcode from the objects below and try again:\n{pkgs}"
+        )
+
+    pids.add(pkgs[0]["packageId"])
+
+
+def search_pkgs(env, orgId, keyType, batch, hubName: str | None = None):
     pids = set()
 
     try:
-        for pkg in batch:
-            p = packages.search_for_package(env, orgId, pkg, hubName)["packages"]
+        with concurrent.futures.ThreadPoolExecutor() as pool:
+            for key in batch:
+                pool.submit(search_pkg, env, orgId, key, keyType, pids)
+        pool.shutdown(wait=True)
 
-            if len(p) <= 0:
-                print(
-                    f"Package Seeker couldn't find {pkg}" + f" for {hubName}"
-                    if hubName
-                    else ""
-                )
-                continue
-
-            pids.add(p[0]["packageId"])
-
-        print(
-            f"Found {len(pids)} packages for batch" + f" for {hubName}"
-            if hubName
-            else ""
-        )
     except Exception as e:
         print(e)
+
+    print(f"Found {len(pids)} packages for batch")
 
     if len(pids) == 0:
         print("packageSeeker couldn't find any of the packages from this batch")
         return
 
     add_to_packages_list(
-        packages.bulk_get_package_details(env, orgId, "pi", list(pids))[
-            "packageRecords"
-        ]
+        packages.bulk_get_package_details(env, orgId, "pi", list(pids))
     )
 
 
@@ -77,18 +77,15 @@ def fill_packages_list_batch(env, orgId, keyType, batch, hubName: str | None):
     Returns:
     None
     """
-    add_to_packages_list(
-        packages.bulk_get_package_details(env, orgId, keyType, batch)["packageRecords"]
-    )
+    add_to_packages_list(packages.bulk_get_package_details(env, orgId, keyType, batch))
 
 
 def add_to_packages_list(pkgs):
     global ALREADY_ASKED, FORCE_REPLAN
 
-    print(f">Found {len(pkgs)} packages")
+    print(f"> Found {len(pkgs)} packages")
 
     if len(pkgs) == 0:
-        print("> Quitting\n")
         return
 
     print(f"{' Applying filters ':=^50}")
@@ -301,12 +298,6 @@ def main(
 ):
     print(f"Key Types: {keyType.upper()}\nKeys: {keys}\n")
     load_packages(env, orgId, keyType, keys, hubName)
-
-    if len(PACKAGES) == 0:
-        print("Trying to search again with Package Seeker + Switchboard")
-        # time.sleep(5)
-        load_packages(env, orgId, keyType, keys, hubName, usePkgSeeker=True)
-
     process_packages(env, orgId, next_delivery_date, hubName)
 
 
@@ -320,11 +311,11 @@ def load_packages(
 ):
     # Using multithreading to fetch multiple packages simultaneosly
     # also split in batches to make less api calls and also accelerate the whole process
-    # with concurrent.futures.ThreadPoolExecutor(8) as pool:
     # getting packages in Switchboard with keys (ori, bc, etc) provided in the file <fileName>.txt
 
     batches = utils.divide_into_batches(keys)
 
+    # with concurrent.futures.ThreadPoolExecutor(8) as pool:
     for batch in batches:
         if usePkgSeeker:
             # pool.submit(search_pkgs, env, orgId, keyType, batch, hubName)
@@ -333,6 +324,12 @@ def load_packages(
             # pool.submit(fill_packages_list_batch, env, orgId, keyType, batch, hubName)
             fill_packages_list_batch(env, orgId, keyType, batch, hubName)
     #    pool.shutdown(wait=True)
+
+    if len(PACKAGES) == 0 and not usePkgSeeker:
+        print("Trying to search again with Package Seeker + Switchboard")
+        load_packages(env, orgId, keyType, keys, hubName, usePkgSeeker=True)
+        # time.sleep(5)
+
     print()
     print("===============================")
 

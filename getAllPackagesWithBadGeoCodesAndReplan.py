@@ -90,9 +90,7 @@ def main():
 
         print("Searching for badly geo coded packages...")
         for packageID in pkgs:
-            pkg = packages.get_package_details(env, orgId, "pi", packageID)[
-                "packageRecords"
-            ][0]
+            pkg = packages.get_package_details(env, orgId, "pi", packageID)[0]
 
             try:
                 hubName = pkg["packageDetails"]["sourceLocation"]["name"]

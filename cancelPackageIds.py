@@ -27,7 +27,7 @@ def main():
     print("Filling Package IDs Array now...\n")
 
     for line in lines:
-        pkgs = packages.get_package_details(env, orgId, keyType, line)["packageRecords"]
+        pkgs = packages.get_package_details(env, orgId, keyType, line)
 
         for pkg in pkgs:
             status = pkg["packageStatuses"]["status"]

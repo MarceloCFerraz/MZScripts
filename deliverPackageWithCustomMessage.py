@@ -6,7 +6,7 @@ from utils import packages, utils
 def main(env: str, org_id: str, key_type: str, key: str, notes: str | None):
     pkgs = []
 
-    pkgs = packages.get_package_details(env, org_id, key_type, key)["packageRecords"]
+    pkgs = packages.get_package_details(env, org_id, key_type, key)
 
     if len(pkgs) == 0:
         print("> NO PACKAGES FOUND <\n")

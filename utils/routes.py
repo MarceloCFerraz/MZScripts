@@ -77,7 +77,9 @@ def get_all_routes_from_hub_alamo(env, orgId, hubName, cpt):
 
     print(f">> Gathering all routes from {hubName} ({cpt}) using Alamo")
 
-    return requests.get(url=url, timeout=15).json()
+    response = requests.get(url=url, timeout=15)
+
+    return response.json()
 
 
 def find_route(env, orgId, routeName, hubName, cpt):

@@ -46,8 +46,9 @@ def move_package_to_hub(env, org_id, newHub, packageId, dispatcher, userName):
         "notes": f"Requested by {dispatcher}. Executed by {userName}",
     }
     response = requests.post(url=url, json=payload, timeout=15)
-    print(f"{packageId}: {response} ({response.text if response.status_code >= 400 else ''})")
-    
+    print(
+        f"{packageId}: {response} ({response.text if response.status_code >= 400 else ''})"
+    )
 
 
 def move_packages_to_route(env, org_id, newRouteId, packageIdsList):
@@ -184,9 +185,16 @@ def bulk_get_package_details(env, org_id, key_type, keys):
         },
     }
 
-    print(payload)
+    # print(payload)
 
-    return requests.post(url=url, json=payload, timeout=30).json()
+    response = requests.post(url=url, json=payload, timeout=30).json()
+
+    if response.get("packageRecords") is None:
+        raise Exception(
+            f"Couldn't get package records from switchboard. Check details below and try again:\n{response}"
+        )
+
+    return response["packageRecords"]
 
 
 def get_package_details(env, org_id, key_type, key):
@@ -209,7 +217,14 @@ def get_package_details(env, org_id, key_type, key):
 
     print(f">>>>> Retrieving Packages From {key_type.upper()} {key} <<<<<")
 
-    return requests.get(endpoint, timeout=500).json()
+    response = requests.post(url=endpoint, timeout=30).json()
+
+    if response.get("packageRecords") is None:
+        raise Exception(
+            f"Couldn't get package records from switchboard. Check details below and try again:\n{response}"
+        )
+
+    return response["packageRecords"]
 
 
 def get_package_histories(env, org_id, key_type, key):
@@ -627,7 +642,7 @@ def get_package_hub(package):
     return None
 
 
-def search_for_package(env: str, orgId: str, keyword: str, hubName: str | None):
+def search_for_package(env: str, orgId: str, keyword: str, hubName: str | None = None):
     url = f"https://packageseeker.{utils.convert_env(env)}.milezero.com/packageseeker-war/api/seeker/search/{orgId}"
 
     payload = {}

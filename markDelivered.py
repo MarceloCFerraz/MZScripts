@@ -34,9 +34,7 @@ def main(file_name: str | None, key_type: str):
 
     for line in lines:
         # getting packages from barcode present in file line
-        pkgs = packages.get_package_details(env, orgId, key_type, line)[
-            "packageRecords"
-        ]
+        pkgs = packages.get_package_details(env, orgId, key_type, line)
 
         if len(pkgs) == 0:
             print("> NO PACKAGES FOUND <\n")

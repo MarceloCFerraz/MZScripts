@@ -50,9 +50,7 @@ def main():
         pkgs = []
 
         for batch in batches:
-            for pkg in packages.bulk_get_package_details(env, orgId, "pi", batch)[
-                "packageRecords"
-            ]:
+            for pkg in packages.bulk_get_package_details(env, orgId, "pi", batch):
                 pkgs.append(pkg)
 
         print(f"Moving {len(pkgs)} packages from route {routeId} to {newHub}")

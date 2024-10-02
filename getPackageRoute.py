@@ -49,9 +49,7 @@ def main(FILENAME, KEY_TYPE):
     files.start_logging(logFile)
 
     for line in lines:
-        pkgs = packages.get_package_details(env, orgId, KEY_TYPE, line)[
-            "packageRecords"
-        ]
+        pkgs = packages.get_package_details(env, orgId, KEY_TYPE, line)
 
         for package in pkgs:
             packageID = package["packageId"]

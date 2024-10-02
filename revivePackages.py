@@ -10,10 +10,8 @@ def main(env:str, org_id:str, keys:list[str], key_type: str) -> dict:
     pids = set()
 
     for batch in batches:
-        pkgs = packages.bulk_get_package_details(env, org_id, key_type, keys).get("packageRecords")
+        pkgs = packages.bulk_get_package_details(env, org_id, key_type, keys)
 
-        if pkgs is None:
-            raise Exception("something wrong happened when trying to get ")
         for pk
 
     try:
