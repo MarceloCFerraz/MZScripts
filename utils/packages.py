@@ -217,12 +217,14 @@ def get_package_details(env, org_id, key_type, key):
 
     print(f">>>>> Retrieving Packages From {key_type.upper()} {key} <<<<<")
 
-    response = requests.post(url=endpoint, timeout=30).json()
+    response = requests.get(url=endpoint, timeout=30)
 
-    if response.get("packageRecords") is None:
+    if response.status_code > 200 :
         raise Exception(
-            f"Couldn't get package records from switchboard. Check details below and try again:\n{response}"
+            f"Couldn't get package records from switchboard. Check details below and try again:\n{response.text}"
         )
+
+    response = response.json()
 
     return response["packageRecords"]
 
