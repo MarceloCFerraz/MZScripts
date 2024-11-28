@@ -23,7 +23,7 @@ ORGS = {
         "LOWES": "",
     },
 }
-ENV = "stage"
+ENV = "prod"
 ORGID = ORGS[ENV.upper()]["STAPLES"]
 
 STATUSES = [
@@ -138,6 +138,72 @@ def resubmit_packages(packageId, newDate, notes):
     except Exception:
         print(f"(OK {response['timeWindow']['start']})")
         SUCCESSES.append(packageId)
+
+
+
+def divide_into_batches(lst, batch_size=100):
+    """
+    Divides a list into batches of a specified size.
+
+    Args:
+        lst (list): The list to divide.
+        batch_size (int): The size of each batch. Defaults to 100.
+
+    Returns:
+        list: The list of batches.
+    """
+    batches = []
+    for i in range(0, len(lst), batch_size):
+        batch = lst[i : i + batch_size]
+        batches.append(batch)
+    return batches
+
+
+def bulk_resubmit_packages(packageIDs, next_delivery_date, notes = ""):
+    """
+    Resubmits multiple packages in bulk for a specific delivery date.
+
+    Args:
+        packageIDs (list): The list of package IDs.
+        next_delivery_date (str): The next delivery date.
+        notes (str): A description to why packages are being resubmitted
+
+    Returns:
+        dict: The response containing the success and error information.
+    """
+    url = f"https://switchboard.{ENV}.milezero.com/switchboard-war/api/fulfillment/resubmit/bulk/{ORGID}"
+
+    requestData = {
+        "packageIds": packageIDs,
+        "adjustTimeWindow": True,
+        "treatEverydayAsProcessingDay": False,
+        "targetLocalDate": next_delivery_date,
+        "notes": notes,
+    }
+
+    response = requests.post(url=url, json=requestData, timeout=15).json()
+    sCount = 0
+    eCount = 0
+
+    successes = response.get("succeededResubmits")
+    errors = response.get("failedResubmits")
+
+    if successes:
+        sCount += len(successes)
+        for success in successes:
+            SUCCESSES.append(success.get("packageId"))
+
+    if errors:
+        eCount += len(errors)
+        for error in errors:
+            FAILS.append(error.get("packageId"))
+
+    print(
+        f">>>>> New Batch ({len(packageIDs)} {next_delivery_date}) <<<<<\n"
+        + f"> {sCount} OK\t {eCount} FAILED"
+    )
+
+    return response
 
 
 def create_dir(directoryName):
@@ -286,6 +352,52 @@ def get_valid_hubs(hubs):
 
     return validHubs
 
+def get_all_routes_for_hub(hubName: str, oldDates: [str]):
+    routeIds = set()
+
+    for date in oldDates:
+        url = f"https://alamo.{ENV}.milezero.com/alamo-war/api/routes/search/matching/orgId/{ORGID}?key={hubName}&keyType=HUB_NAME&localDate={date}"
+
+        response = requests.get(url=url)
+        if response.status_code != 200:
+            print(f"Something happened: {response.text}")
+            continue
+        
+        routeIds = {r["metadata"]["routeId"] for r in response.json()["routes"]}
+
+        for routeId in routeIds:
+            routeIds.add(routeId)
+    
+    return list(routeIds)
+
+
+def get_pkgs_from_alamo(routeId):
+    url = f"http://alamo.{ENV}.milezero.com/alamo-war/api/plannedroutes/stopdetails/{routeId}"
+
+    response = requests.get(url=url).json()
+    # print(f">> Searching for packages in {routeId}")
+
+    if response.get("routeStopDetail") is None:
+        print(response.get("message"))
+        return []
+
+    stops = response["routeStopDetail"]["stops"]
+    pids = set()
+
+    for stop in stops:
+        stopPackages = stop["stopPackages"]
+
+        for pkgs in stopPackages:
+            pid = pkgs.get("packageId")
+
+            if pid is not None:
+                print(f">>> {pid}")
+                pids.add(pid)
+
+    # print(f">> Found {len(pids)} packages\n")
+
+    return list(pids)
+
 
 def main():
     """
@@ -324,12 +436,14 @@ def main():
     today = datetime.now()
     newDate = datetime.min
 
-    oldDate = datetime.strptime(
-        input("Input the Original Date (yyyy-mm-dd): ").strip(), "%Y-%m-%d"
-    )
-    oldDate = oldDate.strftime("%Y-%m-%d")
-    oldDate = str(oldDate + "T16:00:00Z")
-    oldDate = oldDate.replace(":", "%3A")
+    oldDates = list()
+
+    while len(oldDates) < 2: # inform up to two dates (thu & fri)
+        oldDate = datetime.strptime(
+            input("Input the Original Date (yyyy-mm-dd): ").strip(), "%Y-%m-%d"
+        )
+        oldDate = oldDate.strftime("%Y-%m-%d")
+        oldDates.append(oldDate)
 
     status = "a"
     print("Valid Statuses:")
@@ -348,7 +462,7 @@ def main():
     )
     print("Searching for packages...")
 
-    packages = []
+    packages = list()
 
     validHubs = get_valid_hubs(hubs)
 
@@ -356,11 +470,19 @@ def main():
         hubName = hub["name"]
         print(f"> {hubName}")
 
-        hubPackages = get_all_packages_for_hub(hubName, oldDate, status)
+        routes = get_all_routes_for_hub(hubName, oldDates)
+
+        for routeId in routes:
+            pkgIds = get_pkgs_from_alamo(routeId)
+            
+            for pkgId in pkgIds:
+                packages.append(pkgId)
+
+        # hubPackages = get_all_packages_for_hub(hubName, oldDate, status)
 
         # this needs to be done in order to add all packages from all hubs to the array
-        for package in hubPackages:
-            packages.append(package)
+        # for package in hubPackages:
+        #     packages.append(package)
 
     if len(packages) > 0:
         print(f"Total Valid Packages to be Replanned: {len(packages)}\n")
@@ -375,9 +497,12 @@ def main():
         notes = input("Type in the resubmit notes (optional): ").strip()
 
         print("\nResubmitting...")
-        for packageId in packages:
-            print(f"> {packageId}", end=" ")
-            resubmit_packages(packageId, newDate, notes)
+        batches = divide_into_batches(packages)
+
+        for batch in batches:
+            bulk_resubmit_packages(batch, newDate, notes)
+            # print(f"> {packageId}", end=" ")
+            # resubmit_packages(packageId, newDate, notes)
 
         succeededResubmits = len(SUCCESSES)
         failedResubmits = len(FAILS)
