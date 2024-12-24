@@ -72,6 +72,7 @@ def get_all_packages_for_hub(env, orgId, hubName, oldDate, status):
     for route in route_pkgs:
         pkgs = route_pkgs[route]
         for pkg in pkgs:
+            print(pkg)
             valid_packages.add(pkg)
 
     return valid_packages
@@ -145,22 +146,15 @@ def save_file(hubName, oldDate):
     Returns:
     - None
     """
-    oldDate = str(oldDate).replace("T16%3A00%3A00Z", "")
+    oldDate = str(oldDate.strftime("%Y-%m-%d")).replace("T16%3A00%3A00Z", "")
     directory = create_dir(directoryName="RESULTS")
 
     # names the file
-    successesFileName = f"{hubName}_{oldDate}_SUCCESSES.txt"
+    successesFileName = f"{hubName}_{oldDate}_PACKAGES.txt"
     # complete directory and where the files will be saved
     successesDir = os.path.join(directory, successesFileName)
     # saving file
     create_file(directory=successesDir, fileName=successesFileName, content=SUCCESSES)
-
-    # names the file
-    failsFileName = f"DELIVERIES_{oldDate}_FAILS.txt"
-    # complete directory and where the files will be saved
-    failsDir = os.path.join(directory, failsFileName)
-    # saving file
-    create_file(directory=failsDir, fileName=failsFileName, content=FAILS)
 
 
 def print_valid_statuses():
@@ -278,7 +272,7 @@ def main():
             )
 
             if len(SUCCESSES) > 0:
-                print("\nCreating files with resubmit results")
+                print("\nCreating files with results")
                 save_file(hubName=hubName, oldDate=oldDate)
             else:
                 print("No packages found")
