@@ -158,10 +158,11 @@ if __name__ == "__main__":
     org_id = utils.select_org(env)
 
     file_name = input("Type the file with the package keys: ").strip()
-    keys = files.get_data_from_file(file_name)
 
-    hub_name = input("Type the hub name these packages belong to: ").strip()
+    keys = files.get_data_from_file(file_name)
     key_type = packages.select_key_type()
+
+    hub_name = input("Type the hub name these packages belong to (optional): ").strip()
 
     statuses = ""
     if utils.select_answer("Do you want to filter by package status?") == "Y":

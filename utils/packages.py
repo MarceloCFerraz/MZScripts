@@ -269,7 +269,7 @@ def print_minimal_package_details(package):
     print(f"Package ID:         {packageID}")
     print(f"Order Reference ID: {ori}")
     print(f"Scannable Barcode:  {barcode}")
-    print(f"Curent Status:      {status}")
+    print(f"Current Status:     {status}")
     print(f"Route ID:           {routeId}")
 
 
@@ -312,7 +312,7 @@ def print_package_details(package):
     print(f"Scannable Barcode:  {barcode}")
     print(f"Order Reference ID: {ori}")
     print(f"Delivery Window:    {deliveryWindow}")
-    print(f"Curent Status       {status}")
+    print(f"Current Status      {status}")
 
     print(f"\n{half_divisor} ORG & HUB {half_divisor}")
     print(f"Org ID:             {org_id}")
